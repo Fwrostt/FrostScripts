@@ -8,6 +8,8 @@ The UI includes an ice-blue Frost theme, a responsive sidebar, module search (`C
 
 Run the matching entry point in a client environment that provides `loadstring` and `game:HttpGet`:
 
+HTTP loading requires publicly readable source files. Private GitHub repositories return 404 to unauthenticated clients. While this repository is private, use the local development instructions below; the same API and game scripts are still executed through `loadstring`.
+
 ```lua
 -- Grass Cutter
 loadstring(game:HttpGet("https://raw.githubusercontent.com/Fwrostt/FrostScripts/main/GrassCutter.lua"))()
