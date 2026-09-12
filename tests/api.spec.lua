@@ -15,7 +15,6 @@ local sandbox = setmetatable({
 			return sources[url]
 		end,
 	},
-	readfile = function(path) return assert(sources[path], "test file missing") end,
 }, { __index = getfenv() })
 local apiChunk = assert(loadstring(API_SOURCE, "@FrostScriptsAPI"))
 setfenv(apiChunk, sandbox)
@@ -92,16 +91,16 @@ test("scope cleans once and immediately handles late resources", function()
 end)
 
 test("HTTP loader caches and fresh loads bypass cache", function()
-	API.Configure({ BaseUrl = "https://example.test/release/" })
-	sources["https://example.test/release/sample.lua"] = "return { new = function() end }"
+	API.Configure({ BaseUrl = "https://raw.githubusercontent.com/Fwrostt/FrostScripts/test-ref/" })
+	sources["https://raw.githubusercontent.com/Fwrostt/FrostScripts/test-ref/sample.lua"] = "return { new = function() end }"
 	local a = API.LoadModule("sample.lua", "new")
 	assert(a == API.LoadModule("sample.lua", "new"))
 	assert(a ~= API.LoadModule("sample.lua", "new", true))
-	assert(requests["https://example.test/release/sample.lua"] == 2)
+	assert(requests["https://raw.githubusercontent.com/Fwrostt/FrostScripts/test-ref/sample.lua"] == 2)
 	assert(not pcall(API.LoadModule, "sample.lua", "missingMethod"))
 	local config = API.GetConfig()
 	config.BaseUrl = "changed"
-	assert(API.GetConfig().BaseUrl == "https://example.test/release")
+	assert(API.GetConfig().BaseUrl == "https://raw.githubusercontent.com/Fwrostt/FrostScripts/test-ref")
 end)
 
 test("shared click method preserves direct game calls and respects typing", function()
@@ -114,16 +113,16 @@ end)
 
 test("failed downloads and compile errors can be retried", function()
 	assert(not pcall(API.LoadModule, "retry.lua"))
-	sources["https://example.test/release/retry.lua"] = "invalid code !"
+	sources["https://raw.githubusercontent.com/Fwrostt/FrostScripts/test-ref/retry.lua"] = "invalid code !"
 	assert(not pcall(API.LoadModule, "retry.lua"))
-	sources["https://example.test/release/retry.lua"] = "return { ready = true }"
+	sources["https://raw.githubusercontent.com/Fwrostt/FrostScripts/test-ref/retry.lua"] = "return { ready = true }"
 	assert(API.LoadModule("retry.lua").ready)
 end)
 
 test("invalid exports, paths, protocols and games fail clearly", function()
-	sources["https://example.test/release/bad.lua"] = "return nil"
+	sources["https://raw.githubusercontent.com/Fwrostt/FrostScripts/test-ref/bad.lua"] = "return nil"
 	assert(not pcall(API.LoadModule, "bad.lua"))
-	sources["https://example.test/release/bad.lua"] = "return {}"
+	sources["https://raw.githubusercontent.com/Fwrostt/FrostScripts/test-ref/bad.lua"] = "return {}"
 	assert(not pcall(API.LoadModule, "bad.lua", "new"))
 	assert(not pcall(API.LoadModule, "../secret.lua"))
 	assert(not pcall(API.LoadModule, "/secret.lua"))
@@ -131,14 +130,14 @@ test("invalid exports, paths, protocols and games fail clearly", function()
 	assert(not pcall(API.RunGame, "Unknown"))
 end)
 
-test("local mode and game selection load exactly one game", function()
-	API.Configure({ Mode = "local", LocalRoot = "project/" })
-	sources["project/dist/ui/UI.lua"] = "return { new = function() end }"
+test("GitHub UI and game selection load exactly one game", function()
+	API.Configure({ BaseUrl = "https://raw.githubusercontent.com/Fwrostt/FrostScripts/test-ref" })
+	sources["https://raw.githubusercontent.com/Fwrostt/FrostScripts/test-ref/dist/ui/UI.lua"] = "return { new = function() end }"
 	assert(type(API.LoadUI().new) == "function")
 	assert(API.LoadUI() ~= API.LoadUI(), "UI loads must remain isolated after relocation")
-	sources["project/games/GrassCutter/main.lua"] = "local api = ...; return { Version = api.Version, Unload = function() end }"
+	sources["https://raw.githubusercontent.com/Fwrostt/FrostScripts/test-ref/games/GrassCutter/main.lua"] = "local api = ...; return { Version = api.Version, Unload = function() end }"
 	assert(API.RunGame("GrassCutter").Version == API.Version)
-	assert(API.GetConfig().LocalRoot == "project")
+	assert(API.GetConfig().BaseUrl == "https://raw.githubusercontent.com/Fwrostt/FrostScripts/test-ref")
 	assert(#API.GetGames() == 2)
 end)
 print(string.format("%d API tests passed", passed))

@@ -250,6 +250,8 @@ end
 
 function Window:SetAnimations(enabled)
 	self.Animations = enabled == true
+	self:_remember("Animations", self.Animations)
+	self:_syncAmbient()
 	if not self.Animations then
 		for object, running in pairs(self._tweens) do
 			for _, animation in pairs(running) do animation:Cancel() end
@@ -268,6 +270,7 @@ end
 function Window:SetSizePreset(preset)
 	if not SIZE_PRESETS[preset] then return false end
 	self.SizePreset = preset
+	self:_remember("SizePreset", preset)
 	self:_resizeWindow(true)
 	return true
 end
@@ -288,11 +291,13 @@ end
 
 function Window:SetTextScale(scale)
 	self.TextScale = math.clamp(tonumber(scale) or 1, 1, 1.3)
+	self:_remember("TextScale", self.TextScale)
 	self:_applyTextScale()
 end
 
 function Window:SetDimAmount(percent)
 	self.DimAmount = math.clamp(tonumber(percent) or 48, 0, 75)
+	self:_remember("DimAmount", self.DimAmount)
 	self.Shade.BackgroundTransparency = 1 - (self.DimAmount / 100)
 end
 
@@ -313,12 +318,14 @@ end
 
 function Window:SetMonitorWidth(width)
 	self.MonitorWidth = math.clamp(tonumber(width) or 380, 320, 520)
+	self:_remember("MonitorWidth", self.MonitorWidth)
 	self:_layoutMonitors()
 end
 
 function Window:SetMonitorSide(side)
 	if side ~= "Left" and side ~= "Right" then return false end
 	self.MonitorSide = side
+	self:_remember("MonitorSide", side)
 	self:_layoutMonitors()
 	return true
 end
@@ -339,12 +346,15 @@ function Window:SetVisible(show)
 	self._visibilityToken += 1
 	local token = self._visibilityToken
 	self.Visible = show
+	self:_syncAmbient()
 	self.Launcher.Visible = not show
 	if show then
+		self:PlaySound("Open")
 		self.Gui.Enabled = true
 		self:_tween(self.Frame, 0.18, { GroupTransparency = 0 })
 		self:_tween(self.Shade, 0.18, { BackgroundTransparency = 1 - self.DimAmount / 100 })
 	else
+		if self._rebinding then self._rebinding:Refresh(); self._rebinding = nil end
 		self.Search:ReleaseFocus()
 		self:_tween(self.Frame, 0.14, { GroupTransparency = 1 })
 		self:_tween(self.Shade, 0.14, { BackgroundTransparency = 1 })
@@ -375,7 +385,8 @@ function Window:SelectTab(tab)
 	end
 	self.PageTitle.Text, self.PageSubtitle.Text = tab.Name, tab.Subtitle
 	tab.Page.GroupTransparency = self.Animations and 0.3 or 0
-	self:_tween(tab.Page, 0.16, { GroupTransparency = 0 })
+	tab.Page.Position = UDim2.fromOffset(0, self.Animations and 10 or 0)
+	self:_tween(tab.Page, 0.26, { GroupTransparency = 0, Position = UDim2.fromOffset(0, 0) })
 	self:_refreshSearch()
 end
 
@@ -1097,30 +1108,22 @@ function Tab:AddModule(options)
 	return module
 end
 
-function Tab:AddKeybind(options)
+function Module:AddKeybind(options)
 	options = options or {}
-	local module = self:AddModule({
-		Name = options.Name or "Keybind",
-		Description = options.Description or "Click to rebind",
-		Collapsible = false,
-		HeaderHeight = 76,
-		RightInset = 184,
+	self:_index(options.Name or "Keybind")
+	local row = self:_row(92)
+	create("TextLabel", {
+		Position = UDim2.fromOffset(16, 6), Size = UDim2.new(1, -32, 0, 24),
+		Text = options.Name or "Toggle key", TextColor3 = THEME.Text,
+		TextSize = 13, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Left,
+		BackgroundTransparency = 1, Parent = row,
 	})
-	module.Body.Visible = false
-	module.Card.Size = UDim2.new(1, -CARD_HORIZONTAL_GUTTER, 0, 76)
 	local button = create("TextButton", {
-		AnchorPoint = Vector2.new(1, 0.5),
-		Position = UDim2.new(1, -22, 0.5, 0),
-		Size = UDim2.fromOffset(132, 42),
-		AutoButtonColor = false,
-		BackgroundColor3 = THEME.Surface,
-		BorderSizePixel = 0,
-		TextColor3 = THEME.Text,
-		Font = Enum.Font.GothamBold,
-		TextSize = 13,
-		ZIndex = 4,
-		Parent = module.Card,
-	}, { corner(9), stroke(THEME.Border, 0.25) })
+		Position = UDim2.fromOffset(12, 38), Size = UDim2.new(1, -24, 0, 44),
+		BackgroundColor3 = THEME.PanelRaised, BorderSizePixel = 0,
+		TextColor3 = THEME.Text, TextSize = 13, Font = Enum.Font.GothamBold,
+		AutoButtonColor = false, Parent = row,
+	}, { corner(9), stroke(THEME.Border, 0.3) })
 	local binding = {
 		Window = self.Window,
 		Button = button,
@@ -1129,6 +1132,7 @@ function Tab:AddKeybind(options)
 		Set = options.Set,
 		OnPressed = options.OnPressed,
 		AllowClear = options.AllowClear ~= false,
+		IsVisibility = options.IsVisibility == true,
 	}
 	function binding:Refresh()
 		local key = self.Get()
@@ -1147,6 +1151,11 @@ function Tab:AddKeybind(options)
 	return binding
 end
 
+-- Compatibility helper; new game UIs place keybinds in their owning module.
+function Tab:AddKeybind(options)
+	return self:AddModule({ Name = options.Name or "Shortcut", Expanded = true }):AddKeybind(options)
+end
+
 function Window:_keyInUse(key, except)
 	for _, binding in ipairs(self.Keybinds) do
 		if binding ~= except and binding.Get() == key then return binding.Name end
@@ -1155,6 +1164,7 @@ function Window:_keyInUse(key, except)
 end
 
 function Window:_handleKeyboard(input, processed)
+	if self.InputEnabled == false or self._destroyed then return end
 	if input.UserInputType ~= Enum.UserInputType.Keyboard then return end
 	if self._rebinding then
 		local binding = self._rebinding
@@ -1271,7 +1281,8 @@ function Window:_layoutNotifications()
 end
 
 function Window:Notify(options)
-	if self._destroyed then return nil end
+	if self._destroyed or self.NotificationsEnabled == false then return nil end
+	self:PlaySound("Notify")
 	if type(options) == "string" then options = { Text = options } end
 	options = options or {}
 	local duration = math.clamp(tonumber(options.Duration) or 4, 1, 30)
@@ -1451,6 +1462,7 @@ end
 function Window:Destroy()
 	if self._destroyed then return end
 	self._destroyed = true
+	if self._ambientConnection then self._ambientConnection:Disconnect(); self._ambientConnection = nil end
 	self:CloseDropdown()
 	for _, connection in ipairs(self._connections) do connection:Disconnect() end
 	table.clear(self._connections)
@@ -1504,6 +1516,9 @@ function Window:SetTheme(themeName)
 	local source = THEMES[themeName]
 	if not source then return false end
 	self.ThemeName = themeName
+	self:_remember("ThemeName", themeName)
+	self:_remember("CustomAccent", nil)
+	self:_remember("CustomSuccess", nil)
 	for key, value in pairs(source) do
 		THEME[key] = value
 	end
@@ -1514,6 +1529,7 @@ end
 function Window:SetThemeColor(key, color)
 	if not THEME[key] or typeof(color) ~= "Color3" then return false end
 	THEME[key] = color
+	if key == "Accent" or key == "Success" then self:_remember("Custom" .. key, color) end
 	self.CustomTheme = true
 	self:_applyTheme()
 	return true
@@ -1589,75 +1605,9 @@ function Module:AddColorPicker(name, default, callback)
 	return control
 end
 
-function Window:AddClientSettings(tab, options)
-	options = options or {}
-	local state = options.State or {}
-	local onChange = options.OnChange
-	local appearance = tab:AddModule({
-		Name = options.AppearanceName or "FrostScripts Appearance",
-		Description = "Window, text, monitor, and animation settings",
-		Collapsible = false,
-	})
-	appearance:AddToggle("Animations", state.Animations ~= false, function(value)
-		state.Animations = value
-		self:SetAnimations(value)
-		if onChange then onChange("Animations", value) end
-	end)
-	appearance:AddDropdown("Window size", { "Comfortable", "Large", "Extra Large" }, state.SizePreset or self.SizePreset or "Large", function(value)
-		state.SizePreset = value
-		self:SetSizePreset(value)
-		if onChange then onChange("SizePreset", value) end
-	end)
-	appearance:AddSlider("Text scale", 1, 1.3, state.TextScale or self.TextScale or 1, function(value)
-		state.TextScale = value
-		self:SetTextScale(value)
-		if onChange then onChange("TextScale", value) end
-	end, {
-		Step = 0.05,
-		Formatter = function(value) return string.format("%.2fx", value) end,
-	})
-	appearance:AddSlider("Background dim", 0, 75, state.DimAmount or self.DimAmount or 48, function(value)
-		state.DimAmount = value
-		self:SetDimAmount(value)
-		if onChange then onChange("DimAmount", value) end
-	end, {
-		Step = 5,
-		Formatter = function(value) return tostring(value) .. "%" end,
-	})
-	appearance:AddDropdown("Monitor side", { "Left", "Right" }, state.MonitorSide or self.MonitorSide or "Right", function(value)
-		state.MonitorSide = value
-		self:SetMonitorSide(value)
-		if onChange then onChange("MonitorSide", value) end
-	end)
-	appearance:AddSlider("Monitor width", 320, 520, state.MonitorWidth or self.MonitorWidth or 380, function(value)
-		state.MonitorWidth = value
-		self:SetMonitorWidth(value)
-		if onChange then onChange("MonitorWidth", value) end
-	end, {
-		Step = 20,
-		Formatter = function(value) return tostring(value) .. " px" end,
-	})
+-- @include Experience.lua
 
-	local theme = tab:AddModule({
-		Name = options.ThemeName or "FrostScripts Theme",
-		Description = "Preset themes and color tuning",
-		Collapsible = false,
-	})
-	theme:AddDropdown("Theme preset", self:GetThemeNames(), state.ThemeName or self.ThemeName or "Frost", function(value)
-		state.ThemeName = value
-		self:SetTheme(value)
-		if onChange then onChange("ThemeName", value) end
-	end)
-	theme:AddColorPicker("Accent", THEME.Accent, function(color)
-		self:SetThemeColor("Accent", color)
-		if onChange then onChange("Accent", color) end
-	end)
-	theme:AddColorPicker("Success", THEME.Success, function(color)
-		self:SetThemeColor("Success", color)
-		if onChange then onChange("Success", color) end
-	end)
-	return appearance, theme
-end
+-- @include Cards.lua
 
 -- @include Shell.lua
 

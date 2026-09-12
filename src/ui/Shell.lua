@@ -28,11 +28,20 @@ function Window:_resizeWindow(animate)
 		tab.IconLabel.Position = UDim2.fromOffset(compact and 9 or 14, 10)
 	end
 	self._compact = compact
+	self:_layoutScriptCards()
 	local size = UDim2.fromOffset(self.TargetSize.X, self.TargetSize.Y)
 	if animate then self:_tween(self.Frame, 0.2, { Size = size }) else self.Frame.Size = size end
 	self.Frame.Position = UDim2.fromScale(0.5, 0.5)
 	self:_layoutMonitors()
 	self:_layoutNotifications()
+end
+
+function Window:_layoutScriptCards()
+	if not self.TargetSize then return end
+	local columns = self.TargetSize.X - (self._compact and 72 or 216) - 40 >= 710 and 2 or 1
+	for _, tab in ipairs(self.Tabs) do
+		if tab.CardLayout then tab.CardLayout.CellSize = UDim2.new(1 / columns, -12, 0, 448) end
+	end
 end
 
 function Window:_refreshSearch()
@@ -52,7 +61,8 @@ function Window:_refreshSearch()
 	self.Empty.Visible = shown == 0
 	self.Empty.Text = #tab.Modules == 0 and "Your workspace is ready.\nAdd a module to get started."
 		or "No matching modules\nTry a different search or turn off Active."
-	self.Footer.Text = string.format("%d of %d modules  ·  %d active", shown, #tab.Modules, active)
+	self.Footer.Text = tab.ItemNoun == "scripts" and string.format("%d scripts in your collection", shown)
+		or string.format("%d of %d modules  ·  %d active", shown, #tab.Modules, active)
 end
 
 function Window:SetSearch(query)
@@ -142,7 +152,13 @@ function Window:_openDropdown(control, name, options, anchor)
 end
 
 function Library:CreateWindow(options)
-	options = options or {}
+	options = table.clone(options or {})
+	local state = options.UIState or {}
+	for key, value in pairs(UI_DEFAULTS) do
+		if state[key] == nil then state[key] = options[key] == nil and value or options[key] end
+	end
+	for key, value in pairs(state) do options[key] = value end
+	options.Theme = state.ThemeName or options.Theme
 	local player = Players.LocalPlayer
 	local parent = player:WaitForChild("PlayerGui")
 	pcall(function() if type(gethui) == "function" then parent = gethui() end end)
@@ -155,7 +171,12 @@ function Library:CreateWindow(options)
 		if existing then existing:Destroy() end
 	end
 	local window = setmetatable({
+		UIState = state, InputEnabled = true,
 		Animations = options.Animations ~= false, Visible = true,
+		BackgroundEffects = options.BackgroundEffects ~= false,
+		BackgroundAnimations = options.BackgroundAnimations ~= false,
+		Sounds = options.Sounds ~= false, SoundVolume = math.clamp(tonumber(options.SoundVolume) or 0.18, 0, 1),
+		NotificationsEnabled = options.NotificationsEnabled ~= false,
 		SizePreset = options.SizePreset or "Large", ThemeName = options.Theme or "Frost",
 		TextScale = math.clamp(tonumber(options.TextScale) or 1, 1, 1.3),
 		DimAmount = math.clamp(tonumber(options.DimAmount) or 40, 0, 75),
@@ -238,6 +259,15 @@ function Library:CreateWindow(options)
 	}, { corner(12), stroke(THEME.Border, 0.5) })
 	window:_hover(close, THEME.PanelRaised, THEME.SurfaceHover)
 	window:_connect(close.Activated, function() window:SetVisible(false) end)
+	if options.OnReturnToLibrary then
+		local back = create("TextButton", {
+			Name = "ReturnToLibrary", Position = UDim2.new(1, -118, 0, 24), Size = UDim2.fromOffset(44, 44),
+			Text = "←", TextSize = 20, Font = Enum.Font.GothamBold, TextColor3 = THEME.Accent,
+			BackgroundColor3 = THEME.AccentSoft, BorderSizePixel = 0, Parent = topbar,
+		}, { corner(12), stroke(THEME.Border, 0.5) })
+		window.PageTitle.Size = UDim2.new(1, -154, 0, 32)
+		window:_connect(back.Activated, function() safeCall(window, options.OnReturnToLibrary) end)
+	end
 	local toolbar = create("Frame", { Position = UDim2.fromOffset(24, 114), Size = UDim2.new(1, -48, 0, 44), BackgroundTransparency = 1, Parent = window.Main })
 	local searchFrame = create("Frame", { Size = UDim2.new(1, -92, 1, 0), BackgroundColor3 = THEME.PanelRaised, BorderSizePixel = 0, Parent = toolbar }, { corner(10), stroke(THEME.Border, 0.4) })
 	window.Search = create("TextBox", {
@@ -283,9 +313,12 @@ function Library:CreateWindow(options)
 	window:_connect(window.Gui.Destroying, function() if cameraConnection then cameraConnection:Disconnect() end; window:Destroy() end)
 	watchCamera()
 	window:_connect(UserInputService.InputBegan, function(input, processed) window:_handleKeyboard(input, processed) end)
-	window:SetTheme(options.Theme or "Frost")
+	window:_initExperience()
+	window:ApplyPreferences()
 	window.Frame.GroupTransparency = 1
-	window:_tween(window.Frame, 0.22, { GroupTransparency = 0 })
+	window.Frame.Position = UDim2.new(0.5, 0, 0.5, window.Animations and 14 or 0)
+	window:_tween(window.Frame, 0.4, { GroupTransparency = 0, Position = UDim2.fromScale(0.5, 0.5) }, Enum.EasingStyle.Quint)
+	window:PlaySound("Open")
 	window:_applyTextScale()
 	return window
 end

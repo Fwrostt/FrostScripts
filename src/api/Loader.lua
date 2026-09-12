@@ -1,5 +1,5 @@
 -- Each API instance owns its configuration and module cache.
-local settings = { Mode = "http", BaseUrl = "", LocalRoot = "FrostScripts" }
+local settings = { BaseUrl = "https://raw.githubusercontent.com/Fwrostt/FrostScripts/main" }
 local cache, loading = {}, {}
 local games = {}
 for _, entry in ipairs(API.Catalog) do
@@ -17,14 +17,14 @@ end
 
 function API.Configure(options)
 	options = options or {}
-	local mode = options.Mode or settings.Mode
-	assert(mode == "http" or mode == "local", "Mode must be http or local")
 	local base = options.BaseUrl or settings.BaseUrl
-	local root = options.LocalRoot or settings.LocalRoot
-	assert(type(base) == "string" and type(root) == "string", "Source paths must be strings")
-	assert(mode ~= "http" or base:match("^https://"), "Set FrostScriptsConfig.BaseUrl to your HTTPS raw project URL")
+	assert(options.Mode == nil or options.Mode == "http", "FrostScripts loads only from GitHub over HTTPS")
+	assert(type(base) == "string", "BaseUrl must be a string")
+	base = base:gsub("/+$", "")
+	assert(base:match("^https://raw%.githubusercontent%.com/Fwrostt/FrostScripts/[%w%._/%-]+$"),
+		"Use a raw.githubusercontent.com/Fwrostt/FrostScripts branch or commit URL")
 	assert(next(loading) == nil, "Cannot change configuration while a module is loading")
-	settings = { Mode = mode, BaseUrl = base:gsub("/+$", ""), LocalRoot = root:gsub("[/\\]+$", "") }
+	settings = { BaseUrl = base }
 	table.clear(cache)
 	return API
 end
@@ -45,14 +45,7 @@ function API.LoadModule(path, expectedMethod, fresh, ...)
 	loading[path] = true
 	local args = table.pack(...)
 	local ok, result = pcall(function()
-		local source
-		if settings.Mode == "local" then
-			assert(type(readfile) == "function", "Local mode requires readfile")
-			source = readfile(settings.LocalRoot .. "/" .. path)
-		else
-			assert(settings.BaseUrl:match("^https://"), "Configure an HTTPS BaseUrl before loading modules")
-			source = game:HttpGet(settings.BaseUrl .. "/" .. path)
-		end
+		local source = game:HttpGet(settings.BaseUrl .. "/" .. path)
 		assert(type(source) == "string" and #source > 0, "Empty source for " .. path)
 		local chunk, compileError = loadstring(source, "@FrostScripts/" .. path)
 		assert(chunk, compileError)

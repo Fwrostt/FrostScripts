@@ -1,19 +1,19 @@
 # Verification
 
-Run `python tools/build.py` then `python tools/check.py`. The suite compiles all distributable code and the gallery with Luau, then runs 10 API tests and 8 UI behavior tests against mocked Roblox service boundaries. It does not render Roblox UI or simulate a live game. `.local/originals` keeps the initial three scripts as an ignored local backup; they are not part of a clone or deployment.
+Run `python tools/build.py` and `python tools/check.py`. The suite compiles distributable code and the gallery, then runs **10 API**, **11 UI**, and **4 launcher integration** tests against mocked HTTPS and Roblox services. It does not render Roblox or simulate the game servers.
+
+Project checks enforce one player launcher, generated-file consistency, no root scripts, GitHub-only executable source URLs, no filesystem script loading, and no separate game keybind pages.
 
 ## In-game checks
 
-Project checks also reject scripts in the repository root and verify generated files in `dist/`. Launchers are in `dist/launchers/`; `BaseUrl` and `LocalRoot` continue to identify the project root.
+1. Execute only `dist/launchers/Loader.lua` through its raw GitHub URL. Confirm Library displays both cards without starting a game.
+2. Verify card names, descriptions, fallback covers, an uploaded image, search, and one/two-column layouts across phone, tablet, and desktop viewports.
+3. Launch the matching game. Verify its script is fetched only after selection. Use the back arrow to unload it and return; launch the other card only in its corresponding game.
+4. Open module settings and rebind that feature's shortcut there. Check reserved keys, conflicts, clearing, cancellation, and visibility shortcuts.
+5. Disable interface animations, background animation, and background decoration individually. Ambient motion should stop while hidden and after unload.
+6. Mute sounds, change volume, preview sound, and disable notifications. Confirm preferences survive a trip to a game and back and rerunning the loader within the same client session.
+7. Exercise controls and themes at normal and large text sizes. Scroll long modules and popup menus. Check readable card descriptions and module labels.
+8. Test failed HTTP requests and script initialization; the library should show Retry and remain usable. Rerun the loader and confirm old windows/features are cleaned up.
+9. Verify actual game behavior: feature discovery, remotes, farming/harvesting, navigation, overlays, stopping, and respawn.
 
-1. Launch the correct game entry point, in both HTTP and local mode. Confirm the game title and its feature list.
-2. Open every tab and module. Adjust toggles, sliders, single/multiple selections, numeric inputs, color controls, and keybinds. Check labels at normal and large text sizes.
-3. Exercise all themes, hover states, enabled toggles, monitors and notifications; colors should remain consistent after switching themes.
-4. Resize the viewport through desktop, tablet, and phone sizes. All navigation and controls must remain reachable. Scroll long pages and menus.
-5. Search module names and control labels. Verify matching cards, empty results, clearing the search, and changing tabs.
-6. Hide with the header button and reopen with the floating Frost button or configured key. Drag the window to the screen edges and resize the viewport.
-7. Start a feature before character readiness; confirm the toggle rolls back and an error status is visible. Type in inputs while flight/clicking is active.
-8. Disable or unload while work is active. Relaunch twice; check that there is only one window, no duplicate listeners, and no lingering flight constraints or movement tweens.
-9. Confirm game-specific behavior in each game: feature discovery, remotes, farming/harvesting, navigation, overlays, and respawn. Neither launcher should download the other game script.
-
-UI implementation references: [UIScale](https://create.roblox.com/docs/reference/engine/classes/UIScale) and [GuiButton.Activated](https://create.roblox.com/docs/reference/engine/classes/GuiButton#Activated).
+UI references: [UIGradient](https://create.roblox.com/docs/reference/engine/classes/UIGradient), [ImageLabel](https://create.roblox.com/docs/reference/engine/classes/ImageLabel), and [GuiButton](https://create.roblox.com/docs/reference/engine/classes/GuiButton).

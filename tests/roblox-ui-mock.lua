@@ -36,6 +36,7 @@ local methods, meta = {}, {}
 local function isGui(class) return class:find("Frame") or class:find("Label") or class:find("Button") or class == "TextBox" or class == "CanvasGroup" end
 function methods:IsA(class)
 	return self.ClassName == class or class == "Instance" or (class == "GuiObject" and isGui(self.ClassName))
+		or (class == "GuiButton" and self.ClassName:find("Button") ~= nil)
 end
 function methods:GetChildren() return table.clone(self._children) end
 function methods:GetDescendants()
@@ -70,6 +71,8 @@ function methods:Destroy()
 end
 function methods:CaptureFocus() Mock.Focused = self end
 function methods:ReleaseFocus() if Mock.Focused == self then Mock.Focused = nil end end
+function methods:Play() self.Playing = true; self.PlayCount = (self.PlayCount or 0) + 1 end
+function methods:Stop() self.Playing = false end
 meta.__index = function(self, key)
 	if methods[key] then return methods[key] end
 	local props = rawget(self, "_props")
@@ -104,12 +107,16 @@ meta.__newindex = function(self, key, value)
 	local old = props[key]
 	props[key] = value
 	if old ~= value and self._signals[key] then self._signals[key]:Fire() end
+	if key == "Parent" and value then
+		local ancestor = value
+		while ancestor do ancestor.DescendantAdded:Fire(self); ancestor = ancestor.Parent end
+	end
 end
 local function instance(class)
 	local self = setmetatable({ _props = { ClassName = class, Name = class, Visible = true, Enabled = true,
 		Size = udim2(), Position = udim2(), AnchorPoint = vector(0, 0), Scale = 1, Text = "" },
 		_children = {}, _attributes = {}, _signals = {} }, meta)
-	for _, name in ipairs({ "Destroying", "Activated", "MouseEnter", "MouseLeave", "InputBegan", "InputChanged", "InputEnded", "FocusLost" }) do self[name] = signal() end
+	for _, name in ipairs({ "Destroying", "DescendantAdded", "Activated", "MouseEnter", "MouseLeave", "InputBegan", "InputChanged", "InputEnded", "FocusLost" }) do self[name] = signal() end
 	return self
 end
 local player = instance("Player")
@@ -121,7 +128,7 @@ local input = { InputBegan = signal(), InputChanged = signal(), InputEnded = sig
 function input:GetFocusedTextBox() return Mock.Focused end
 function input:IsKeyDown() return false end
 local services = { Players = { LocalPlayer = player }, UserInputService = input,
-	RunService = {}, TweenService = { Create = function(_, object, _, properties)
+	RunService = { RenderStepped = signal() }, TweenService = { Create = function(_, object, _, properties)
 		return { Play = function() for key, value in pairs(properties) do object[key] = value end end, Cancel = function() end }
 	end } }
 Mock.Env = setmetatable({
@@ -131,10 +138,14 @@ Mock.Env = setmetatable({
 	UDim = { new = udim }, UDim2 = { new = udim2, fromOffset = function(x, y) return udim2(0, x, 0, y) end, fromScale = function(x, y) return udim2(x, 0, y, 0) end },
 	Color3 = { new = color, fromRGB = function(r, g, b) return color(r / 255, g / 255, b / 255) end },
 	TweenInfo = { new = function() return {} end },
+	ColorSequence = { new = function(...) return { ... } end },
+	NumberSequence = { new = function(...) return { ... } end },
+	NumberSequenceKeypoint = { new = function(...) return { ... } end },
 	typeof = function(value) return type(value) == "table" and (value._type or (getmetatable(value) == meta and "Instance")) or type(value) end,
 	task = {
 		defer = function(callback) table.insert(Mock.Deferred, callback) end,
 		delay = function(_, callback) table.insert(Mock.Delayed, callback) end,
+		spawn = function(callback) callback() end,
 		wait = function() end,
 	},
 }, { __index = getfenv() })

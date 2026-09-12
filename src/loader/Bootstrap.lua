@@ -4,19 +4,14 @@ local config = env.FrostScriptsConfig or {}
 config = table.clone(config)
 config.BaseUrl = config.BaseUrl or "https://raw.githubusercontent.com/Fwrostt/FrostScripts/main"
 assert(type(loadstring) == "function", "FrostScripts requires loadstring")
-local mode = config.Mode or "http"
-assert(mode == "local" or mode == "http", "FrostScripts Mode must be local or http")
+assert(config.Mode == nil or config.Mode == "http", "FrostScripts loads only from GitHub over HTTPS")
+assert(type(config.BaseUrl) == "string" and config.BaseUrl:gsub("/+$", ""):match("^https://raw%.githubusercontent%.com/Fwrostt/FrostScripts/[%w%._/%-]+$"),
+	"Use a raw.githubusercontent.com/Fwrostt/FrostScripts branch or commit URL")
 local ok, source = pcall(function()
-	if mode == "local" then
-		assert(type(readfile) == "function", "Local mode requires readfile")
-		return readfile((config.LocalRoot or "FrostScripts"):gsub("[/\\]+$", "") .. "/dist/api/FrostScriptsAPI.lua")
-	end
-	assert(type(config.BaseUrl) == "string" and config.BaseUrl:match("^https://"),
-		"Set getgenv().FrostScriptsConfig.BaseUrl to the HTTPS raw URL of your published project")
 	return game:HttpGet(config.BaseUrl:gsub("/+$", "") .. "/dist/api/FrostScriptsAPI.lua")
 end)
 assert(ok, "FrostScriptsAPI download failed: " .. tostring(source)
-	.. ". Check the source URL and repository visibility, or use Mode = local with readfile.")
+	.. ". The GitHub repository and raw source files must be publicly readable.")
 local chunk, compileError = loadstring(source, "@FrostScriptsAPI")
 assert(chunk, compileError)
 local API = chunk()

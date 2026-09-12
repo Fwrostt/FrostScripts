@@ -22,7 +22,8 @@ def outputs():
     for name in ("Experience", "Cards"):
         source = (ROOT / f"src/ui/{name}.lua").read_text(encoding="utf-8")
         ui = ui.replace(f"-- @include {name}.lua", source.rstrip())
-    result["dist/ui/UI.lua"] = HEADER + ui.replace("-- @include Shell.lua", shell.rstrip())
+    defaults = (ROOT / "config/UI.lua").read_text(encoding="utf-8")
+    result["dist/ui/UI.lua"] = HEADER + "local UI_DEFAULTS = (function()\n" + defaults + "\nend)()\n" + ui.replace("-- @include Shell.lua", shell.rstrip())
     bootstrap = (ROOT / "src/loader/Bootstrap.lua").read_text(encoding="utf-8")
     result["dist/launchers/Loader.lua"] = HEADER + bootstrap
     result["dist/launcher/App.lua"] = HEADER + (ROOT / "src/launcher/App.lua").read_text(encoding="utf-8")

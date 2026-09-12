@@ -20,9 +20,10 @@ module:AddButton("Show notification", function()
 end)
 local settings = window:AddTab("Appearance", "S", "Choose your colors and layout")
 window:AddClientSettings(settings)
-local shortcuts = window:AddTab("Shortcuts", "K", "Make it feel familiar")
-local toggleKey = Enum.KeyCode.RightShift
-shortcuts:AddKeybind({ Name = "Show or hide", Get = function() return toggleKey end,
-	Set = function(key) toggleKey = key end, OnPressed = function() window:Toggle() end, AllowClear = false })
+feature:AddSetting("ToggleKey", Enum.KeyCode.F)
+module:AddKeybind({ Name = "Toggle example feature",
+	Get = function() return feature.Settings.ToggleKey end,
+	Set = function(key) feature:SetSetting("ToggleKey", key) end,
+	OnPressed = function() feature:SetEnabled(not feature.Enabled) end })
 window:SelectTab(home)
 return window

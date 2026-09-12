@@ -7,18 +7,28 @@ function Library.ImageContent(image)
 end
 
 function Tab:AddScriptCard(entry, onLaunch)
+	if not self.CardLayout then
+		local list = self.Scroll:FindFirstChildWhichIsA("UIListLayout")
+		if list then list:Destroy() end
+		self.CardLayout = create("UIGridLayout", {
+			CellSize = UDim2.new(0.5, -12, 0, 448), CellPadding = UDim2.fromOffset(12, 16),
+			SortOrder = Enum.SortOrder.LayoutOrder, HorizontalAlignment = Enum.HorizontalAlignment.Center,
+			Parent = self.Scroll,
+		})
+	end
 	local module = self:AddModule({ Name = entry.Name, Description = entry.Description, HeaderHeight = 0, Collapsible = false })
 	-- Cards share module search/filtering, but have their own editorial layout.
 	for _, object in ipairs(module.Card:GetChildren()) do
 		if object:IsA("GuiObject") and object ~= module.Body then object.Visible = false end
 	end
 	module.Body.Position = UDim2.fromOffset(CARD_BODY_INSET, 16)
-	local cover = module:_row(144)
+	local cover = module:_row(140)
 	cover.Name = "ScriptCover"
 	cover.ClipsDescendants = true
 	cover.BackgroundColor3 = THEME.AccentSoft
 	cover:SetAttribute("FrostTheme_BackgroundColor3", "AccentSoft")
-	create("UIGradient", { Rotation = 25, Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(70, 100, 145)), Parent = cover })
+	local coverGradient = create("UIGradient", { Rotation = 25, Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(70, 100, 145)), Parent = cover })
+	table.insert(self.Window._coverGradients, coverGradient)
 	local orbit = create("Frame", {
 		AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.82, 0.45), Size = UDim2.fromOffset(196, 196),
 		BackgroundTransparency = 1, BorderSizePixel = 0, Parent = cover,
@@ -45,10 +55,10 @@ function Tab:AddScriptCard(entry, onLaunch)
 		TextSize = 10, Font = Enum.Font.GothamBold, TextColor3 = THEME.Text,
 		TextXAlignment = Enum.TextXAlignment.Left, BackgroundTransparency = 1, Visible = image.Image == "", Parent = cover,
 	})
-	module:AddParagraph(entry.Name, entry.Description, { Height = 114 })
+	module:AddParagraph(entry.Name, entry.Description, { Height = 100 })
 	local button = module:AddButton("Launch script  →", onLaunch)
 	button.Name = "LaunchScript"
-	local status = module:AddParagraph("Ready when you are", "Open while playing this game", { Height = 78 })
+	local status = module:AddParagraph("Ready when you are", "Open while playing this game", { Height = 64 })
 	local card = { Module = module, Button = button, Cover = cover, Image = image }
 	function card:SetLaunchState(state, detail)
 		self.Button.Text = state == "Loading" and "Loading…" or state == "Retry" and "Try again  →" or "Launch script  →"
@@ -68,5 +78,6 @@ function Tab:AddScriptCard(entry, onLaunch)
 		self.Window:_tween(scale, 0.3, { Scale = 1 })
 		self.Window:_tween(orbit, 0.5, { Rotation = 0 })
 	end)
+	self.Window:_layoutScriptCards()
 	return card
 end

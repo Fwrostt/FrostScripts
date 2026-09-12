@@ -58,18 +58,7 @@ assert(Remotes.GetHayState, "GetHayState remote was not found.")
 assert(Remotes.SellHay, "SellHay remote was not found.")
 
 local Client = {
-	GuiKey = Enum.KeyCode.RightShift,
-	AssistKey = Enum.KeyCode.B,
-	PickKey = Enum.KeyCode.N,
-	SellKey = Enum.KeyCode.G,
-	FlightKey = Enum.KeyCode.F,
-	ClickerKey = Enum.KeyCode.V,
-	Animations = true,
 	StatusMonitor = true,
-	MonitorSide = "Right",
-	MonitorWidth = 400,
-	DimAmount = 48,
-	TextScale = 1,
 	MarkerColor = "Amber",
 	NeedleColor = "Cyan",
 	SellColor = "Green",
@@ -1117,6 +1106,7 @@ end
 
 local function newFeature(name, settings)
 	local feature = API.CreateFeature(name, settings)
+	feature:AddSetting("ToggleKey", name == "Assist Mode" and Enum.KeyCode.B or Enum.KeyCode.Unknown)
 	table.insert(Runtime.Features, feature)
 	return feature
 end
@@ -1649,6 +1639,12 @@ local function addFeatureModule(tab, feature, options)
 	})
 	Runtime.Controls[feature] = module
 	feature:BindControl(module)
+	if options.Toggleable ~= false then
+		module:AddKeybind({ Name = "Toggle " .. feature.Name,
+			Get = function() return feature.Settings.ToggleKey end,
+			Set = function(key) feature:SetSetting("ToggleKey", key) end,
+			OnPressed = function() feature:SetEnabled(not feature.Enabled) end })
+	end
 	return module
 end
 
@@ -1689,12 +1685,6 @@ local Interface = Library.new({
 	Game = "NeedleInHay",
 	GuiName = "FrostScriptsNeedleInHayUI",
 	OverlayName = "FrostScriptsNeedleInHayOverlays",
-	Animations = Client.Animations,
-	SizePreset = "Large",
-	TextScale = Client.TextScale,
-	DimAmount = Client.DimAmount,
-	MonitorWidth = Client.MonitorWidth,
-	MonitorSide = Client.MonitorSide,
 })
 
 Runtime.Interface = Interface
@@ -1717,8 +1707,7 @@ if AutoClicker then table.insert(Runtime.Features, AutoClicker) end
 
 local Home = Interface:AddTab("Home", "H", "FrostScripts NeedleInHay")
 local Modules = Interface:AddTab("Modules", "M", "Game modules")
-local Settings = Interface:AddTab("Settings", "S", "Client settings")
-local Keybinds = Interface:AddTab("Keybinds", "K", "Runtime shortcuts")
+local Settings = Interface:AddTab("UI Settings", "S", "Appearance, motion, and sound")
 
 local overview = Home:AddModule({
 	Name = "FrostScripts NeedleInHay",
@@ -1939,107 +1928,42 @@ diagnosticsModule:AddButton("Unload FrostScripts", function()
 	env.FrostScriptsNeedleInHay:Unload()
 end, { Danger = true })
 
-if type(Interface.AddClientSettings) == "function" then
-	Interface:AddClientSettings(Settings, {
-		State = Client,
-		OnChange = function(key, value)
-			Client[key] = value
-		end,
-	})
-else
-	local fallbackAppearance = Settings:AddModule({
-		Name = "FrostScripts Appearance",
-		Description = "Update the hosted UI.lua for themes and color tuning",
-		Collapsible = false,
-	})
-	fallbackAppearance:AddToggle("Animations", Client.Animations, function(value)
-		Client.Animations = value
-		Interface:SetAnimations(value)
-	end)
-	fallbackAppearance:AddDropdown("Window size", { "Comfortable", "Large", "Extra Large" }, "Large", function(value)
-		Interface:SetSizePreset(value)
-	end)
-end
+Interface:AddClientSettings(Settings)
 
-local monitorSettings = Settings:AddModule({
-	Name = "FrostScripts Overlay",
-	Description = "Status overlay and marker colors",
-	Collapsible = false,
-})
-monitorSettings:AddDropdown("Status monitor", ON_OFF, Client.StatusMonitor, function(value)
+roundModule:AddDropdown("Status monitor", ON_OFF, Client.StatusMonitor, function(value)
 	Client.StatusMonitor = value
 	if not value then Interface:HideMonitor("NeedleInHayStatus") end
 end)
-monitorSettings:AddDropdown("Hay marker color", { "Amber", "Cyan", "Green", "Purple", "Red", "White" }, Client.MarkerColor, function(value)
+visualsModule:AddDropdown("Hay marker color", { "Amber", "Cyan", "Green", "Purple", "Red", "White" }, Client.MarkerColor, function(value)
 	Client.MarkerColor = value
 	Visuals.NextRun = 0
 end)
-monitorSettings:AddDropdown("Needle marker color", { "Cyan", "Amber", "Green", "Purple", "Red", "White" }, Client.NeedleColor, function(value)
+visualsModule:AddDropdown("Needle marker color", { "Cyan", "Amber", "Green", "Purple", "Red", "White" }, Client.NeedleColor, function(value)
 	Client.NeedleColor = value
 	Visuals.NextRun = 0
 end)
-monitorSettings:AddDropdown("Sell marker color", { "Green", "Amber", "Cyan", "Purple", "Red", "White" }, Client.SellColor, function(value)
+visualsModule:AddDropdown("Sell marker color", { "Green", "Amber", "Cyan", "Purple", "Red", "White" }, Client.SellColor, function(value)
 	Client.SellColor = value
 	Visuals.NextRun = 0
 end)
 
-Keybinds:AddKeybind({
-	Name = "Toggle interface",
-	Description = "Show or hide the main window",
-	AllowClear = false,
-	Get = function() return Client.GuiKey end,
-	Set = function(key) Client.GuiKey = key end,
-	OnPressed = function() Interface:Toggle() end,
-})
-Keybinds:AddKeybind({
-	Name = "Toggle assist",
-	Description = "Enable or disable Assist Mode",
-	AllowClear = true,
-	Get = function() return Client.AssistKey end,
-	Set = function(key) Client.AssistKey = key end,
-	OnPressed = function() AssistMode:SetEnabled(not AssistMode.Enabled) end,
-})
-Keybinds:AddKeybind({
-	Name = "Pick nearest",
-	Description = "One harvest call for nearest hay",
-	AllowClear = true,
-	Get = function() return Client.PickKey end,
-	Set = function(key) Client.PickKey = key end,
+AutoPick:AddSetting("ManualKey", Enum.KeyCode.N)
+pickModule:AddKeybind({
+	Name = "Pick nearest once",
+	Get = function() return AutoPick.Settings.ManualKey end,
+	Set = function(key) AutoPick:SetSetting("ManualKey", key) end,
 	OnPressed = function()
 		local candidate = getHayCandidates(2500, AutoPick.Settings)[1]
-		if candidate then
-			requestHarvest(candidate, AutoPick.Settings)
-		end
+		if candidate then requestHarvest(candidate, AutoPick.Settings) end
 	end,
 })
-Keybinds:AddKeybind({
-	Name = "Sell hay",
-	Description = "One SellHay call",
-	AllowClear = true,
-	Get = function() return Client.SellKey end,
-	Set = function(key) Client.SellKey = key end,
+AutoSell:AddSetting("ManualKey", Enum.KeyCode.G)
+sellModule:AddKeybind({
+	Name = "Sell hay once",
+	Get = function() return AutoSell.Settings.ManualKey end,
+	Set = function(key) AutoSell:SetSetting("ManualKey", key) end,
 	OnPressed = requestSell,
 })
-if UniversalFlight then
-	Keybinds:AddKeybind({
-		Name = "Toggle Flight",
-		Description = "Enable or disable FrostScripts flight",
-		AllowClear = true,
-		Get = function() return Client.FlightKey end,
-		Set = function(key) Client.FlightKey = key end,
-		OnPressed = function() UniversalFlight:SetEnabled(not UniversalFlight.Enabled) end,
-	})
-end
-if AutoClicker then
-	Keybinds:AddKeybind({
-		Name = "Toggle Auto Clicker",
-		Description = "Enable or disable FrostScripts click utility",
-		AllowClear = true,
-		Get = function() return Client.ClickerKey end,
-		Set = function(key) Client.ClickerKey = key end,
-		OnPressed = function() AutoClicker:SetEnabled(not AutoClicker.Enabled) end,
-	})
-end
 
 track(player:GetAttributeChangedSignal("HayHeld"):Connect(function()
 	setStatus("Hay held changed")

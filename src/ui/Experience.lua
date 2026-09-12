@@ -60,6 +60,9 @@ function Window:_syncAmbient()
 		for index, dot in ipairs(self._stars) do
 			dot.BackgroundTransparency = 0.76 + math.sin(t * 0.65 + index * 1.7) * 0.18
 		end
+		for index, gradient in ipairs(self._coverGradients) do
+			gradient.Offset = Vector2.new(math.sin(t * 0.15 + index) * 0.2, 0)
+		end
 	end)
 end
 
@@ -78,12 +81,16 @@ end
 function Window:_wireFeedback(button)
 	if not button:IsA("GuiButton") or self._feedbackButtons[button] then return end
 	self._feedbackButtons[button] = true
-	self:_connect(button.MouseEnter, function() if self.Visible then self:PlaySound("Hover") end end)
-	self:_connect(button.Activated, function() if self.Visible then self:PlaySound("Click") end end)
+	local connections = {}
+	table.insert(connections, button.MouseEnter:Connect(function() if self.Visible then self:PlaySound("Hover") end end))
+	table.insert(connections, button.Activated:Connect(function() if self.Visible then self:PlaySound("Click") end end))
+	table.insert(connections, button.Destroying:Connect(function()
+		for _, connection in ipairs(connections) do connection:Disconnect() end
+	end))
 end
 
 function Window:_initExperience()
-	self._aurora, self._stars, self._feedbackButtons = {}, {}, setmetatable({}, { __mode = "k" })
+	self._aurora, self._stars, self._coverGradients, self._feedbackButtons = {}, {}, {}, setmetatable({}, { __mode = "k" })
 	self.Ambient = create("Frame", {
 		Name = "AuroraBackground", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1,
 		ClipsDescendants = true, ZIndex = 0, Parent = self.Frame,

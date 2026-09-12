@@ -11,10 +11,6 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
 
-local Config = {
-	ToggleKey = Enum.KeyCode.RightShift,
-	Animations = true,
-}
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -1506,19 +1502,12 @@ Interface = Library.new({
 	Game = "Grass Cutter",
 	GuiName = "GrassCutterUI",
 	OverlayName = "FrostScriptsGrassCutterOverlays",
-	Animations = Config.Animations,
-	SizePreset = "Large",
-	TextScale = 1,
-	DimAmount = 52,
-	MonitorWidth = 380,
-	MonitorSide = "Right",
 })
 Runtime.MainGui = Interface:GetRoot()
 
 local Home = Interface:AddTab("Home", "H", "Overview and quick access")
 local Modules = Interface:AddTab("Modules", "M", "Configure automation and utility modules")
-local Settings = Interface:AddTab("Settings", "S", "Customize the interface")
-local Keybinds = Interface:AddTab("Keybinds", "K", "Manage keyboard shortcuts")
+local Settings = Interface:AddTab("UI Settings", "S", "Appearance, motion, and sound")
 
 local welcome = Home:AddModule({
 	Name = "Welcome back",
@@ -1540,7 +1529,7 @@ local quickAccess = Home:AddModule({
 	Expanded = true,
 })
 quickAccess:AddButton("Open Modules", function() Interface:SelectTab(Modules) end)
-quickAccess:AddButton("Open Keybinds", function() Interface:SelectTab(Keybinds) end)
+quickAccess:AddButton("Customize interface", function() Interface:SelectTab(Settings) end)
 
 local moduleControls = {}
 
@@ -1562,6 +1551,13 @@ local function addFeatureModule(feature, options)
 		end,
 	})
 	moduleControls[feature] = module
+	if options.Toggleable ~= false then
+		feature:AddSetting("ToggleKey", Enum.KeyCode.Unknown)
+		module:AddKeybind({ Name = "Toggle " .. feature.Name,
+			Get = function() return feature.Settings.ToggleKey end,
+			Set = function(key) feature:SetSetting("ToggleKey", key) end,
+			OnPressed = function() feature:SetEnabled(not feature.Enabled) end })
+	end
 	return module
 end
 
@@ -1703,46 +1699,9 @@ local TOGGLE_FEATURES = {
 	UpgradeAssistant,
 }
 
-local appearance = Settings:AddModule({
-	Name = "Appearance",
-	Description = "Interface motion and feedback",
-	Collapsible = false,
-})
-appearance:AddToggle("Interface animations", Config.Animations, function(enabled)
-	Config.Animations = enabled
-	Interface:SetAnimations(enabled)
-end, "Smooth transitions and hover feedback")
-appearance:AddDropdown("Window size", { "Comfortable", "Large", "Extra Large" }, "Large", function(value)
-	Interface:SetSizePreset(value)
-end)
-appearance:AddDropdown("Text size", {
-	{ Label = "Normal", Value = 1 },
-	{ Label = "Large", Value = 1.12 },
-	{ Label = "Extra Large", Value = 1.25 },
-}, 1, function(value)
-	Interface:SetTextScale(value)
-end)
-appearance:AddSlider("Background dim", 0, 70, 52, function(value)
-	Interface:SetDimAmount(value)
-end, { Step = 5, Formatter = function(value) return tostring(value) .. "%" end })
-appearance:AddSlider("Monitor width", 320, 520, 380, function(value)
-	Interface:SetMonitorWidth(value)
-end, { Step = 20, Formatter = function(value) return tostring(value) .. " px" end })
-appearance:AddDropdown("Monitor side", { "Left", "Right" }, "Right", function(value)
-	Interface:SetMonitorSide(value)
-end)
-local themeSettings = Settings:AddModule({
-	Name = "Colors & theme",
-	Description = "Make the workspace yours",
-})
-themeSettings:AddDropdown("Theme preset", Interface:GetThemeNames(), "Frost", function(value)
-	Interface:SetTheme(value)
-end)
-themeSettings:AddColorPicker("Accent color", Interface:GetThemeColor("Accent"), function(value)
-	Interface:SetThemeColor("Accent", value)
-end)
+Interface:AddClientSettings(Settings)
 
-local safety = Settings:AddModule({
+local safety = Home:AddModule({
 	Name = "Emergency stop",
 	Description = "Disable every running module immediately",
 	Collapsible = false,
@@ -1762,7 +1721,7 @@ safety:AddButton("STOP ALL", function()
 	Interface:Notify({ Title = "Emergency stop", Text = "All running modules were disabled." })
 end, { Danger = true })
 
-local diagnostics = Settings:AddModule({
+local diagnostics = Modules:AddModule({
 	Name = "Game compatibility",
 	Description = "Run an in-game scan after the world finishes loading.",
 	Collapsible = false,
@@ -1792,31 +1751,6 @@ diagnostics:AddButton("RUN SCAN", function()
 	diagnosticsText:SetColor(lootCount > 0 and grassCount > 0
 		and Library.Theme.Success or Library.Theme.Muted)
 end)
-
-local function addKeybind(name, description, feature, allowClear)
-	return Keybinds:AddKeybind({
-		Name = name,
-		Description = description,
-		AllowClear = allowClear,
-		Get = function() return feature.Settings.ToggleKey end,
-		Set = function(key) feature:SetSetting("ToggleKey", key) end,
-		OnPressed = function() feature:SetEnabled(not feature.Enabled) end,
-	})
-end
-
-Keybinds:AddKeybind({
-	Name = "GUI visibility",
-	Description = "Show or hide the main window",
-	AllowClear = false,
-	Get = function() return Config.ToggleKey end,
-	Set = function(key) Config.ToggleKey = key end,
-	OnPressed = function() Interface:Toggle() end,
-})
-addKeybind("Toggle Fly", "Enable or disable flight", Fly, true)
-addKeybind("Toggle Auto Strength Farm", "Start or stop strength farming", AutoStrengthFarm, true)
-for _, feature in ipairs(TOGGLE_FEATURES) do
-	addKeybind("Toggle " .. feature.Name, "Backspace clears this binding", feature, true)
-end
 
 Interface:SelectTab(Home)
 
