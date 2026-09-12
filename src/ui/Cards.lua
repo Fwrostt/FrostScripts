@@ -32,10 +32,11 @@ function Tab:AddScriptCard(entry, onLaunch)
 		Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(90, 95, 110)), Parent = cover })
 	table.insert(self.Window._coverGradients, gradient)
 	local fallback = create("TextLabel", {
-		Size = UDim2.fromScale(1, 1), Text = entry.Monogram or entry.Name:sub(1, 2):upper(),
+		Name = "CoverFallback", Size = UDim2.fromScale(1, 1), Text = entry.Monogram or entry.Name:sub(1, 2):upper(),
 		TextSize = 36, Font = Enum.Font.BuilderSansBold, TextColor3 = THEME.Accent,
 		BackgroundTransparency = 1, Parent = cover,
 	})
+	local cardHovered = false
 	local image = create("ImageLabel", {
 		Name = "CustomCover", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1,
 		Image = Library.ImageContent(entry.Image),
@@ -53,7 +54,7 @@ function Tab:AddScriptCard(entry, onLaunch)
 		TextColor3 = THEME.Text, TextTransparency = 1, Font = Enum.Font.BuilderSansBold, TextSize = 10,
 		Parent = cover, ZIndex = 4,
 	})
-	local function imageReady() fallback.Visible = not (image.Visible and image.IsLoaded) end
+	local function imageReady() fallback.Visible = not cardHovered and not (image.Visible and image.IsLoaded) end
 	self.Window:_connect(image:GetPropertyChangedSignal("IsLoaded"), imageReady)
 	imageReady()
 	if self.Window.ResolveCover then
@@ -81,10 +82,12 @@ function Tab:AddScriptCard(entry, onLaunch)
 	self.Window:_hover(button, THEME.Surface, THEME.SurfaceHover)
 	local cardStroke = module.Card:FindFirstChildWhichIsA("UIStroke")
 	local function setHovered(hovered)
+		cardHovered = hovered
+		imageReady()
 		self.Window:_tween(module.Card, 0.13, { BackgroundColor3 = hovered and THEME.Surface or THEME.PanelRaised })
 		if cardStroke then self.Window:_tween(cardStroke, 0.13, { Color = hovered and THEME.Accent or THEME.Border, Transparency = hovered and 0.3 or 0.25 }) end
 		self.Window:_tween(hoverWash, 0.13, { BackgroundTransparency = hovered and 0.84 or 1 })
-		self.Window:_tween(hoverHint, 0.13, { TextTransparency = hovered and 0 or 1 })
+		self.Window:_tween(hoverHint, 0.13, { TextTransparency = hovered and hoverHint.Visible and 0 or 1 })
 		if hovered then self.Window:PlaySound("Hover") end
 	end
 	self.Window:_connect(module.Card.MouseEnter, function() setHovered(true) end)
@@ -107,6 +110,7 @@ function Tab:AddScriptCard(entry, onLaunch)
 			local buttonY = height - buttonHeight - buttonBottom
 			description.Position, description.Size = UDim2.fromOffset(left, descriptionTop), UDim2.new(1, -left - 12, 0, math.max(12, buttonY - descriptionTop - 4))
 			button.Position, button.Size = UDim2.fromOffset(left, buttonY), UDim2.new(1, -left - 12, 0, buttonHeight)
+			hoverHint.Visible = side >= 84
 			status.Visible = false
 		else
 			local descriptionHeight = math.ceil(52 * textScale)
@@ -116,6 +120,7 @@ function Tab:AddScriptCard(entry, onLaunch)
 			description.Position, description.Size = UDim2.fromOffset(14, coverHeight + 31 + titleHeight), UDim2.new(1, -28, 0, descriptionHeight)
 			button.Position, button.Size = UDim2.new(0, 12, 1, -68), UDim2.new(1, -24, 0, 38)
 			status.Position, status.Size = UDim2.new(0, 14, 1, -23), UDim2.new(1, -28, 0, 16)
+			hoverHint.Visible = coverHeight >= 84
 			status.Visible = true
 		end
 	end

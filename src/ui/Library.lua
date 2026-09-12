@@ -1,7 +1,6 @@
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
 
 local Library = {}
 Library.__index = Library
@@ -196,35 +195,25 @@ function Window:_hover(button, normalColor, hoverColor)
 end
 
 function Window:_makeDraggable(object, handle)
-	local activeInput, dragStart, startCenter, viewport, half, pendingDelta, dragConnection
-	local function stopDragging()
-		activeInput = nil
-		if dragConnection then dragConnection:Disconnect(); dragConnection = nil; self._dragConnection = nil end
-	end
+	local activeInput, dragStart, startCenter, viewport, half
 	handle.Active = true
 	self:_connect(handle.InputBegan, function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-			stopDragging()
-			activeInput, dragStart, pendingDelta = input, input.Position, Vector2.zero
+			activeInput, dragStart = input, input.Position
 			startCenter = object.AbsolutePosition + object.AbsoluteSize / 2
 			viewport, half = self.Gui.AbsoluteSize, object.AbsoluteSize / 2
-			dragConnection = RunService.RenderStepped:Connect(function()
-				if not activeInput or not self.Visible then return end
-				local center = startCenter + pendingDelta
-				object.Position = UDim2.fromOffset(
-					math.clamp(center.X, half.X, math.max(half.X, viewport.X - half.X)),
-					math.clamp(center.Y, half.Y, math.max(half.Y, viewport.Y - half.Y)))
-			end)
-			self._dragConnection = dragConnection
 		end
 	end)
 	self:_connect(UserInputService.InputEnded, function(input)
-		if input == activeInput then stopDragging() end
+		if input == activeInput then activeInput = nil end
 	end)
 	self:_connect(UserInputService.InputChanged, function(input)
 		if not activeInput or not self.Visible then return end
 		if input ~= activeInput and input.UserInputType ~= Enum.UserInputType.MouseMovement then return end
-		pendingDelta = input.Position - dragStart
+		local center = startCenter + (input.Position - dragStart)
+		object.Position = UDim2.fromOffset(
+			math.clamp(center.X, half.X, math.max(half.X, viewport.X - half.X)),
+			math.clamp(center.Y, half.Y, math.max(half.Y, viewport.Y - half.Y)))
 	end)
 end
 
@@ -1467,7 +1456,6 @@ function Window:Destroy()
 	if self._destroyed then return end
 	self._destroyed = true
 	if self._ambientConnection then self._ambientConnection:Disconnect(); self._ambientConnection = nil end
-	if self._dragConnection then self._dragConnection:Disconnect(); self._dragConnection = nil end
 	self:CloseDropdown()
 	for _, connection in ipairs(self._connections) do connection:Disconnect() end
 	table.clear(self._connections)
