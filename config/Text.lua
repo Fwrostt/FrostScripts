@@ -103,6 +103,7 @@ return {
 		["No options"] = "No options",
 		["None"] = "None",
 		["Notifications"] = "Notifications",
+		["OPEN WORKSPACE"] = "OPEN WORKSPACE",
 		["Off"] = "Off",
 		["On"] = "On",
 		["Open in the matching game"] = "Open in the matching game",

@@ -56,15 +56,16 @@ end)()
 local UI_DEFAULTS = (function()
 -- UI defaults only. Feature settings belong to their game modules.
 return {
-	DesignRevision = 3,
+	DesignRevision = 4,
 	Animations = true,
-	BackgroundEffects = true,
-	BackgroundAnimations = true,
+	-- Decorative effects are opt-in: the loader stays crisp and inexpensive by default.
+	BackgroundEffects = false,
+	BackgroundAnimations = false,
 	Sounds = true,
 	SoundVolume = 0.18,
 	NotificationsEnabled = true,
 	ThemeName = "Black",
-	SizePreset = "Large",
+	SizePreset = "Comfortable",
 	TextScale = 1,
 	DimAmount = 40,
 	MonitorWidth = 380,
@@ -75,7 +76,7 @@ return {
 }
 
 end)()
-local SVG_ICONS = {["controls"]={{"line",6.0,3.0,6.0,21.0,1.8},{"line",12.0,3.0,12.0,21.0,1.8},{"line",18.0,3.0,18.0,21.0,1.8},{"rect",4.0,7.0,4.0,4.0,1.0,1.8},{"rect",10.0,14.0,4.0,4.0,1.0,1.8},{"rect",16.0,5.0,4.0,4.0,1.0,1.8}},["home"]={{"line",3.0,10.0,12.0,3.0,1.8},{"line",12.0,3.0,21.0,10.0,1.8},{"line",5.0,9.0,5.0,21.0,1.8},{"line",5.0,21.0,10.0,21.0,1.8},{"line",10.0,21.0,10.0,14.0,1.8},{"line",10.0,14.0,14.0,14.0,1.8},{"line",14.0,14.0,14.0,21.0,1.8},{"line",14.0,21.0,19.0,21.0,1.8},{"line",19.0,21.0,19.0,9.0,1.8}},["library"]={{"rect",3.0,4.0,5.0,16.0,1.0,1.8},{"rect",11.0,4.0,4.0,16.0,1.0,1.8},{"line",18.0,5.0,21.0,19.0,1.8},{"line",3.0,8.0,8.0,8.0,1.8}},["modules"]={{"rect",3.0,3.0,7.0,7.0,1.5,1.8},{"rect",14.0,3.0,7.0,7.0,1.5,1.8},{"rect",3.0,14.0,7.0,7.0,1.5,1.8},{"rect",14.0,14.0,7.0,7.0,1.5,1.8}},["settings"]={{"line",4.0,6.0,20.0,6.0,1.8},{"line",4.0,12.0,20.0,12.0,1.8},{"line",4.0,18.0,20.0,18.0,1.8},{"circle",8.0,6.0,2.0,1.8},{"circle",16.0,12.0,2.0,1.8},{"circle",10.0,18.0,2.0,1.8}},["snowflake"]={{"line",12.0,2.0,12.0,22.0,1.8},{"line",3.3,7.0,20.7,17.0,1.8},{"line",3.3,17.0,20.7,7.0,1.8},{"line",9.0,4.0,12.0,7.0,1.8},{"line",12.0,7.0,15.0,4.0,1.8},{"line",9.0,20.0,12.0,17.0,1.8},{"line",12.0,17.0,15.0,20.0,1.8}}}
+local SVG_ICONS = {["controls"]={{"line",6.0,5.0,6.0,19.0,1.35},{"line",12.0,5.0,12.0,19.0,1.35},{"line",18.0,5.0,18.0,19.0,1.35},{"rect",4.5,8.0,3.0,3.0,1.0,1.35},{"rect",10.5,13.0,3.0,3.0,1.0,1.35},{"rect",16.5,6.0,3.0,3.0,1.0,1.35}},["home"]={{"line",4.0,10.0,12.0,4.0,1.35},{"line",12.0,4.0,20.0,10.0,1.35},{"line",6.0,9.0,6.0,20.0,1.35},{"line",6.0,20.0,18.0,20.0,1.35},{"line",18.0,20.0,18.0,9.0,1.35},{"line",10.0,20.0,10.0,14.0,1.35},{"line",14.0,14.0,14.0,20.0,1.35}},["library"]={{"rect",4.0,4.0,5.0,16.0,1.0,1.35},{"rect",10.5,4.0,5.0,16.0,1.0,1.35},{"rect",17.0,4.0,3.0,16.0,1.0,1.35}},["modules"]={{"rect",4.0,4.0,6.0,6.0,1.25,1.35},{"rect",14.0,4.0,6.0,6.0,1.25,1.35},{"rect",4.0,14.0,6.0,6.0,1.25,1.35},{"rect",14.0,14.0,6.0,6.0,1.25,1.35}},["settings"]={{"line",5.0,6.0,19.0,6.0,1.35},{"line",5.0,12.0,19.0,12.0,1.35},{"line",5.0,18.0,19.0,18.0,1.35},{"circle",9.0,6.0,1.5,1.35},{"circle",15.0,12.0,1.5,1.35},{"circle",11.0,18.0,1.5,1.35}},["snowflake"]={{"line",12.0,4.0,12.0,20.0,1.35},{"line",5.1,8.0,18.9,16.0,1.35},{"line",5.1,16.0,18.9,8.0,1.35}}}
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -273,9 +274,9 @@ end
 local THEME = copyTheme(THEMES.Black)
 
 local SIZE_PRESETS = {
-	Comfortable = Vector2.new(900, 580),
-	Large = Vector2.new(1040, 650),
-	["Extra Large"] = Vector2.new(1180, 720),
+	Comfortable = Vector2.new(880, 540),
+	Large = Vector2.new(960, 590),
+	["Extra Large"] = Vector2.new(1060, 640),
 }
 
 local CARD_HORIZONTAL_GUTTER = 8
@@ -466,7 +467,7 @@ function Window:SetAnimations(enabled)
 	if not self.Animations then
 		for object, running in pairs(self._tweens) do
 			for _, animation in pairs(running) do animation:Cancel() end
-			if object == self.Frame then object.GroupTransparency = self.Visible and 0 or 1 end
+			if object == self.Frame then object.Visible = self.Visible end
 		end
 		for _, tab in ipairs(self.Tabs) do
 			for _, module in ipairs(tab.Modules) do module:_refreshHeight() end
@@ -563,12 +564,12 @@ function Window:SetVisible(show)
 	if show then
 		self:PlaySound("Open")
 		self.Gui.Enabled = true
-		self:_tween(self.Frame, 0.18, { GroupTransparency = 0 })
+		self.Frame.Visible = true
 		self:_tween(self.Shade, 0.18, { BackgroundTransparency = 1 - self.DimAmount / 100 })
 	else
 		if self._rebinding then self._rebinding:Refresh(); self._rebinding = nil end
 		self.Search:ReleaseFocus()
-		self:_tween(self.Frame, 0.14, { GroupTransparency = 1 })
+		self.Frame.Visible = false
 		self:_tween(self.Shade, 0.14, { BackgroundTransparency = 1 })
 		task.delay(self.Animations and 0.15 or 0, function()
 			if not self._destroyed and token == self._visibilityToken then self.Gui.Enabled = false end
@@ -598,22 +599,20 @@ function Window:SelectTab(tab)
 	self.Search.PlaceholderText = tab.ItemNoun == "scripts" and "Find a script..." or "Search modules..."
 	self.ActiveFilter.Visible = searchable and tab.ItemNoun ~= "scripts"
 	self.Search.Parent.Size = UDim2.new(1, tab.ItemNoun == "scripts" and 0 or -92, 1, 0)
-	self.Content.Position = UDim2.fromOffset(20, searchable and 158 or 112)
-	self.Content.Size = UDim2.new(1, -40, 1, searchable and -202 or -156)
+	self.Content.Position = UDim2.fromOffset(20, searchable and 142 or 94)
+	self.Content.Size = UDim2.new(1, -40, 1, searchable and -186 or -138)
 	self:SetActiveOnly(self.ActiveOnly)
 	for _, item in ipairs(self.Tabs) do
 		local selected = item == tab
 		item.Page.Visible = selected
 		self:_tween(item.Button, 0.14, { BackgroundColor3 = selected and THEME.AccentSoft or THEME.Panel })
 		self:_tween(item.Label, 0.14, { TextColor3 = selected and THEME.Text or THEME.Muted })
-		self:_tween(item.IconLabel, 0.14, { TextColor3 = selected and THEME.Accent or THEME.Muted,
-			BackgroundColor3 = selected and THEME.AccentSoft or THEME.Surface })
+		self:_tween(item.IconLabel, 0.14, { TextColor3 = selected and THEME.Accent or THEME.Muted })
 		item.Indicator.BackgroundTransparency = selected and 0 or 1
 	end
 	self.PageTitle.Text, self.PageSubtitle.Text = tab.Name, tab.Subtitle
-	tab.Page.GroupTransparency = self.Animations and 0.3 or 0
 	tab.Page.Position = UDim2.fromOffset(0, self.Animations and 10 or 0)
-	self:_tween(tab.Page, 0.26, { GroupTransparency = 0, Position = UDim2.fromOffset(0, 0) })
+	self:_tween(tab.Page, 0.18, { Position = UDim2.fromOffset(0, 0) })
 	self:_refreshSearch()
 end
 
@@ -627,7 +626,7 @@ function Window:AddTab(name, icon, subtitle)
 		Subtitle = subtitle or "",
 		Modules = {},
 	}, Tab)
-	tab.Page = create("CanvasGroup", {
+	tab.Page = create("Frame", {
 		Name = name,
 		Size = UDim2.fromScale(1, 1),
 		BackgroundTransparency = 1,
@@ -680,14 +679,13 @@ function Window:AddTab(name, icon, subtitle)
 	local iconLabel = create("TextLabel", {
 		Position = UDim2.fromOffset(self._compact and 9 or 14, 10),
 		Size = UDim2.fromOffset(28, 28),
-		BackgroundColor3 = THEME.Surface,
-		BorderSizePixel = 0,
+		BackgroundTransparency = 1,
 		Text = tostring(tab.Icon),
 		TextColor3 = THEME.Muted,
 		Font = Enum.Font.BuilderSansBold,
 		TextSize = 18,
 		Parent = button,
-	}, { corner(8), stroke(THEME.Border, 0.55) })
+	})
 	local label = create("TextLabel", {
 		Position = UDim2.fromOffset(54, 0),
 		Size = UDim2.new(1, -62, 1, 0),
@@ -708,14 +706,14 @@ function Window:AddTab(name, icon, subtitle)
 		if self.ActiveTab ~= tab then
 			self:_tween(button, 0.13, { BackgroundColor3 = THEME.PanelRaised })
 		self:_tween(label, 0.13, { TextColor3 = THEME.Text })
-			self:_tween(iconLabel, 0.13, { TextColor3 = THEME.Text, BackgroundColor3 = THEME.SurfaceHover })
+			self:_tween(iconLabel, 0.13, { TextColor3 = THEME.Accent })
 		end
 	end)
 	self:_connect(button.MouseLeave, function()
 		if self.ActiveTab ~= tab then
 			self:_tween(button, 0.13, { BackgroundColor3 = THEME.Panel })
 			self:_tween(label, 0.13, { TextColor3 = THEME.Muted })
-			self:_tween(iconLabel, 0.13, { TextColor3 = THEME.Muted, BackgroundColor3 = THEME.Surface })
+			self:_tween(iconLabel, 0.13, { TextColor3 = THEME.Muted })
 		end
 	end)
 	self:_connect(button.Activated, function() self:SelectTab(tab) end)
@@ -725,7 +723,7 @@ end
 
 function Module:_refreshHeight()
 	if self.Window._destroyed or self.IsScriptCard then return end
-	local bodyHeight = self.BodyLayout.AbsoluteContentSize.Y + 30
+	local bodyHeight = self.BodyLayout.AbsoluteContentSize.Y + 16
 	self.Body.Size = UDim2.new(1, -(CARD_BODY_INSET * 2), 0, bodyHeight)
 	local target = self.Expanded and self.HeaderHeight + bodyHeight or self.HeaderHeight
 	self.Window:_tween(self.Card, 0.2, { Size = UDim2.new(1, -CARD_HORIZONTAL_GUTTER, 0, target) })
@@ -781,35 +779,35 @@ end
 
 function Module:AddToggle(name, default, callback, description)
 	self:_index(name)
-	local row = self:_row(description and 72 or 62)
+	local row = self:_row(description and 54 or 48)
 	create("TextLabel", {
-		Position = UDim2.fromOffset(16, description and 11 or 0),
-		Size = UDim2.new(1, -96, 0, description and 22 or 62),
+		Position = UDim2.fromOffset(14, description and 7 or 0),
+		Size = UDim2.new(1, -86, 0, description and 20 or 48),
 		BackgroundTransparency = 1,
 		Text = name,
 		TextColor3 = THEME.Text,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		Font = Enum.Font.BuilderSansBold,
-		TextSize = 14,
+		TextSize = 13,
 		Parent = row,
 	})
 	if description then
 		create("TextLabel", {
-			Position = UDim2.fromOffset(16, 37),
-			Size = UDim2.new(1, -96, 0, 18),
+			Position = UDim2.fromOffset(14, 28),
+			Size = UDim2.new(1, -86, 0, 16),
 			BackgroundTransparency = 1,
 			Text = description,
 			TextColor3 = THEME.Muted,
 			TextXAlignment = Enum.TextXAlignment.Left,
 			Font = Enum.Font.BuilderSansMedium,
-			TextSize = 12,
+			TextSize = 11,
 			Parent = row,
 		})
 	end
 	local button = create("TextButton", {
 		AnchorPoint = Vector2.new(1, 0.5),
-		Position = UDim2.new(1, -18, 0.5, 0),
-		Size = UDim2.fromOffset(48, 26),
+		Position = UDim2.new(1, -14, 0.5, 0),
+		Size = UDim2.fromOffset(44, 24),
 		AutoButtonColor = false,
 		BackgroundColor3 = THEME.Surface,
 		BorderSizePixel = 0,
@@ -818,7 +816,7 @@ function Module:AddToggle(name, default, callback, description)
 	}, { corner(12), stroke(THEME.Border, 0.35) })
 	local knob = create("Frame", {
 		Position = UDim2.fromOffset(3, 3),
-		Size = UDim2.fromOffset(20, 20),
+		Size = UDim2.fromOffset(18, 18),
 		BackgroundColor3 = THEME.Text,
 		BorderSizePixel = 0,
 		Parent = button,
@@ -830,14 +828,14 @@ function Module:AddToggle(name, default, callback, description)
 			BackgroundColor3 = self.Value and THEME.Accent or THEME.PanelRaised,
 		})
 		self.Module.Window:_tween(knob, 0.14, {
-			Position = self.Value and UDim2.fromOffset(25, 3) or UDim2.fromOffset(3, 3),
+			Position = self.Value and UDim2.fromOffset(23, 3) or UDim2.fromOffset(3, 3),
 		})
 		if not silent then safeCall(self.Module.Window, callback, self.Value) end
 	end
 	control.Module = self
 	local hitTarget = create("TextButton", {
-		AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -10, 0.5, 0),
-		Size = UDim2.fromOffset(64, 44), Text = "", BackgroundTransparency = 1,
+		AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -6, 0.5, 0),
+		Size = UDim2.fromOffset(58, 40), Text = "", BackgroundTransparency = 1,
 		ZIndex = 4, Parent = row,
 	})
 	self.Window:_connect(hitTarget.Activated, function()
@@ -1125,7 +1123,7 @@ end
 function Module:AddButton(name, callback, options)
 	self:_index(name)
 	options = options or {}
-	local row = self:_row(54)
+	local row = self:_row(42)
 	local danger = options.Danger == true
 	local button = create("TextButton", {
 		Size = UDim2.fromScale(1, 1),
@@ -1135,9 +1133,9 @@ function Module:AddButton(name, callback, options)
 		Text = name,
 		TextColor3 = danger and THEME.Danger or THEME.Text,
 		Font = Enum.Font.BuilderSansBold,
-		TextSize = 14,
+		TextSize = 13,
 		Parent = row,
-	}, { corner(10), stroke(danger and THEME.Danger or THEME.Accent, 0.35) })
+	}, { corner(8), stroke(danger and THEME.Danger or THEME.Accent, 0.45) })
 	self.Window:_hover(
 		button,
 		danger and THEME.DangerSurface or THEME.Surface,
@@ -1151,9 +1149,9 @@ function Module:AddParagraph(title, text, options)
 	self:_index(title)
 	self:_index(text)
 	options = options or {}
-	local row = self:_row(options.Height or 88)
+	local row = self:_row(options.Height or 66)
 	create("TextLabel", {
-		Position = UDim2.fromOffset(16, 12),
+		Position = UDim2.fromOffset(14, 8),
 		Size = UDim2.new(1, -28, 0, 20),
 		BackgroundTransparency = 1,
 		Text = title,
@@ -1164,8 +1162,8 @@ function Module:AddParagraph(title, text, options)
 		Parent = row,
 	})
 	local label = create("TextLabel", {
-		Position = UDim2.fromOffset(16, 38),
-		Size = UDim2.new(1, -32, 1, -48),
+		Position = UDim2.fromOffset(14, 29),
+		Size = UDim2.new(1, -28, 1, -35),
 		BackgroundTransparency = 1,
 		Text = text,
 		TextColor3 = THEME.Muted,
@@ -1190,7 +1188,7 @@ function Tab:AddModule(options)
 		Tab = self,
 		Name = options.Name or "Module",
 		SearchText = (self.Window:Text(options.Name or "Module") .. " " .. self.Window:Text(options.Description or "")):lower(),
-		HeaderHeight = options.HeaderHeight or 68,
+		HeaderHeight = options.HeaderHeight or 56,
 		Expanded = options.Expanded == true or options.Collapsible == false,
 		Collapsible = options.Collapsible ~= false,
 		Enabled = false,
@@ -1201,19 +1199,20 @@ function Tab:AddModule(options)
 		BackgroundColor3 = THEME.PanelRaised,
 		BorderSizePixel = 0,
 		ClipsDescendants = true,
+		Active = true,
 		LayoutOrder = #self.Modules + 1,
 		Parent = self.Scroll,
 	}, { corner(13), stroke(THEME.Border, 0.25) })
 	module.Accent = create("Frame", {
-		Position = UDim2.fromOffset(4, 12),
-		Size = UDim2.fromOffset(3, math.max(24, module.HeaderHeight - 24)),
+		Position = UDim2.fromOffset(4, 10),
+		Size = UDim2.fromOffset(3, math.max(20, module.HeaderHeight - 20)),
 		BackgroundColor3 = options.Accent and THEME.Accent or THEME.Border,
 		BorderSizePixel = 0,
 		ZIndex = 3,
 		Parent = module.Card,
 	}, { corner(3) })
 	create("TextLabel", {
-		Position = UDim2.fromOffset(24, 12),
+		Position = UDim2.fromOffset(22, 9),
 		Size = UDim2.new(1, -(options.RightInset or (options.Toggleable and 148 or 58)), 0, 22),
 		BackgroundTransparency = 1,
 		Text = module.Name,
@@ -1224,7 +1223,7 @@ function Tab:AddModule(options)
 		Parent = module.Card,
 	})
 	module.Status = create("TextLabel", {
-		Position = UDim2.fromOffset(24, 38),
+		Position = UDim2.fromOffset(22, 30),
 		Size = UDim2.new(1, -(options.RightInset or (options.Toggleable and 148 or 64)), 0, 20),
 		BackgroundTransparency = 1,
 		Text = options.Description or options.Status or "Ready",
@@ -1828,7 +1827,7 @@ function Window:_attachIcon(host, name)
 	local root = create("Frame", { Name = "VectorIcon_" .. name, Size = UDim2.fromOffset(24, 24),
 		AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
 		BackgroundTransparency = 1, Parent = host })
-	create("UIScale", { Scale = 0.8, Parent = root })
+	create("UIScale", { Scale = 0.68, Parent = root })
 	local objects = {}
 	for _, shape in ipairs(SVG_ICONS[name] or SVG_ICONS.controls) do
 		local frame
@@ -1979,7 +1978,7 @@ function Window:_syncAmbient()
 	local accumulated = 0
 	self._ambientConnection = RunService.RenderStepped:Connect(function(delta)
 		accumulated += delta
-		if accumulated < 1 / 30 then return end
+		if accumulated < 1 / 15 then return end
 		self._ambientTime = (self._ambientTime or 0) + accumulated
 		accumulated = 0
 		local t = self._ambientTime
@@ -1987,9 +1986,6 @@ function Window:_syncAmbient()
 			item.Gradient.Offset = Vector2.new(math.sin(t * 0.16 + index) * 0.32, 0)
 			item.Frame.Rotation = -24 + math.sin(t * 0.11 + index) * 9
 			item.Frame.Position = UDim2.fromScale(0.32 + math.sin(t * 0.08 + index) * 0.12, 0.15 + (index - 1) * 0.32)
-		end
-		for index, gradient in ipairs(self._coverGradients) do
-			gradient.Offset = Vector2.new(math.sin(t * 0.15 + index) * 0.2, 0)
 		end
 	end)
 end
@@ -2006,19 +2002,8 @@ function Window:SetBackgroundAnimations(enabled)
 	self:_syncAmbient()
 end
 
-function Window:_wireFeedback(button)
-	if not button:IsA("GuiButton") or self._feedbackButtons[button] then return end
-	self._feedbackButtons[button] = true
-	local connections = {}
-	table.insert(connections, button.MouseEnter:Connect(function() if self.Visible then self:PlaySound("Hover") end end))
-	table.insert(connections, button.Activated:Connect(function() if self.Visible then self:PlaySound("Click") end end))
-	table.insert(connections, button.Destroying:Connect(function()
-		for _, connection in ipairs(connections) do connection:Disconnect() end
-	end))
-end
-
 function Window:_initExperience()
-	self._aurora, self._coverGradients, self._feedbackButtons = {}, {}, setmetatable({}, { __mode = "k" })
+	self._aurora, self._coverGradients = {}, {}
 	self.Ambient = create("Frame", {
 		Name = "AuroraBackground", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1,
 		ClipsDescendants = true, ZIndex = 0, Parent = self.Frame,
@@ -2041,8 +2026,6 @@ function Window:_initExperience()
 		Name = "FrostInterfaceSound", SoundId = self.UIState.SoundAsset or UI_DEFAULTS.SoundAsset,
 		Volume = self.SoundVolume, Parent = self.Gui,
 	})
-	for _, object in ipairs(self.Gui:GetDescendants()) do self:_wireFeedback(object) end
-	self:_connect(self.Gui.DescendantAdded, function(object) self:_wireFeedback(object) end)
 	self:_syncAmbient()
 end
 
@@ -2050,8 +2033,8 @@ function Window:ApplyPreferences()
 	local state = self.UIState or {}
 	local accent, success = state.CustomAccent, state.CustomSuccess
 	self:SetAnimations(state.Animations ~= false)
-	self:SetBackgroundEffects(state.BackgroundEffects ~= false)
-	self:SetBackgroundAnimations(state.BackgroundAnimations ~= false)
+	self:SetBackgroundEffects(state.BackgroundEffects == true)
+	self:SetBackgroundAnimations(state.BackgroundAnimations == true)
 	self:SetSounds(state.Sounds ~= false)
 	self:SetSoundVolume(state.SoundVolume or 0.18)
 	self:SetNotifications(state.NotificationsEnabled ~= false)
@@ -2153,6 +2136,16 @@ function Tab:AddScriptCard(entry, onLaunch)
 		ZIndex = 2, Parent = cover,
 	}, { corner(10) })
 	image.Visible = image.Image ~= ""
+	local hoverWash = create("Frame", {
+		Name = "CardHoverWash", Size = UDim2.fromScale(1, 1), BackgroundColor3 = THEME.Accent,
+		BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 3, Parent = cover,
+	}, { corner(10) })
+	local hoverHint = create("TextLabel", {
+		Name = "CardHoverHint", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -10),
+		Size = UDim2.new(1, -20, 0, 18), BackgroundTransparency = 1, Text = "OPEN WORKSPACE",
+		TextColor3 = THEME.Text, TextTransparency = 1, Font = Enum.Font.BuilderSansBold, TextSize = 10,
+		Parent = cover, ZIndex = 4,
+	})
 	local function imageReady() fallback.Visible = not (image.Visible and image.IsLoaded) end
 	self.Window:_connect(image:GetPropertyChangedSignal("IsLoaded"), imageReady)
 	imageReady()
@@ -2179,19 +2172,34 @@ function Tab:AddScriptCard(entry, onLaunch)
 		BackgroundColor3 = THEME.Surface, BorderSizePixel = 0, AutoButtonColor = false, Parent = module.Card,
 	}, { corner(8), stroke(THEME.Accent, 0.65) })
 	self.Window:_hover(button, THEME.Surface, THEME.SurfaceHover)
+	local cardStroke = module.Card:FindFirstChildWhichIsA("UIStroke")
+	local function setHovered(hovered)
+		self.Window:_tween(module.Card, 0.13, { BackgroundColor3 = hovered and THEME.Surface or THEME.PanelRaised })
+		if cardStroke then self.Window:_tween(cardStroke, 0.13, { Color = hovered and THEME.Accent or THEME.Border, Transparency = hovered and 0.3 or 0.25 }) end
+		self.Window:_tween(hoverWash, 0.13, { BackgroundTransparency = hovered and 0.84 or 1 })
+		self.Window:_tween(hoverHint, 0.13, { TextTransparency = hovered and 0 or 1 })
+		if hovered then self.Window:PlaySound("Hover") end
+	end
+	self.Window:_connect(module.Card.MouseEnter, function() setHovered(true) end)
+	self.Window:_connect(module.Card.MouseLeave, function() setHovered(false) end)
 	self.Window:_connect(button.Activated, function() if button.Active then safeCall(self.Window, onLaunch) end end)
 	local card = { Module = module, Button = button, Cover = cover, Image = image, Title = title, Description = description, Status = status }
 	function card:Layout(horizontal, height)
 		local textScale = self.Module.Window.TextScale
 		local titleHeight = math.ceil(24 * textScale)
 		if horizontal then
-			local side = math.min(104, height - 24)
+			local compact = height < 100
+			local side = math.min(104, height - (compact and 20 or 24))
 			local left = side + 26
-			cover.Position, cover.Size = UDim2.fromOffset(12, 12), UDim2.fromOffset(side, side)
-			title.Position, title.Size = UDim2.fromOffset(left, 10), UDim2.new(1, -left - 12, 0, titleHeight)
-			local descriptionTop = 14 + titleHeight
-			description.Position, description.Size = UDim2.fromOffset(left, descriptionTop), UDim2.new(1, -left - 12, 0, math.max(16, height - descriptionTop - 54))
-			button.Position, button.Size = UDim2.new(0, left, 1, -48), UDim2.new(1, -left - 12, 0, 36)
+			cover.Position, cover.Size = UDim2.fromOffset(compact and 10 or 12, compact and 10 or 12), UDim2.fromOffset(side, side)
+			local compactTitleHeight = compact and math.min(20, titleHeight) or titleHeight
+			title.Position, title.Size = UDim2.fromOffset(left, compact and 6 or 10), UDim2.new(1, -left - 12, 0, compactTitleHeight)
+			local descriptionTop = (compact and 8 or 14) + compactTitleHeight
+			local buttonHeight = compact and 28 or 32
+			local buttonBottom = compact and 6 or 8
+			local buttonY = height - buttonHeight - buttonBottom
+			description.Position, description.Size = UDim2.fromOffset(left, descriptionTop), UDim2.new(1, -left - 12, 0, math.max(12, buttonY - descriptionTop - 4))
+			button.Position, button.Size = UDim2.fromOffset(left, buttonY), UDim2.new(1, -left - 12, 0, buttonHeight)
 			status.Visible = false
 		else
 			local descriptionHeight = math.ceil(52 * textScale)
@@ -2221,11 +2229,11 @@ end
 -- Composed with Library.lua by the build; shares its private UI helpers.
 function Window:_targetWindowSize()
 	local viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1280, 720)
-	local scale = math.min(1, math.max(1, viewport.X - 24) / 480, math.max(1, viewport.Y - 24) / 460)
+	local scale = math.min(1, math.max(1, viewport.X - 24) / 460, math.max(1, viewport.Y - 24) / 420)
 	local preset = SIZE_PRESETS[self.SizePreset] or SIZE_PRESETS.Large
 	self.Scale.Scale = scale
-	return Vector2.new(math.clamp((viewport.X - 24) / scale, 480, preset.X),
-		math.clamp((viewport.Y - 24) / scale, 460, preset.Y))
+	return Vector2.new(math.clamp((viewport.X - 24) / scale, 460, preset.X),
+		math.clamp((viewport.Y - 24) / scale, 420, preset.Y))
 end
 
 function Window:_resizeWindow(animate)
@@ -2233,7 +2241,7 @@ function Window:_resizeWindow(animate)
 	self:CloseDropdown()
 	self.TargetSize = self:_targetWindowSize()
 	local compact = self.TargetSize.X < 800
-	local sidebarWidth = compact and 72 or 216
+	local sidebarWidth = compact and 68 or 192
 	self.Sidebar.Size = UDim2.new(0, sidebarWidth, 1, 0)
 	self.Main.Position = UDim2.fromOffset(sidebarWidth, 0)
 	self.Main.Size = UDim2.new(1, -sidebarWidth, 1, 0)
@@ -2245,7 +2253,7 @@ function Window:_resizeWindow(animate)
 	self.Logo.Position = UDim2.fromOffset(compact and 14 or 20, 24)
 	for _, tab in ipairs(self.Tabs) do
 		tab.Label.Visible = not compact
-		tab.IconLabel.Position = UDim2.fromOffset(compact and 9 or 14, 10)
+		tab.IconLabel.Position = UDim2.fromOffset(compact and 8 or 13, 12)
 	end
 	self._compact = compact
 	self:_layoutScriptCards()
@@ -2259,15 +2267,15 @@ end
 
 function Window:_layoutScriptCards()
 	if not self.TargetSize then return end
-	local availableWidth = self.TargetSize.X - (self._compact and 72 or 216) - 40
-	local availableHeight = self.TargetSize.Y - 202
-	local horizontal = availableWidth < 600 or availableHeight < 280
+	local availableWidth = self.TargetSize.X - (self._compact and 68 or 192) - 40
+	local availableHeight = self.TargetSize.Y - 186
+	local horizontal = availableWidth < 520 or availableHeight < 250
 	local columns = horizontal and 1 or 2
 	for _, tab in ipairs(self.Tabs) do
 		if tab.CardLayout then
 			local count = math.min(2, math.max(1, #tab.ScriptCards))
-			local height = horizontal and math.clamp(math.floor((availableHeight - 8 - (count - 1) * 12) / count), 112, 174)
-				or math.min(300 + math.ceil((self.TextScale - 1) * 100), availableHeight - 8)
+			local height = horizontal and math.clamp(math.floor((availableHeight - 8 - (count - 1) * 12) / count), 78, 152)
+				or math.min(244 + math.ceil((self.TextScale - 1) * 72), availableHeight - 8)
 			tab.CardLayout.CellSize = UDim2.new(1 / columns, columns == 2 and -10 or -8, 0, height)
 			for _, card in ipairs(tab.ScriptCards) do card:Layout(horizontal, height) end
 		end
@@ -2439,9 +2447,9 @@ function Library:CreateWindow(options)
 		Name = "Shade", Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(0, 0, 0),
 		BackgroundTransparency = 1 - window.DimAmount / 100, BorderSizePixel = 0, Parent = window.Gui,
 	})
-	window.Frame = create("CanvasGroup", {
+	window.Frame = create("Frame", {
 		Name = "FrostWorkspace", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
-		Size = UDim2.fromOffset(1040, 650), BackgroundColor3 = THEME.Background,
+		Size = UDim2.fromOffset(880, 540), BackgroundColor3 = THEME.Background,
 		BorderSizePixel = 0, ClipsDescendants = true, Parent = window.Gui,
 	}, { corner(18), stroke(THEME.Border, 0.12) })
 	window.Scale = create("UIScale", { Parent = window.Frame })
@@ -2490,12 +2498,12 @@ function Library:CreateWindow(options)
 	window.PlayerName:SetAttribute("FrostTheme_TextColor3", "Text")
 	window.BrandName:SetAttribute("FrostTheme_TextColor3", "Text")
 	window.Main = create("Frame", { Name = "Main", BackgroundTransparency = 1, Parent = window.Frame })
-	local topbar = create("Frame", { Name = "Header", Size = UDim2.new(1, 0, 0, 108), BackgroundTransparency = 1, Parent = window.Main })
-	label(topbar, string.upper(window:Text(options.Game or "FrostScripts")), UDim2.fromOffset(24, 18), UDim2.new(1, -96, 0, 16), 10, THEME.Accent, true)
-	window.PageTitle = label(topbar, "Workspace", UDim2.fromOffset(24, 39), UDim2.new(1, -96, 0, 32), 27, THEME.Text, true)
-	window.PageSubtitle = label(topbar, "", UDim2.fromOffset(24, 77), UDim2.new(1, -48, 0, 19), 12, THEME.Muted, false)
+	local topbar = create("Frame", { Name = "Header", Size = UDim2.new(1, 0, 0, 92), BackgroundTransparency = 1, Parent = window.Main })
+	label(topbar, string.upper(window:Text(options.Game or "FrostScripts")), UDim2.fromOffset(20, 12), UDim2.new(1, -88, 0, 16), 9, THEME.Accent, true)
+	window.PageTitle = label(topbar, "Workspace", UDim2.fromOffset(20, 30), UDim2.new(1, -88, 0, 28), 24, THEME.Text, true)
+	window.PageSubtitle = label(topbar, "", UDim2.fromOffset(20, 61), UDim2.new(1, -40, 0, 17), 11, THEME.Muted, false)
 	local close = create("TextButton", {
-		Position = UDim2.new(1, -68, 0, 24), Size = UDim2.fromOffset(44, 44), Text = "−",
+		Position = UDim2.new(1, -60, 0, 18), Size = UDim2.fromOffset(38, 38), Text = "−",
 		BackgroundColor3 = THEME.PanelRaised, TextColor3 = THEME.Muted, BorderSizePixel = 0,
 		Font = Enum.Font.BuilderSans, TextSize = 24, AutoButtonColor = false, Parent = topbar,
 	}, { corner(12), stroke(THEME.Border, 0.5) })
@@ -2503,14 +2511,14 @@ function Library:CreateWindow(options)
 	window:_connect(close.Activated, function() window:SetVisible(false) end)
 	if options.OnReturnToLibrary then
 		local back = create("TextButton", {
-			Name = "ReturnToLibrary", Position = UDim2.new(1, -118, 0, 24), Size = UDim2.fromOffset(44, 44),
+		Name = "ReturnToLibrary", Position = UDim2.new(1, -106, 0, 18), Size = UDim2.fromOffset(38, 38),
 			Text = "←", TextSize = 20, Font = Enum.Font.BuilderSansBold, TextColor3 = THEME.Accent,
 			BackgroundColor3 = THEME.AccentSoft, BorderSizePixel = 0, Parent = topbar,
 		}, { corner(12), stroke(THEME.Border, 0.5) })
 		window.PageTitle.Size = UDim2.new(1, -154, 0, 32)
 		window:_connect(back.Activated, function() safeCall(window, options.OnReturnToLibrary) end)
 	end
-	local toolbar = create("Frame", { Position = UDim2.fromOffset(24, 104), Size = UDim2.new(1, -48, 0, 44), BackgroundTransparency = 1, Parent = window.Main })
+	local toolbar = create("Frame", { Position = UDim2.fromOffset(20, 94), Size = UDim2.new(1, -40, 0, 40), BackgroundTransparency = 1, Parent = window.Main })
 	window.Toolbar = toolbar
 	local searchFrame = create("Frame", { Size = UDim2.new(1, -92, 1, 0), BackgroundColor3 = THEME.PanelRaised, BorderSizePixel = 0, Parent = toolbar }, { corner(10), stroke(THEME.Border, 0.4) })
 	window.Search = create("TextBox", {
@@ -2519,17 +2527,17 @@ function Library:CreateWindow(options)
 		BackgroundTransparency = 1, TextColor3 = THEME.Text, PlaceholderColor3 = THEME.Muted,
 		TextSize = 13, Font = Enum.Font.BuilderSansMedium, TextXAlignment = Enum.TextXAlignment.Left, Parent = searchFrame,
 	})
-	local clear = create("TextButton", { Position = UDim2.new(1, -44, 0, 0), Size = UDim2.fromOffset(44, 44),
+	local clear = create("TextButton", { Position = UDim2.new(1, -40, 0, 0), Size = UDim2.fromOffset(40, 40),
 		Text = "×", TextSize = 18, Font = Enum.Font.BuilderSans, TextColor3 = THEME.Muted,
 		BackgroundTransparency = 1, Parent = searchFrame })
 	window:_connect(clear.Activated, function() window:SetSearch("") end)
 	window:_connect(window.Search:GetPropertyChangedSignal("Text"), function() window:_refreshSearch() end)
-	window.ActiveFilter = create("TextButton", { Position = UDim2.new(1, -82, 0, 0), Size = UDim2.fromOffset(82, 44),
+	window.ActiveFilter = create("TextButton", { Position = UDim2.new(1, -78, 0, 0), Size = UDim2.fromOffset(78, 40),
 		Text = "Active", TextSize = 12, Font = Enum.Font.BuilderSansBold, TextColor3 = THEME.Muted,
 		BackgroundColor3 = THEME.PanelRaised, AutoButtonColor = false, BorderSizePixel = 0, Parent = toolbar,
 	}, { corner(10), stroke(THEME.Border, 0.4) })
 	window:_connect(window.ActiveFilter.Activated, function() window:SetActiveOnly(not window.ActiveOnly) end)
-	window.Content = create("Frame", { Position = UDim2.fromOffset(20, 158), Size = UDim2.new(1, -40, 1, -202),
+	window.Content = create("Frame", { Position = UDim2.fromOffset(20, 142), Size = UDim2.new(1, -40, 1, -186),
 		BackgroundTransparency = 1, ClipsDescendants = true, Parent = window.Main })
 	window.Empty = label(window.Main, "", UDim2.new(0, 32, 0.5, 0), UDim2.new(1, -64, 0, 90), 14, THEME.Muted, false)
 	window.Empty.TextXAlignment = Enum.TextXAlignment.Center
@@ -2559,9 +2567,8 @@ function Library:CreateWindow(options)
 	window:_connect(UserInputService.InputBegan, function(input, processed) window:_handleKeyboard(input, processed) end)
 	window:_initExperience()
 	window:ApplyPreferences()
-	window.Frame.GroupTransparency = 1
 	window.Frame.Position = UDim2.new(0.5, 0, 0.5, window.Animations and 14 or 0)
-	window:_tween(window.Frame, 0.4, { GroupTransparency = 0, Position = UDim2.fromScale(0.5, 0.5) }, Enum.EasingStyle.Quint)
+	window:_tween(window.Frame, 0.22, { Position = UDim2.fromScale(0.5, 0.5) }, Enum.EasingStyle.Quint)
 	window:PlaySound("Open")
 	window:_applyTextScale()
 	return window

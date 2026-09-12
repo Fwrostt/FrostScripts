@@ -8,6 +8,7 @@ Shared = {
     ["YOUR SCRIPT LIBRARY"] = "FROST COLLECTION",
     ["Pick your world. Make it yours."] = "Choose a game to get started.",
     ["Launch script"] = "Open workspace",
+    ["OPEN WORKSPACE"] = "OPEN WORKSPACE",
     ["Grass Cutter"] = "My Grass Cutter",
     ["%d scripts in your collection"] = "%d scripts available",
 },

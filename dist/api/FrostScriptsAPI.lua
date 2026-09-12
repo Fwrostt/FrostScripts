@@ -30,15 +30,16 @@ end)()
 API.UIState = (function()
 -- UI defaults only. Feature settings belong to their game modules.
 return {
-	DesignRevision = 3,
+	DesignRevision = 4,
 	Animations = true,
-	BackgroundEffects = true,
-	BackgroundAnimations = true,
+	-- Decorative effects are opt-in: the loader stays crisp and inexpensive by default.
+	BackgroundEffects = false,
+	BackgroundAnimations = false,
 	Sounds = true,
 	SoundVolume = 0.18,
 	NotificationsEnabled = true,
 	ThemeName = "Black",
-	SizePreset = "Large",
+	SizePreset = "Comfortable",
 	TextScale = 1,
 	DimAmount = 40,
 	MonitorWidth = 380,

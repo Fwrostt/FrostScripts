@@ -1515,12 +1515,12 @@ local welcome = Home:AddModule({
 	Description = "15 modules ready",
 	Accent = true,
 	Collapsible = false,
-	HeaderHeight = 66,
+	HeaderHeight = 56,
 })
 welcome:AddParagraph(
 	"Grass Cutter suite",
 	"A complete automation and utility suite for Grass Cutter. Open Modules to configure farming, navigation, ESP, dashboards, and performance.",
-	{ Height = 100 }
+	{ Height = 66 }
 )
 
 local quickAccess = Home:AddModule({

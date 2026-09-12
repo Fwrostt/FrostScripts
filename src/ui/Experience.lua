@@ -48,7 +48,7 @@ function Window:_syncAmbient()
 	local accumulated = 0
 	self._ambientConnection = RunService.RenderStepped:Connect(function(delta)
 		accumulated += delta
-		if accumulated < 1 / 30 then return end
+		if accumulated < 1 / 15 then return end
 		self._ambientTime = (self._ambientTime or 0) + accumulated
 		accumulated = 0
 		local t = self._ambientTime
@@ -56,9 +56,6 @@ function Window:_syncAmbient()
 			item.Gradient.Offset = Vector2.new(math.sin(t * 0.16 + index) * 0.32, 0)
 			item.Frame.Rotation = -24 + math.sin(t * 0.11 + index) * 9
 			item.Frame.Position = UDim2.fromScale(0.32 + math.sin(t * 0.08 + index) * 0.12, 0.15 + (index - 1) * 0.32)
-		end
-		for index, gradient in ipairs(self._coverGradients) do
-			gradient.Offset = Vector2.new(math.sin(t * 0.15 + index) * 0.2, 0)
 		end
 	end)
 end
@@ -75,19 +72,8 @@ function Window:SetBackgroundAnimations(enabled)
 	self:_syncAmbient()
 end
 
-function Window:_wireFeedback(button)
-	if not button:IsA("GuiButton") or self._feedbackButtons[button] then return end
-	self._feedbackButtons[button] = true
-	local connections = {}
-	table.insert(connections, button.MouseEnter:Connect(function() if self.Visible then self:PlaySound("Hover") end end))
-	table.insert(connections, button.Activated:Connect(function() if self.Visible then self:PlaySound("Click") end end))
-	table.insert(connections, button.Destroying:Connect(function()
-		for _, connection in ipairs(connections) do connection:Disconnect() end
-	end))
-end
-
 function Window:_initExperience()
-	self._aurora, self._coverGradients, self._feedbackButtons = {}, {}, setmetatable({}, { __mode = "k" })
+	self._aurora, self._coverGradients = {}, {}
 	self.Ambient = create("Frame", {
 		Name = "AuroraBackground", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1,
 		ClipsDescendants = true, ZIndex = 0, Parent = self.Frame,
@@ -110,8 +96,6 @@ function Window:_initExperience()
 		Name = "FrostInterfaceSound", SoundId = self.UIState.SoundAsset or UI_DEFAULTS.SoundAsset,
 		Volume = self.SoundVolume, Parent = self.Gui,
 	})
-	for _, object in ipairs(self.Gui:GetDescendants()) do self:_wireFeedback(object) end
-	self:_connect(self.Gui.DescendantAdded, function(object) self:_wireFeedback(object) end)
 	self:_syncAmbient()
 end
 
@@ -119,8 +103,8 @@ function Window:ApplyPreferences()
 	local state = self.UIState or {}
 	local accent, success = state.CustomAccent, state.CustomSuccess
 	self:SetAnimations(state.Animations ~= false)
-	self:SetBackgroundEffects(state.BackgroundEffects ~= false)
-	self:SetBackgroundAnimations(state.BackgroundAnimations ~= false)
+	self:SetBackgroundEffects(state.BackgroundEffects == true)
+	self:SetBackgroundAnimations(state.BackgroundAnimations == true)
 	self:SetSounds(state.Sounds ~= false)
 	self:SetSoundVolume(state.SoundVolume or 0.18)
 	self:SetNotifications(state.NotificationsEnabled ~= false)

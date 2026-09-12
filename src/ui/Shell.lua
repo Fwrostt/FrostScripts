@@ -1,11 +1,11 @@
 -- Composed with Library.lua by the build; shares its private UI helpers.
 function Window:_targetWindowSize()
 	local viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1280, 720)
-	local scale = math.min(1, math.max(1, viewport.X - 24) / 480, math.max(1, viewport.Y - 24) / 460)
+	local scale = math.min(1, math.max(1, viewport.X - 24) / 460, math.max(1, viewport.Y - 24) / 420)
 	local preset = SIZE_PRESETS[self.SizePreset] or SIZE_PRESETS.Large
 	self.Scale.Scale = scale
-	return Vector2.new(math.clamp((viewport.X - 24) / scale, 480, preset.X),
-		math.clamp((viewport.Y - 24) / scale, 460, preset.Y))
+	return Vector2.new(math.clamp((viewport.X - 24) / scale, 460, preset.X),
+		math.clamp((viewport.Y - 24) / scale, 420, preset.Y))
 end
 
 function Window:_resizeWindow(animate)
@@ -13,7 +13,7 @@ function Window:_resizeWindow(animate)
 	self:CloseDropdown()
 	self.TargetSize = self:_targetWindowSize()
 	local compact = self.TargetSize.X < 800
-	local sidebarWidth = compact and 72 or 216
+	local sidebarWidth = compact and 68 or 192
 	self.Sidebar.Size = UDim2.new(0, sidebarWidth, 1, 0)
 	self.Main.Position = UDim2.fromOffset(sidebarWidth, 0)
 	self.Main.Size = UDim2.new(1, -sidebarWidth, 1, 0)
@@ -25,7 +25,7 @@ function Window:_resizeWindow(animate)
 	self.Logo.Position = UDim2.fromOffset(compact and 14 or 20, 24)
 	for _, tab in ipairs(self.Tabs) do
 		tab.Label.Visible = not compact
-		tab.IconLabel.Position = UDim2.fromOffset(compact and 9 or 14, 10)
+		tab.IconLabel.Position = UDim2.fromOffset(compact and 8 or 13, 12)
 	end
 	self._compact = compact
 	self:_layoutScriptCards()
@@ -39,15 +39,15 @@ end
 
 function Window:_layoutScriptCards()
 	if not self.TargetSize then return end
-	local availableWidth = self.TargetSize.X - (self._compact and 72 or 216) - 40
-	local availableHeight = self.TargetSize.Y - 202
-	local horizontal = availableWidth < 600 or availableHeight < 280
+	local availableWidth = self.TargetSize.X - (self._compact and 68 or 192) - 40
+	local availableHeight = self.TargetSize.Y - 186
+	local horizontal = availableWidth < 520 or availableHeight < 250
 	local columns = horizontal and 1 or 2
 	for _, tab in ipairs(self.Tabs) do
 		if tab.CardLayout then
 			local count = math.min(2, math.max(1, #tab.ScriptCards))
-			local height = horizontal and math.clamp(math.floor((availableHeight - 8 - (count - 1) * 12) / count), 112, 174)
-				or math.min(300 + math.ceil((self.TextScale - 1) * 100), availableHeight - 8)
+			local height = horizontal and math.clamp(math.floor((availableHeight - 8 - (count - 1) * 12) / count), 78, 152)
+				or math.min(244 + math.ceil((self.TextScale - 1) * 72), availableHeight - 8)
 			tab.CardLayout.CellSize = UDim2.new(1 / columns, columns == 2 and -10 or -8, 0, height)
 			for _, card in ipairs(tab.ScriptCards) do card:Layout(horizontal, height) end
 		end
@@ -219,9 +219,9 @@ function Library:CreateWindow(options)
 		Name = "Shade", Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(0, 0, 0),
 		BackgroundTransparency = 1 - window.DimAmount / 100, BorderSizePixel = 0, Parent = window.Gui,
 	})
-	window.Frame = create("CanvasGroup", {
+	window.Frame = create("Frame", {
 		Name = "FrostWorkspace", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
-		Size = UDim2.fromOffset(1040, 650), BackgroundColor3 = THEME.Background,
+		Size = UDim2.fromOffset(880, 540), BackgroundColor3 = THEME.Background,
 		BorderSizePixel = 0, ClipsDescendants = true, Parent = window.Gui,
 	}, { corner(18), stroke(THEME.Border, 0.12) })
 	window.Scale = create("UIScale", { Parent = window.Frame })
@@ -270,12 +270,12 @@ function Library:CreateWindow(options)
 	window.PlayerName:SetAttribute("FrostTheme_TextColor3", "Text")
 	window.BrandName:SetAttribute("FrostTheme_TextColor3", "Text")
 	window.Main = create("Frame", { Name = "Main", BackgroundTransparency = 1, Parent = window.Frame })
-	local topbar = create("Frame", { Name = "Header", Size = UDim2.new(1, 0, 0, 108), BackgroundTransparency = 1, Parent = window.Main })
-	label(topbar, string.upper(window:Text(options.Game or "FrostScripts")), UDim2.fromOffset(24, 18), UDim2.new(1, -96, 0, 16), 10, THEME.Accent, true)
-	window.PageTitle = label(topbar, "Workspace", UDim2.fromOffset(24, 39), UDim2.new(1, -96, 0, 32), 27, THEME.Text, true)
-	window.PageSubtitle = label(topbar, "", UDim2.fromOffset(24, 77), UDim2.new(1, -48, 0, 19), 12, THEME.Muted, false)
+	local topbar = create("Frame", { Name = "Header", Size = UDim2.new(1, 0, 0, 92), BackgroundTransparency = 1, Parent = window.Main })
+	label(topbar, string.upper(window:Text(options.Game or "FrostScripts")), UDim2.fromOffset(20, 12), UDim2.new(1, -88, 0, 16), 9, THEME.Accent, true)
+	window.PageTitle = label(topbar, "Workspace", UDim2.fromOffset(20, 30), UDim2.new(1, -88, 0, 28), 24, THEME.Text, true)
+	window.PageSubtitle = label(topbar, "", UDim2.fromOffset(20, 61), UDim2.new(1, -40, 0, 17), 11, THEME.Muted, false)
 	local close = create("TextButton", {
-		Position = UDim2.new(1, -68, 0, 24), Size = UDim2.fromOffset(44, 44), Text = "−",
+		Position = UDim2.new(1, -60, 0, 18), Size = UDim2.fromOffset(38, 38), Text = "−",
 		BackgroundColor3 = THEME.PanelRaised, TextColor3 = THEME.Muted, BorderSizePixel = 0,
 		Font = Enum.Font.BuilderSans, TextSize = 24, AutoButtonColor = false, Parent = topbar,
 	}, { corner(12), stroke(THEME.Border, 0.5) })
@@ -283,14 +283,14 @@ function Library:CreateWindow(options)
 	window:_connect(close.Activated, function() window:SetVisible(false) end)
 	if options.OnReturnToLibrary then
 		local back = create("TextButton", {
-			Name = "ReturnToLibrary", Position = UDim2.new(1, -118, 0, 24), Size = UDim2.fromOffset(44, 44),
+		Name = "ReturnToLibrary", Position = UDim2.new(1, -106, 0, 18), Size = UDim2.fromOffset(38, 38),
 			Text = "←", TextSize = 20, Font = Enum.Font.BuilderSansBold, TextColor3 = THEME.Accent,
 			BackgroundColor3 = THEME.AccentSoft, BorderSizePixel = 0, Parent = topbar,
 		}, { corner(12), stroke(THEME.Border, 0.5) })
 		window.PageTitle.Size = UDim2.new(1, -154, 0, 32)
 		window:_connect(back.Activated, function() safeCall(window, options.OnReturnToLibrary) end)
 	end
-	local toolbar = create("Frame", { Position = UDim2.fromOffset(24, 104), Size = UDim2.new(1, -48, 0, 44), BackgroundTransparency = 1, Parent = window.Main })
+	local toolbar = create("Frame", { Position = UDim2.fromOffset(20, 94), Size = UDim2.new(1, -40, 0, 40), BackgroundTransparency = 1, Parent = window.Main })
 	window.Toolbar = toolbar
 	local searchFrame = create("Frame", { Size = UDim2.new(1, -92, 1, 0), BackgroundColor3 = THEME.PanelRaised, BorderSizePixel = 0, Parent = toolbar }, { corner(10), stroke(THEME.Border, 0.4) })
 	window.Search = create("TextBox", {
@@ -299,17 +299,17 @@ function Library:CreateWindow(options)
 		BackgroundTransparency = 1, TextColor3 = THEME.Text, PlaceholderColor3 = THEME.Muted,
 		TextSize = 13, Font = Enum.Font.BuilderSansMedium, TextXAlignment = Enum.TextXAlignment.Left, Parent = searchFrame,
 	})
-	local clear = create("TextButton", { Position = UDim2.new(1, -44, 0, 0), Size = UDim2.fromOffset(44, 44),
+	local clear = create("TextButton", { Position = UDim2.new(1, -40, 0, 0), Size = UDim2.fromOffset(40, 40),
 		Text = "×", TextSize = 18, Font = Enum.Font.BuilderSans, TextColor3 = THEME.Muted,
 		BackgroundTransparency = 1, Parent = searchFrame })
 	window:_connect(clear.Activated, function() window:SetSearch("") end)
 	window:_connect(window.Search:GetPropertyChangedSignal("Text"), function() window:_refreshSearch() end)
-	window.ActiveFilter = create("TextButton", { Position = UDim2.new(1, -82, 0, 0), Size = UDim2.fromOffset(82, 44),
+	window.ActiveFilter = create("TextButton", { Position = UDim2.new(1, -78, 0, 0), Size = UDim2.fromOffset(78, 40),
 		Text = "Active", TextSize = 12, Font = Enum.Font.BuilderSansBold, TextColor3 = THEME.Muted,
 		BackgroundColor3 = THEME.PanelRaised, AutoButtonColor = false, BorderSizePixel = 0, Parent = toolbar,
 	}, { corner(10), stroke(THEME.Border, 0.4) })
 	window:_connect(window.ActiveFilter.Activated, function() window:SetActiveOnly(not window.ActiveOnly) end)
-	window.Content = create("Frame", { Position = UDim2.fromOffset(20, 158), Size = UDim2.new(1, -40, 1, -202),
+	window.Content = create("Frame", { Position = UDim2.fromOffset(20, 142), Size = UDim2.new(1, -40, 1, -186),
 		BackgroundTransparency = 1, ClipsDescendants = true, Parent = window.Main })
 	window.Empty = label(window.Main, "", UDim2.new(0, 32, 0.5, 0), UDim2.new(1, -64, 0, 90), 14, THEME.Muted, false)
 	window.Empty.TextXAlignment = Enum.TextXAlignment.Center
@@ -339,9 +339,8 @@ function Library:CreateWindow(options)
 	window:_connect(UserInputService.InputBegan, function(input, processed) window:_handleKeyboard(input, processed) end)
 	window:_initExperience()
 	window:ApplyPreferences()
-	window.Frame.GroupTransparency = 1
 	window.Frame.Position = UDim2.new(0.5, 0, 0.5, window.Animations and 14 or 0)
-	window:_tween(window.Frame, 0.4, { GroupTransparency = 0, Position = UDim2.fromScale(0.5, 0.5) }, Enum.EasingStyle.Quint)
+	window:_tween(window.Frame, 0.22, { Position = UDim2.fromScale(0.5, 0.5) }, Enum.EasingStyle.Quint)
 	window:PlaySound("Open")
 	window:_applyTextScale()
 	return window

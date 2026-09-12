@@ -33,9 +33,9 @@ end
 local THEME = copyTheme(THEMES.Black)
 
 local SIZE_PRESETS = {
-	Comfortable = Vector2.new(900, 580),
-	Large = Vector2.new(1040, 650),
-	["Extra Large"] = Vector2.new(1180, 720),
+	Comfortable = Vector2.new(880, 540),
+	Large = Vector2.new(960, 590),
+	["Extra Large"] = Vector2.new(1060, 640),
 }
 
 local CARD_HORIZONTAL_GUTTER = 8
@@ -226,7 +226,7 @@ function Window:SetAnimations(enabled)
 	if not self.Animations then
 		for object, running in pairs(self._tweens) do
 			for _, animation in pairs(running) do animation:Cancel() end
-			if object == self.Frame then object.GroupTransparency = self.Visible and 0 or 1 end
+			if object == self.Frame then object.Visible = self.Visible end
 		end
 		for _, tab in ipairs(self.Tabs) do
 			for _, module in ipairs(tab.Modules) do module:_refreshHeight() end
@@ -323,12 +323,12 @@ function Window:SetVisible(show)
 	if show then
 		self:PlaySound("Open")
 		self.Gui.Enabled = true
-		self:_tween(self.Frame, 0.18, { GroupTransparency = 0 })
+		self.Frame.Visible = true
 		self:_tween(self.Shade, 0.18, { BackgroundTransparency = 1 - self.DimAmount / 100 })
 	else
 		if self._rebinding then self._rebinding:Refresh(); self._rebinding = nil end
 		self.Search:ReleaseFocus()
-		self:_tween(self.Frame, 0.14, { GroupTransparency = 1 })
+		self.Frame.Visible = false
 		self:_tween(self.Shade, 0.14, { BackgroundTransparency = 1 })
 		task.delay(self.Animations and 0.15 or 0, function()
 			if not self._destroyed and token == self._visibilityToken then self.Gui.Enabled = false end
@@ -358,22 +358,20 @@ function Window:SelectTab(tab)
 	self.Search.PlaceholderText = tab.ItemNoun == "scripts" and "Find a script..." or "Search modules..."
 	self.ActiveFilter.Visible = searchable and tab.ItemNoun ~= "scripts"
 	self.Search.Parent.Size = UDim2.new(1, tab.ItemNoun == "scripts" and 0 or -92, 1, 0)
-	self.Content.Position = UDim2.fromOffset(20, searchable and 158 or 112)
-	self.Content.Size = UDim2.new(1, -40, 1, searchable and -202 or -156)
+	self.Content.Position = UDim2.fromOffset(20, searchable and 142 or 94)
+	self.Content.Size = UDim2.new(1, -40, 1, searchable and -186 or -138)
 	self:SetActiveOnly(self.ActiveOnly)
 	for _, item in ipairs(self.Tabs) do
 		local selected = item == tab
 		item.Page.Visible = selected
 		self:_tween(item.Button, 0.14, { BackgroundColor3 = selected and THEME.AccentSoft or THEME.Panel })
 		self:_tween(item.Label, 0.14, { TextColor3 = selected and THEME.Text or THEME.Muted })
-		self:_tween(item.IconLabel, 0.14, { TextColor3 = selected and THEME.Accent or THEME.Muted,
-			BackgroundColor3 = selected and THEME.AccentSoft or THEME.Surface })
+		self:_tween(item.IconLabel, 0.14, { TextColor3 = selected and THEME.Accent or THEME.Muted })
 		item.Indicator.BackgroundTransparency = selected and 0 or 1
 	end
 	self.PageTitle.Text, self.PageSubtitle.Text = tab.Name, tab.Subtitle
-	tab.Page.GroupTransparency = self.Animations and 0.3 or 0
 	tab.Page.Position = UDim2.fromOffset(0, self.Animations and 10 or 0)
-	self:_tween(tab.Page, 0.26, { GroupTransparency = 0, Position = UDim2.fromOffset(0, 0) })
+	self:_tween(tab.Page, 0.18, { Position = UDim2.fromOffset(0, 0) })
 	self:_refreshSearch()
 end
 
@@ -387,7 +385,7 @@ function Window:AddTab(name, icon, subtitle)
 		Subtitle = subtitle or "",
 		Modules = {},
 	}, Tab)
-	tab.Page = create("CanvasGroup", {
+	tab.Page = create("Frame", {
 		Name = name,
 		Size = UDim2.fromScale(1, 1),
 		BackgroundTransparency = 1,
@@ -440,14 +438,13 @@ function Window:AddTab(name, icon, subtitle)
 	local iconLabel = create("TextLabel", {
 		Position = UDim2.fromOffset(self._compact and 9 or 14, 10),
 		Size = UDim2.fromOffset(28, 28),
-		BackgroundColor3 = THEME.Surface,
-		BorderSizePixel = 0,
+		BackgroundTransparency = 1,
 		Text = tostring(tab.Icon),
 		TextColor3 = THEME.Muted,
 		Font = Enum.Font.BuilderSansBold,
 		TextSize = 18,
 		Parent = button,
-	}, { corner(8), stroke(THEME.Border, 0.55) })
+	})
 	local label = create("TextLabel", {
 		Position = UDim2.fromOffset(54, 0),
 		Size = UDim2.new(1, -62, 1, 0),
@@ -468,14 +465,14 @@ function Window:AddTab(name, icon, subtitle)
 		if self.ActiveTab ~= tab then
 			self:_tween(button, 0.13, { BackgroundColor3 = THEME.PanelRaised })
 		self:_tween(label, 0.13, { TextColor3 = THEME.Text })
-			self:_tween(iconLabel, 0.13, { TextColor3 = THEME.Text, BackgroundColor3 = THEME.SurfaceHover })
+			self:_tween(iconLabel, 0.13, { TextColor3 = THEME.Accent })
 		end
 	end)
 	self:_connect(button.MouseLeave, function()
 		if self.ActiveTab ~= tab then
 			self:_tween(button, 0.13, { BackgroundColor3 = THEME.Panel })
 			self:_tween(label, 0.13, { TextColor3 = THEME.Muted })
-			self:_tween(iconLabel, 0.13, { TextColor3 = THEME.Muted, BackgroundColor3 = THEME.Surface })
+			self:_tween(iconLabel, 0.13, { TextColor3 = THEME.Muted })
 		end
 	end)
 	self:_connect(button.Activated, function() self:SelectTab(tab) end)
@@ -485,7 +482,7 @@ end
 
 function Module:_refreshHeight()
 	if self.Window._destroyed or self.IsScriptCard then return end
-	local bodyHeight = self.BodyLayout.AbsoluteContentSize.Y + 30
+	local bodyHeight = self.BodyLayout.AbsoluteContentSize.Y + 16
 	self.Body.Size = UDim2.new(1, -(CARD_BODY_INSET * 2), 0, bodyHeight)
 	local target = self.Expanded and self.HeaderHeight + bodyHeight or self.HeaderHeight
 	self.Window:_tween(self.Card, 0.2, { Size = UDim2.new(1, -CARD_HORIZONTAL_GUTTER, 0, target) })
@@ -541,35 +538,35 @@ end
 
 function Module:AddToggle(name, default, callback, description)
 	self:_index(name)
-	local row = self:_row(description and 72 or 62)
+	local row = self:_row(description and 54 or 48)
 	create("TextLabel", {
-		Position = UDim2.fromOffset(16, description and 11 or 0),
-		Size = UDim2.new(1, -96, 0, description and 22 or 62),
+		Position = UDim2.fromOffset(14, description and 7 or 0),
+		Size = UDim2.new(1, -86, 0, description and 20 or 48),
 		BackgroundTransparency = 1,
 		Text = name,
 		TextColor3 = THEME.Text,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		Font = Enum.Font.BuilderSansBold,
-		TextSize = 14,
+		TextSize = 13,
 		Parent = row,
 	})
 	if description then
 		create("TextLabel", {
-			Position = UDim2.fromOffset(16, 37),
-			Size = UDim2.new(1, -96, 0, 18),
+			Position = UDim2.fromOffset(14, 28),
+			Size = UDim2.new(1, -86, 0, 16),
 			BackgroundTransparency = 1,
 			Text = description,
 			TextColor3 = THEME.Muted,
 			TextXAlignment = Enum.TextXAlignment.Left,
 			Font = Enum.Font.BuilderSansMedium,
-			TextSize = 12,
+			TextSize = 11,
 			Parent = row,
 		})
 	end
 	local button = create("TextButton", {
 		AnchorPoint = Vector2.new(1, 0.5),
-		Position = UDim2.new(1, -18, 0.5, 0),
-		Size = UDim2.fromOffset(48, 26),
+		Position = UDim2.new(1, -14, 0.5, 0),
+		Size = UDim2.fromOffset(44, 24),
 		AutoButtonColor = false,
 		BackgroundColor3 = THEME.Surface,
 		BorderSizePixel = 0,
@@ -578,7 +575,7 @@ function Module:AddToggle(name, default, callback, description)
 	}, { corner(12), stroke(THEME.Border, 0.35) })
 	local knob = create("Frame", {
 		Position = UDim2.fromOffset(3, 3),
-		Size = UDim2.fromOffset(20, 20),
+		Size = UDim2.fromOffset(18, 18),
 		BackgroundColor3 = THEME.Text,
 		BorderSizePixel = 0,
 		Parent = button,
@@ -590,14 +587,14 @@ function Module:AddToggle(name, default, callback, description)
 			BackgroundColor3 = self.Value and THEME.Accent or THEME.PanelRaised,
 		})
 		self.Module.Window:_tween(knob, 0.14, {
-			Position = self.Value and UDim2.fromOffset(25, 3) or UDim2.fromOffset(3, 3),
+			Position = self.Value and UDim2.fromOffset(23, 3) or UDim2.fromOffset(3, 3),
 		})
 		if not silent then safeCall(self.Module.Window, callback, self.Value) end
 	end
 	control.Module = self
 	local hitTarget = create("TextButton", {
-		AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -10, 0.5, 0),
-		Size = UDim2.fromOffset(64, 44), Text = "", BackgroundTransparency = 1,
+		AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -6, 0.5, 0),
+		Size = UDim2.fromOffset(58, 40), Text = "", BackgroundTransparency = 1,
 		ZIndex = 4, Parent = row,
 	})
 	self.Window:_connect(hitTarget.Activated, function()
@@ -885,7 +882,7 @@ end
 function Module:AddButton(name, callback, options)
 	self:_index(name)
 	options = options or {}
-	local row = self:_row(54)
+	local row = self:_row(42)
 	local danger = options.Danger == true
 	local button = create("TextButton", {
 		Size = UDim2.fromScale(1, 1),
@@ -895,9 +892,9 @@ function Module:AddButton(name, callback, options)
 		Text = name,
 		TextColor3 = danger and THEME.Danger or THEME.Text,
 		Font = Enum.Font.BuilderSansBold,
-		TextSize = 14,
+		TextSize = 13,
 		Parent = row,
-	}, { corner(10), stroke(danger and THEME.Danger or THEME.Accent, 0.35) })
+	}, { corner(8), stroke(danger and THEME.Danger or THEME.Accent, 0.45) })
 	self.Window:_hover(
 		button,
 		danger and THEME.DangerSurface or THEME.Surface,
@@ -911,9 +908,9 @@ function Module:AddParagraph(title, text, options)
 	self:_index(title)
 	self:_index(text)
 	options = options or {}
-	local row = self:_row(options.Height or 88)
+	local row = self:_row(options.Height or 66)
 	create("TextLabel", {
-		Position = UDim2.fromOffset(16, 12),
+		Position = UDim2.fromOffset(14, 8),
 		Size = UDim2.new(1, -28, 0, 20),
 		BackgroundTransparency = 1,
 		Text = title,
@@ -924,8 +921,8 @@ function Module:AddParagraph(title, text, options)
 		Parent = row,
 	})
 	local label = create("TextLabel", {
-		Position = UDim2.fromOffset(16, 38),
-		Size = UDim2.new(1, -32, 1, -48),
+		Position = UDim2.fromOffset(14, 29),
+		Size = UDim2.new(1, -28, 1, -35),
 		BackgroundTransparency = 1,
 		Text = text,
 		TextColor3 = THEME.Muted,
@@ -950,7 +947,7 @@ function Tab:AddModule(options)
 		Tab = self,
 		Name = options.Name or "Module",
 		SearchText = (self.Window:Text(options.Name or "Module") .. " " .. self.Window:Text(options.Description or "")):lower(),
-		HeaderHeight = options.HeaderHeight or 68,
+		HeaderHeight = options.HeaderHeight or 56,
 		Expanded = options.Expanded == true or options.Collapsible == false,
 		Collapsible = options.Collapsible ~= false,
 		Enabled = false,
@@ -961,19 +958,20 @@ function Tab:AddModule(options)
 		BackgroundColor3 = THEME.PanelRaised,
 		BorderSizePixel = 0,
 		ClipsDescendants = true,
+		Active = true,
 		LayoutOrder = #self.Modules + 1,
 		Parent = self.Scroll,
 	}, { corner(13), stroke(THEME.Border, 0.25) })
 	module.Accent = create("Frame", {
-		Position = UDim2.fromOffset(4, 12),
-		Size = UDim2.fromOffset(3, math.max(24, module.HeaderHeight - 24)),
+		Position = UDim2.fromOffset(4, 10),
+		Size = UDim2.fromOffset(3, math.max(20, module.HeaderHeight - 20)),
 		BackgroundColor3 = options.Accent and THEME.Accent or THEME.Border,
 		BorderSizePixel = 0,
 		ZIndex = 3,
 		Parent = module.Card,
 	}, { corner(3) })
 	create("TextLabel", {
-		Position = UDim2.fromOffset(24, 12),
+		Position = UDim2.fromOffset(22, 9),
 		Size = UDim2.new(1, -(options.RightInset or (options.Toggleable and 148 or 58)), 0, 22),
 		BackgroundTransparency = 1,
 		Text = module.Name,
@@ -984,7 +982,7 @@ function Tab:AddModule(options)
 		Parent = module.Card,
 	})
 	module.Status = create("TextLabel", {
-		Position = UDim2.fromOffset(24, 38),
+		Position = UDim2.fromOffset(22, 30),
 		Size = UDim2.new(1, -(options.RightInset or (options.Toggleable and 148 or 64)), 0, 20),
 		BackgroundTransparency = 1,
 		Text = options.Description or options.Status or "Ready",

@@ -4,10 +4,11 @@ assert(type(API) == "table", "Start with dist/launchers/Loader.lua")
 local env = (type(getgenv) == "function" and getgenv()) or _G
 if env.FrostScriptsLauncher then env.FrostScriptsLauncher:Unload() end
 if type(env.FrostScriptsUIPreferences) == "table" then
+	local persistent = { Sounds = true, SoundVolume = true, NotificationsEnabled = true, VisibilityKey = true }
 	for key in pairs(API.UIState) do
 		local old = env.FrostScriptsUIPreferences
 		local currentDesign = old.DesignRevision == API.UIState.DesignRevision
-		if key ~= "DesignRevision" and (key ~= "ThemeName" or currentDesign) and old[key] ~= nil then
+		if key ~= "DesignRevision" and (currentDesign or persistent[key]) and old[key] ~= nil then
 			API.UIState[key] = old[key]
 		end
 	end
