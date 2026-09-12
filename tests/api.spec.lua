@@ -157,4 +157,15 @@ test("GitHub covers discover extensions and cache validated images", function()
 	sandbox.writefile = nil
 	assert(API.ResolveCover({ EntryPoint = "games/NeedleInHay/main.lua" }) == nil)
 end)
+test("text files reload from GitHub and malformed catalogs preserve working copy", function()
+	local url = API.GetConfig().BaseUrl .. "/config/Text.lua"
+	sources[url] = 'return { Shared = { ["Ready"] = "All set", ["Count %d / %d"] = "%d of %d total" }, GrassCutter = { Ready = "Grass ready" } }'
+	assert(API.ReloadText())
+	assert(API.Text("Ready") == "All set" and API.Text("Ready", "GrassCutter") == "Grass ready")
+	assert(API.Text("Count 5 / 10") == "5 of 10 total")
+	sources[url] = 'return { Shared = {}, GrassCutter = "wrong type" }'
+	assert(not API.ReloadText() and API.Text("Ready") == "All set")
+	sources[url] = 'return { Shared = { Ready = "Updated" } }'
+	assert(API.ReloadText() and API.Text("Ready") == "Updated")
+end)
 print(string.format("%d API tests passed", passed))

@@ -49,7 +49,7 @@ def main():
         for path in (ROOT / directory).rglob("*.lua"):
             if re.search(r'AddTab\("(?:Keybinds|Shortcuts)"', path.read_text(encoding="utf-8")):
                 parser.error(f"Keybinds belong inside modules: {path}")
-    files = list((ROOT / "dist").rglob("*.lua")) + list((ROOT / "games").rglob("*.lua")) + list((ROOT / "examples").rglob("*.lua"))
+    files = list((ROOT / "dist").rglob("*.lua")) + list((ROOT / "games").rglob("*.lua")) + list((ROOT / "examples").rglob("*.lua")) + list((ROOT / "config").rglob("*.lua"))
     # API fragments are compiled through their generated bundle.
     run(binary("luau-compile"), "--null", *files)
     temp = ROOT / ".local/tests"
@@ -68,6 +68,7 @@ def main():
     ui_file.write_text("local UI_SOURCE = [====[" + ui + "]====]\n" + mock + "\n" + ui_spec, encoding="utf-8")
     run(binary("luau"), ui_file)
     sources = {name: content for name, content in outputs().items()}
+    sources["config/Text.lua"] = (ROOT / "config/Text.lua").read_text(encoding="utf-8")
     fixture = "local SOURCES = {\n" + "\n".join(
         f"[{json.dumps(name)}] = [====[{content}]====]," for name, content in sources.items()
     ) + "\n}\n"

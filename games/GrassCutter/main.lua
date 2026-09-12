@@ -1498,6 +1498,7 @@ end
 
 local Library = API.LoadUI()
 Interface = Library.new({
+	TextScope = "GrassCutter",
 	Name = "FrostScripts",
 	Game = "Grass Cutter",
 	GuiName = "GrassCutterUI",

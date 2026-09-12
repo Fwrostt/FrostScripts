@@ -13,6 +13,12 @@ Tab.__index = Tab
 
 local Module = {}
 Module.__index = Module
+local translate = makeText(UI_COPY, "Shared")
+local textResolvers = setmetatable({}, { __mode = "k" })
+
+function Window:Text(value)
+	return self.Translate(value)
+end
 
 -- @include Themes.lua
 
@@ -37,11 +43,14 @@ local CARD_BODY_INSET = 16
 
 local function create(className, properties, children)
 	local object = Instance.new(className)
+	local renderText = (properties and textResolvers[properties.Parent]) or translate
+	if properties and properties.Localize == false then renderText = function(value) return value end end
+	textResolvers[object] = renderText
 	if className == "TextLabel" or className == "TextButton" or className == "TextBox" then
 		object.TextTruncate = Enum.TextTruncate.AtEnd
 	end
 	for property, value in pairs(properties or {}) do
-		object[property] = value
+		if property ~= "Localize" then object[property] = (property == "Text" or property == "PlaceholderText") and renderText(value) or value end
 		if typeof(value) == "Color3" then
 			for themeKey, themeValue in pairs(THEME) do
 				if value == themeValue then
@@ -50,6 +59,20 @@ local function create(className, properties, children)
 				end
 			end
 		end
+	end
+	if className == "TextLabel" or className == "TextButton" or className == "TextBox" then
+		local property = className == "TextBox" and "PlaceholderText" or "Text"
+		local changing = false
+		local connection = object:GetPropertyChangedSignal(property):Connect(function()
+			if changing then return end
+			local original = object[property]
+			local rendered = renderText(original)
+			if rendered ~= original then
+				changing = true; object[property] = rendered; changing = false
+			end
+		end)
+		local cleanup
+		cleanup = object.Destroying:Connect(function() connection:Disconnect(); cleanup:Disconnect() end)
 	end
 	for _, child in ipairs(children or {}) do
 		child.Parent = object
@@ -502,7 +525,7 @@ function Window:_queueTextScale()
 end
 
 function Module:_index(text)
-	self.SearchText = self.SearchText .. " " .. tostring(text or ""):lower()
+	self.SearchText = self.SearchText .. " " .. tostring(self.Window:Text(text) or ""):lower()
 end
 
 function Module:_row(height)
@@ -786,7 +809,7 @@ function Module:AddMultiDropdown(name, options, defaults, callback, colors)
 				BackgroundColor3 = self.Value[option] and THEME.AccentSoft or THEME.PanelRaised,
 				TextColor3 = self.Value[option] and ((colors and colors[option]) or THEME.Text) or THEME.Muted,
 			})
-			button.Text = (self.Value[option] and "✓ " or "") .. tostring(option)
+			button.Text = (self.Value[option] and "✓ " or "") .. self.Module.Window:Text(tostring(option))
 		end
 	end
 	function control:SetValue(values, silent)
@@ -926,7 +949,7 @@ function Tab:AddModule(options)
 		Window = self.Window,
 		Tab = self,
 		Name = options.Name or "Module",
-		SearchText = ((options.Name or "Module") .. " " .. (options.Description or "")):lower(),
+		SearchText = (self.Window:Text(options.Name or "Module") .. " " .. self.Window:Text(options.Description or "")):lower(),
 		HeaderHeight = options.HeaderHeight or 68,
 		Expanded = options.Expanded == true or options.Collapsible == false,
 		Collapsible = options.Collapsible ~= false,

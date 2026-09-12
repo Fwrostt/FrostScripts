@@ -144,6 +144,7 @@ function Window:_openDropdown(control, name, options, anchor)
 	local entries = {}
 	for index, option in ipairs(options) do
 		local label, value = optionParts(option)
+		label = self:Text(label)
 		local selected = value == control.Value
 		local button = create("TextButton", {
 			Size = UDim2.new(1, -5, 0, 44), LayoutOrder = index,
@@ -163,6 +164,7 @@ end
 
 function Library:CreateWindow(options)
 	options = table.clone(options or {})
+	translate = makeText(options.TextData or UI_COPY, options.TextScope or "Shared")
 	local state = options.UIState or {}
 	for key, value in pairs(UI_DEFAULTS) do
 		if state[key] == nil then state[key] = options[key] == nil and value or options[key] end
@@ -181,7 +183,7 @@ function Library:CreateWindow(options)
 		if existing then existing:Destroy() end
 	end
 	local window = setmetatable({
-		UIState = state, InputEnabled = true, ResolveCover = options.ResolveCover,
+		UIState = state, InputEnabled = true, ResolveCover = options.ResolveCover, Translate = translate,
 		Animations = options.Animations ~= false, Visible = true,
 		BackgroundEffects = options.BackgroundEffects ~= false,
 		BackgroundAnimations = options.BackgroundAnimations ~= false,
@@ -235,8 +237,9 @@ function Library:CreateWindow(options)
 		TextSize = 26, BorderSizePixel = 0, Parent = window.Sidebar,
 	}, { corner(13), stroke(THEME.Accent, 0.65) })
 	if not options.Logo then window:_attachIcon(window.Logo, "snowflake") end
-	local function label(parentObject, text, position, size, fontSize, color, bold)
+	local function label(parentObject, text, position, size, fontSize, color, bold, localize)
 		return create("TextLabel", { Text = text, Position = position, Size = size, BackgroundTransparency = 1,
+			Localize = localize,
 			TextSize = fontSize, TextColor3 = color, Font = bold and Enum.Font.BuilderSansBold or Enum.Font.BuilderSansMedium,
 			TextXAlignment = Enum.TextXAlignment.Left, Parent = parentObject })
 	end
@@ -263,12 +266,12 @@ function Library:CreateWindow(options)
 			Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size150x150)
 		if ok and ready and not window._destroyed then window.Avatar.Image = content end
 	end)
-	window.PlayerName = label(playerCard, player.DisplayName or player.Name, UDim2.fromOffset(60, 0), UDim2.new(1, -68, 1, 0), 12, THEME.Text, true)
+	window.PlayerName = label(playerCard, player.DisplayName or player.Name, UDim2.fromOffset(60, 0), UDim2.new(1, -68, 1, 0), 12, THEME.Text, true, false)
 	window.PlayerName:SetAttribute("FrostTheme_TextColor3", "Text")
 	window.BrandName:SetAttribute("FrostTheme_TextColor3", "Text")
 	window.Main = create("Frame", { Name = "Main", BackgroundTransparency = 1, Parent = window.Frame })
 	local topbar = create("Frame", { Name = "Header", Size = UDim2.new(1, 0, 0, 108), BackgroundTransparency = 1, Parent = window.Main })
-	label(topbar, string.upper(options.Game or "FROSTSCRIPTS"), UDim2.fromOffset(24, 18), UDim2.new(1, -96, 0, 16), 10, THEME.Accent, true)
+	label(topbar, string.upper(window:Text(options.Game or "FrostScripts")), UDim2.fromOffset(24, 18), UDim2.new(1, -96, 0, 16), 10, THEME.Accent, true)
 	window.PageTitle = label(topbar, "Workspace", UDim2.fromOffset(24, 39), UDim2.new(1, -96, 0, 32), 27, THEME.Text, true)
 	window.PageSubtitle = label(topbar, "", UDim2.fromOffset(24, 77), UDim2.new(1, -48, 0, 19), 12, THEME.Muted, false)
 	local close = create("TextButton", {

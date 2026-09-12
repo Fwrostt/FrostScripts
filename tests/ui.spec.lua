@@ -225,6 +225,28 @@ test("all theme previews apply complete palettes with distinct hover and selecti
 	end
 	window:SetTheme("Black")
 end)
+test("editable copy changes presentation without changing tab or option IDs", function()
+	local data = { Shared = { Library = "My collection", ["Find a script..."] = "Find my tools", Flight = "Air movement",
+		["Movement"] = "Movement tools", ["%d scripts in your collection"] = "%d available tools", ["Current palette: %s"] = "Palette: %s",
+		Nearest = "Closest", ["Toggle %s"] = "Shortcut for %s" }, GrassCutter = { Flight = "Grass flight" } }
+	local custom = UI.new({ GuiName = "CopyTest", TextData = data, TextScope = "GrassCutter", Animations = false })
+	local library = custom:AddTab("Library", "library", "Movement")
+	library:AddScriptCard({ Name = "Flight", Description = "Movement" }, function() end)
+	custom:SelectTab(library)
+	assert(custom.PageTitle.Text == "My collection" and library.Name == "Library")
+	assert(custom.Search.PlaceholderText == "Find my tools" and custom.Footer.Text == "1 available tools")
+	assert(library.ScriptCards[1].Title.Text == "Grass flight")
+	local mods = custom:AddTab("Modules", "modules")
+	local feature = mods:AddModule({ Name = "Flight", Description = "Movement" })
+	local choice = feature:AddDropdown("Priority", { "Nearest", "Farthest" }, "Nearest", function() end)
+	assert(choice.Value == "Nearest", "translated labels must not change option values")
+	custom:SelectTab(mods); custom:SetSearch("grass flight"); assert(feature.Card.Visible)
+	feature:SetStatus("Toggle Flight"); assert(feature.Status.Text == "Shortcut for Flight")
+	local second = UI.new({ GuiName = "OtherCopyTest", TextData = { Shared = { Flight = "Other window" } }, Animations = false })
+	local oldButton = feature:AddButton("Flight", function() end)
+	assert(oldButton.Text == "Grass flight", "windows must retain their own text scopes")
+	second:Destroy(); custom:Destroy()
+end)
 test("destroy disconnects listeners and is safe to repeat", function()
 	local connections = table.clone(window._connections)
 	window:Destroy(); window:Destroy()

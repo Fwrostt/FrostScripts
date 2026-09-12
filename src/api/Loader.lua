@@ -69,6 +69,7 @@ function API.LoadUI()
 			options = table.clone(options or {})
 			options.UIState = API.UIState
 			options.ResolveCover = API.ResolveCover
+			options.TextData = API.TextData
 			if not options.IsLauncher then options.OnReturnToLibrary = API.ReturnToLauncher end
 			return createWindow(self, options)
 		end
@@ -110,5 +111,6 @@ function API.GetCatalog()
 end
 
 function API.OpenLauncher()
+	API.ReloadText()
 	return API.LoadModule("dist/launcher/App.lua", "Unload", true, API)
 end
