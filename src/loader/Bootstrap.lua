@@ -23,4 +23,4 @@ local API = chunk()
 assert(type(API) == "table" and API.Version == "2.0.0" and type(API.Configure) == "function",
 	"Incompatible FrostScriptsAPI; publish all files from the same build")
 API.Configure(config)
-return API.RunGame(__GAME__)
+return API.OpenLauncher()

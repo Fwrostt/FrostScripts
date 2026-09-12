@@ -1,7 +1,19 @@
 -- Each API instance owns its configuration and module cache.
 local settings = { Mode = "http", BaseUrl = "", LocalRoot = "FrostScripts" }
 local cache, loading = {}, {}
-local games = { GrassCutter = "games/GrassCutter/main.lua", NeedleInHay = "games/NeedleInHay/main.lua" }
+local games = {}
+for _, entry in ipairs(API.Catalog) do
+	assert(type(entry.Id) == "string" and not games[entry.Id], "Catalog IDs must be unique strings")
+	assert(type(entry.Name) == "string" and type(entry.Description) == "string", "Catalog entries need a name and description")
+	assert(type(entry.EntryPoint) == "string" and entry.EntryPoint:match("^games/[%w_/-]+%.lua$"), "EntryPoint must be a Lua file under games/")
+	games[entry.Id] = entry
+end
+local function copy(value)
+	if type(value) ~= "table" then return value end
+	local result = {}
+	for key, item in pairs(value) do result[key] = copy(item) end
+	return result
+end
 
 function API.Configure(options)
 	options = options or {}
@@ -57,14 +69,52 @@ end
 
 function API.LoadUI()
 	-- Fresh UI factories isolate window theme state between game suites.
-	return API.LoadModule("dist/ui/UI.lua", "new", true)
+	local library = API.LoadModule("dist/ui/UI.lua", "new", true)
+	local createWindow = library.CreateWindow
+	if type(createWindow) == "function" then
+		library.CreateWindow = function(self, options)
+			options = table.clone(options or {})
+			options.UIState = API.UIState
+			if not options.IsLauncher then options.OnReturnToLibrary = API.ReturnToLauncher end
+			return createWindow(self, options)
+		end
+	end
+	return library
+end
+
+function API.UnloadGame()
+	if API.ActiveSuite then
+		API.ActiveSuite:Unload()
+		API.ActiveSuite, API.ActiveGame = nil, nil
+	end
 end
 
 function API.RunGame(name)
-	assert(games[name], "Unsupported game: " .. tostring(name) .. ". Choose GrassCutter or NeedleInHay.")
-	return API.LoadModule(games[name], "Unload", true, API)
+	local entry = games[name]
+	assert(entry, "Unsupported script: " .. tostring(name))
+	assert(not API._gameLoading, "Another script is still loading")
+	assert(#(entry.PlaceIds or {}) == 0 or table.find(entry.PlaceIds, game.PlaceId), "Open " .. entry.Name .. " in its supported game first")
+	API._gameLoading = true
+	local ok, suite = pcall(function()
+		API.UnloadGame()
+		return API.LoadModule(entry.EntryPoint, "Unload", true, API)
+	end)
+	API._gameLoading = false
+	assert(ok, suite)
+	API.ActiveSuite, API.ActiveGame = suite, name
+	return suite
 end
 
 function API.GetGames()
-	return { "GrassCutter", "NeedleInHay" }
+	local names = {}
+	for _, entry in ipairs(API.Catalog) do table.insert(names, entry.Id) end
+	return names
+end
+
+function API.GetCatalog()
+	return copy(API.Catalog)
+end
+
+function API.OpenLauncher()
+	return API.LoadModule("dist/launcher/App.lua", "Unload", true, API)
 end
