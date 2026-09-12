@@ -74,3 +74,4 @@ python tools/check.py
 ```
 
 Checks cover deterministic builds, Luau compilation, API loading errors and retries, feature rollback, cleanup, and UI binding behavior. Roblox rendering and live game integration require the [manual checks](docs/TESTING.md).
+"# FrostScripts" 
