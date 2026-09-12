@@ -44,6 +44,8 @@ Long-running work must check `self.Enabled` and `self._token == token` after yie
 - `DistanceToPlayer(object, player?)` returns distance or infinity if unavailable.
 - `FormatNumber(value, compact?)` and `FormatDistance(value)` format display text.
 
+The clicker also exposes `feature:Click()` for one click through the same input checks. It returns success and an optional error message. A paused click (typing, manual click held, or input captured) returns success without sending input.
+
 ## UI library
 
 `UI.new(options)` creates a window. Window options include `Name`, `Game`, `GuiName`, `OverlayName`, `Animations`, `SizePreset`, `TextScale`, `DimAmount`, `MonitorWidth`, and `MonitorSide`.
@@ -51,6 +53,8 @@ Long-running work must check `self.Enabled` and `self._token == token` after yie
 Use `window:AddTab(name, icon, subtitle)` then `tab:AddModule(options)`. Modules support `AddToggle`, `AddSlider`, `AddDropdown`, `AddMultiDropdown`, `AddNumberInput`, `AddButton`, `AddParagraph`, and `AddColorPicker`. Tabs support `AddKeybind`. Pass a feature as `options.Feature` to bind its UI state.
 
 Window methods include `SelectTab`, `Toggle`, `SetVisible`, `SetAnimations`, `SetSizePreset`, `SetTextScale`, `SetTheme`, `SetThemeColor`, `GetThemeNames`, `AddClientSettings`, `Notify`, `SetMonitor`, `HideMonitor`, `AddWorldMarker`, and `Destroy`.
+
+`SetSearch(text)` matches words against the current tab's module names, descriptions, and control labels. `SetActiveOnly(boolean)` filters that tab to enabled modules. `Ctrl K` focuses search; Escape clears focused search or closes an option menu. Hidden windows can be reopened through the floating F button. `Theme` is an optional creation setting. A new `API.LoadUI()` call gives each suite its own UI factory; windows created from the same factory share its theme palette.
 
 ## Migration from the original files
 

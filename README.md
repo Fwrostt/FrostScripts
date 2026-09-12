@@ -2,6 +2,8 @@
 
 A shared Luau API and UI toolkit, with independent game suites. Each launcher runs only its named game. There is no cross-game auto-detection or combined game payload.
 
+The UI includes an ice-blue Frost theme, a responsive sidebar, module search (`Ctrl K`), an Active filter, searchable option menus, larger touch targets, dismissible notifications, and a floating reopen button. Appearance settings include four themes, custom colors, text size, and reduced motion.
+
 ## Launch
 
 Run the matching entry point in a client environment that provides `loadstring` and `game:HttpGet`:
@@ -22,12 +24,13 @@ The launcher downloads `FrostScriptsAPI.lua` through `loadstring`. The API loads
 
 ```text
 src/api/                 Shared loader, utilities, feature lifecycle, universal modules
-src/ui/Library.lua       UI source and controls
+src/ui/                 UI controls and responsive window shell
 src/loader/Bootstrap.lua Shared launcher source
 games/GrassCutter/       Grass Cutter logic and UI bindings
 games/NeedleInHay/       NeedleInHay logic and UI bindings
 tools/                  Build and verification commands
 tests/                  API regression tests
+examples/UIGallery.lua   Game-independent control gallery
 docs/                   API contract and manual UI verification
 FrostScriptsAPI.lua     Generated, independently loadable API
 UI.lua                  Generated, independently loadable UI
@@ -73,5 +76,5 @@ python tools/build.py
 python tools/check.py
 ```
 
-Checks cover deterministic builds, Luau compilation, API loading errors and retries, feature rollback, cleanup, and UI binding behavior. Roblox rendering and live game integration require the [manual checks](docs/TESTING.md).
+Checks cover deterministic builds, Luau compilation, API loading errors and retries, feature rollback, cleanup, responsive geometry, search/filter behavior, option selection, and UI lifecycle. GitHub Actions runs these checks on pushes and pull requests. Roblox rendering and live game integration require the [manual checks](docs/TESTING.md). Use [UIGallery.lua](examples/UIGallery.lua) to inspect every control without a game suite.
 "# FrostScripts" 

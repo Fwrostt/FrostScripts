@@ -1,6 +1,6 @@
 # Verification
 
-Run `python tools/build.py` then `python tools/check.py`. The suite compiles all distributable code with Luau and runs API tests against mocked Roblox service boundaries. It does not simulate a live Roblox game.
+Run `python tools/build.py` then `python tools/check.py`. The suite compiles all distributable code and the gallery with Luau, then runs 10 API tests and 8 UI behavior tests against mocked Roblox service boundaries. It does not render Roblox UI or simulate a live game. `.local/originals` keeps the initial three scripts as an ignored local backup; they are not part of a clone or deployment.
 
 ## In-game checks
 

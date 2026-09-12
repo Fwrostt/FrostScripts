@@ -26,7 +26,7 @@ def main():
         return found
 
     run(sys.executable, "tools/build.py", "--check")
-    files = list(ROOT.glob("*.lua")) + list((ROOT / "games").rglob("*.lua"))
+    files = list(ROOT.glob("*.lua")) + list((ROOT / "games").rglob("*.lua")) + list((ROOT / "examples").rglob("*.lua"))
     # API fragments are compiled through their generated bundle.
     run(binary("luau-compile"), "--null", *files)
     temp = ROOT / ".local/tests"
@@ -37,6 +37,13 @@ def main():
     test_file = temp / "api.spec.luau"
     test_file.write_text("local API_SOURCE = [====[" + api + "]====]\n" + spec, encoding="utf-8")
     run(binary("luau"), test_file)
+    ui = (ROOT / "UI.lua").read_text(encoding="utf-8")
+    mock = (ROOT / "tests/roblox-ui-mock.lua").read_text(encoding="utf-8")
+    ui_spec = (ROOT / "tests/ui.spec.lua").read_text(encoding="utf-8")
+    assert "]====]" not in ui
+    ui_file = temp / "ui.spec.luau"
+    ui_file.write_text("local UI_SOURCE = [====[" + ui + "]====]\n" + mock + "\n" + ui_spec, encoding="utf-8")
+    run(binary("luau"), ui_file)
     print("All project checks passed.")
 
 

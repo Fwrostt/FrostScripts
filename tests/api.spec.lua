@@ -1,7 +1,12 @@
 -- Executed by tools/check.py with the built API and a mocked Roblox boundary.
 local requests, sources = {}, {}
-local services = { Players = {}, RunService = {}, UserInputService = {} }
+local focused, clicks = false, 0
+local services = { Players = {}, RunService = {},
+	UserInputService = { GetFocusedTextBox = function() return focused end, IsMouseButtonPressed = function() return false end },
+	VirtualInputManager = { SendMouseButtonEvent = function() clicks += 1 end },
+}
 local sandbox = setmetatable({
+	Enum = { KeyCode = { V = "V" }, UserInputType = { MouseButton1 = "MouseButton1" } },
 	game = {
 		GetService = function(_, name) return services[name] end,
 		HttpGet = function(_, url)
@@ -93,9 +98,18 @@ test("HTTP loader caches and fresh loads bypass cache", function()
 	assert(a == API.LoadModule("sample.lua", "new"))
 	assert(a ~= API.LoadModule("sample.lua", "new", true))
 	assert(requests["https://example.test/release/sample.lua"] == 2)
+	assert(not pcall(API.LoadModule, "sample.lua", "missingMethod"))
 	local config = API.GetConfig()
 	config.BaseUrl = "changed"
 	assert(API.GetConfig().BaseUrl == "https://example.test/release")
+end)
+
+test("shared click method preserves direct game calls and respects typing", function()
+	local clicker = API.UniversalModules.CreateAutoClicker()
+	assert(clicker:Click() and clicks == 2)
+	focused = true
+	assert(clicker:Click() and clicks == 2)
+	focused = false
 end)
 
 test("failed downloads and compile errors can be retried", function()

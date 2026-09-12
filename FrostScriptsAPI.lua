@@ -29,7 +29,10 @@ end
 function API.LoadModule(path, expectedMethod, fresh, ...)
 	assert(type(path) == "string" and path:match("^[%w_/%-%.]+%.lua$")
 		and not path:find("..", 1, true) and path:sub(1, 1) ~= "/", "Invalid module path")
-	if not fresh and cache[path] ~= nil then return cache[path] end
+	if not fresh and cache[path] ~= nil then
+		assert(not expectedMethod or type(cache[path][expectedMethod]) == "function", path .. " has an incompatible interface")
+		return cache[path]
+	end
 	assert(not loading[path], "Circular module load: " .. path)
 	assert(type(loadstring) == "function", "FrostScripts requires loadstring")
 	loading[path] = true
@@ -358,6 +361,16 @@ function API.UniversalModules.CreateAutoClicker(options)
 		ClicksPerSecond = options.ClicksPerSecond or 8,
 		ToggleKey = options.ToggleKey or Enum.KeyCode.V,
 	})
+	function feature:Click()
+		if not VirtualInputManager then return false, "VirtualInputManager unavailable" end
+		if UserInputService:GetFocusedTextBox()
+			or UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1)
+			or (options.IsInputCaptured and options.IsInputCaptured()) then return true end
+		return pcall(function()
+			VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+			VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+		end)
+	end
 	function feature:OnEnable(token)
 		if not VirtualInputManager then
 			self:SetStatus("VirtualInputManager unavailable")
@@ -366,18 +379,11 @@ function API.UniversalModules.CreateAutoClicker(options)
 		task.spawn(function()
 			while self.Enabled and self._token == token do
 				local started = os.clock()
-				if not UserInputService:GetFocusedTextBox()
-					and not UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1)
-					and not (options.IsInputCaptured and options.IsInputCaptured()) then
-					local ok, err = pcall(function()
-						VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
-						VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
-					end)
-					if not ok then
-						self:Disable()
-						self:SetStatus(tostring(err))
-						break
-					end
+				local ok, err = self:Click()
+				if not ok then
+					self:Disable()
+					self:SetStatus(tostring(err))
+					break
 				end
 				local rate = math.clamp(tonumber(self.Settings.ClicksPerSecond) or 8, 1, 30)
 				task.wait(math.max(0.02, (1 / rate) - (os.clock() - started)))

@@ -14,7 +14,9 @@ def outputs():
         api.append(f"\n-- {name}\ndo\n{source.rstrip()}\nend\n")
     api.append("\nreturn API\n")
     result = {"FrostScriptsAPI.lua": "".join(api)}
-    result["UI.lua"] = HEADER + (ROOT / "src/ui/Library.lua").read_text(encoding="utf-8")
+    ui = (ROOT / "src/ui/Library.lua").read_text(encoding="utf-8")
+    shell = (ROOT / "src/ui/Shell.lua").read_text(encoding="utf-8")
+    result["UI.lua"] = HEADER + ui.replace("-- @include Shell.lua", shell.rstrip())
     bootstrap = (ROOT / "src/loader/Bootstrap.lua").read_text(encoding="utf-8")
     for name in ("GrassCutter", "NeedleInHay"):
         result[f"{name}.lua"] = HEADER + bootstrap.replace("__GAME__", f'"{name}"')

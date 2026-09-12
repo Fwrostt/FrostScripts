@@ -24,7 +24,10 @@ end
 function API.LoadModule(path, expectedMethod, fresh, ...)
 	assert(type(path) == "string" and path:match("^[%w_/%-%.]+%.lua$")
 		and not path:find("..", 1, true) and path:sub(1, 1) ~= "/", "Invalid module path")
-	if not fresh and cache[path] ~= nil then return cache[path] end
+	if not fresh and cache[path] ~= nil then
+		assert(not expectedMethod or type(cache[path][expectedMethod]) == "function", path .. " has an incompatible interface")
+		return cache[path]
+	end
 	assert(not loading[path], "Circular module load: " .. path)
 	assert(type(loadstring) == "function", "FrostScripts requires loadstring")
 	loading[path] = true

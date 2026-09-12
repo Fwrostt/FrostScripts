@@ -1704,11 +1704,13 @@ local UniversalFlight = API.UniversalModules
 		Name = "Flight",
 		Speed = 70,
 		VerticalSpeed = 50,
+		IsInputCaptured = function() return Interface:IsCapturingInput() end,
 	})
 local AutoClicker = API.UniversalModules
 	and API.UniversalModules.CreateAutoClicker({
 		Name = "Auto Clicker",
 		ClicksPerSecond = 8,
+		IsInputCaptured = function() return Interface:IsCapturingInput() end,
 	})
 if UniversalFlight then table.insert(Runtime.Features, UniversalFlight) end
 if AutoClicker then table.insert(Runtime.Features, AutoClicker) end

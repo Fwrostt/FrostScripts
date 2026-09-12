@@ -5,12 +5,10 @@ assert(type(API) == "table" and type(API.CreateFeature) == "function", "Launch t
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
 local StarterGui = game:GetService("StarterGui")
 local TeleportService = game:GetService("TeleportService")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
-local VirtualInputManager = game:GetService("VirtualInputManager")
 
 
 local Config = {
@@ -946,7 +944,7 @@ function SmartGrassFarm:OnEnable(token)
 						root.CFrame = CFrame.lookAt(root.Position, Vector3.new(position.X, root.Position.Y, position.Z))
 						if not AutoStrengthFarm.Enabled
 							and not UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
-							AutoStrengthFarm:_click()
+							AutoStrengthFarm:Click()
 						end
 					end
 				else
@@ -1732,6 +1730,16 @@ appearance:AddSlider("Monitor width", 320, 520, 380, function(value)
 end, { Step = 20, Formatter = function(value) return tostring(value) .. " px" end })
 appearance:AddDropdown("Monitor side", { "Left", "Right" }, "Right", function(value)
 	Interface:SetMonitorSide(value)
+end)
+local themeSettings = Settings:AddModule({
+	Name = "Colors & theme",
+	Description = "Make the workspace yours",
+})
+themeSettings:AddDropdown("Theme preset", Interface:GetThemeNames(), "Frost", function(value)
+	Interface:SetTheme(value)
+end)
+themeSettings:AddColorPicker("Accent color", Interface:GetThemeColor("Accent"), function(value)
+	Interface:SetThemeColor("Accent", value)
 end)
 
 local safety = Settings:AddModule({
