@@ -57,9 +57,6 @@ function Window:_syncAmbient()
 			item.Frame.Rotation = -24 + math.sin(t * 0.11 + index) * 9
 			item.Frame.Position = UDim2.fromScale(0.32 + math.sin(t * 0.08 + index) * 0.12, 0.15 + (index - 1) * 0.32)
 		end
-		for index, dot in ipairs(self._stars) do
-			dot.BackgroundTransparency = 0.76 + math.sin(t * 0.65 + index * 1.7) * 0.18
-		end
 		for index, gradient in ipairs(self._coverGradients) do
 			gradient.Offset = Vector2.new(math.sin(t * 0.15 + index) * 0.2, 0)
 		end
@@ -90,7 +87,7 @@ function Window:_wireFeedback(button)
 end
 
 function Window:_initExperience()
-	self._aurora, self._stars, self._coverGradients, self._feedbackButtons = {}, {}, {}, setmetatable({}, { __mode = "k" })
+	self._aurora, self._coverGradients, self._feedbackButtons = {}, {}, setmetatable({}, { __mode = "k" })
 	self.Ambient = create("Frame", {
 		Name = "AuroraBackground", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1,
 		ClipsDescendants = true, ZIndex = 0, Parent = self.Frame,
@@ -108,15 +105,6 @@ function Window:_initExperience()
 			Parent = ribbon,
 		})
 		table.insert(self._aurora, { Frame = ribbon, Gradient = gradient })
-	end
-	for index = 1, 18 do
-		local dot = create("Frame", {
-			Name = "AmbientDot", Position = UDim2.fromScale(0.24 + ((index * 37) % 73) / 100, ((index * 23) % 97) / 100),
-			Size = UDim2.fromOffset(index % 3 == 0 and 3 or 2, index % 3 == 0 and 3 or 2),
-			BackgroundColor3 = THEME.Accent, BackgroundTransparency = 0.85, BorderSizePixel = 0,
-			ZIndex = 0, Parent = self.Ambient,
-		}, { corner(3) })
-		table.insert(self._stars, dot)
 	end
 	self.UISound = create("Sound", {
 		Name = "FrostInterfaceSound", SoundId = self.UIState.SoundAsset or UI_DEFAULTS.SoundAsset,
@@ -161,7 +149,7 @@ function Window:AddClientSettings(tab)
 	bind(motion:AddToggle("Interface animations", self.Animations, function(value) self:SetAnimations(value) end,
 		"Turn off all movement for a still interface"), "Animations")
 	bind(motion:AddToggle("Decorative background", self.BackgroundEffects, function(value) self:SetBackgroundEffects(value) end,
-		"Aurora ribbons and soft points of light"), "BackgroundEffects")
+		"Soft gradients behind your workspace"), "BackgroundEffects")
 	bind(motion:AddToggle("Animate background", self.BackgroundAnimations, function(value) self:SetBackgroundAnimations(value) end,
 		"Pause ambient movement while keeping the artwork"), "BackgroundAnimations")
 	local audio = tab:AddModule({ Name = "Sound & feedback", Description = "Small details, on your terms" })

@@ -157,7 +157,20 @@ local function stroke(color, transparency)
 		Color = color or THEME.Border,
 		Transparency = transparency or 0,
 		Thickness = 1,
+		ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 	})
+end
+
+-- Draw disclosure arrows with geometry so missing font glyphs cannot become squares.
+local function chevron(parent, position)
+	local root = create("Frame", { Name = "Disclosure", Position = position, Size = UDim2.fromOffset(18, 18),
+		BackgroundTransparency = 1, Parent = parent })
+	for index, rotation in ipairs({ 45, -45 }) do
+		create("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(index == 1 and 6 or 12, 9),
+			Size = UDim2.fromOffset(9, 2), Rotation = rotation, BackgroundColor3 = THEME.Muted,
+			BorderSizePixel = 0, Parent = root }, { corner(1) })
+	end
+	return root
 end
 
 local function safeCall(window, callback, ...)
@@ -395,7 +408,21 @@ function Window:SelectTab(tab)
 	if type(tab) == "string" then tab = self._tabsByName[tab] end
 	if not tab or tab.Window ~= self then return end
 	self:CloseDropdown()
+	if self.ActiveTab then
+		self.ActiveTab.Query, self.ActiveTab.ActiveOnly = self.Search.Text, self.ActiveOnly
+	end
 	self.ActiveTab = tab
+	local searchable = tab.SearchEnabled ~= false
+	self.Toolbar.Visible, self.SearchHint.Visible = searchable, searchable
+	self.Search:ReleaseFocus()
+	self.Search.Text = tab.Query or ""
+	self.ActiveOnly = tab.ActiveOnly == true
+	self.Search.PlaceholderText = tab.ItemNoun == "scripts" and "Find a script..." or "Search modules..."
+	self.ActiveFilter.Visible = searchable and tab.ItemNoun ~= "scripts"
+	self.Search.Parent.Size = UDim2.new(1, tab.ItemNoun == "scripts" and 0 or -92, 1, 0)
+	self.Content.Position = UDim2.fromOffset(20, searchable and 158 or 112)
+	self.Content.Size = UDim2.new(1, -40, 1, searchable and -202 or -156)
+	self:SetActiveOnly(self.ActiveOnly)
 	for _, item in ipairs(self.Tabs) do
 		local selected = item == tab
 		item.Page.Visible = selected
@@ -417,7 +444,8 @@ function Window:AddTab(name, icon, subtitle)
 	local tab = setmetatable({
 		Window = self,
 		Name = name,
-		Icon = icon or "•",
+		Icon = ({ H = "🏠", L = "📚", S = "⚙️", M = "🧩", C = "🎛️" })[icon] or icon or "📄",
+		SearchEnabled = name == "Library" or name == "Modules" or name == "Controls",
 		Subtitle = subtitle or "",
 		Modules = {},
 	}, Tab)
@@ -448,7 +476,8 @@ function Window:AddTab(name, icon, subtitle)
 			HorizontalAlignment = Enum.HorizontalAlignment.Center,
 		}),
 		create("UIPadding", {
-			PaddingBottom = UDim.new(0, 16),
+			PaddingTop = UDim.new(0, 4),
+			PaddingBottom = UDim.new(0, 4),
 		}),
 	})
 	local button = create("TextButton", {
@@ -477,8 +506,8 @@ function Window:AddTab(name, icon, subtitle)
 		BorderSizePixel = 0,
 		Text = tostring(tab.Icon),
 		TextColor3 = THEME.Muted,
-		Font = Enum.Font.GothamBold,
-		TextSize = 12,
+		Font = Enum.Font.BuilderSansBold,
+		TextSize = 18,
 		Parent = button,
 	}, { corner(8), stroke(THEME.Border, 0.55) })
 	local label = create("TextLabel", {
@@ -488,7 +517,7 @@ function Window:AddTab(name, icon, subtitle)
 		Text = name,
 		TextColor3 = THEME.Muted,
 		TextXAlignment = Enum.TextXAlignment.Left,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.BuilderSansBold,
 		TextSize = 14,
 		Parent = button,
 	})
@@ -500,7 +529,7 @@ function Window:AddTab(name, icon, subtitle)
 		if self.ActiveTab ~= tab then
 			self:_tween(button, 0.13, { BackgroundColor3 = THEME.PanelRaised })
 		self:_tween(label, 0.13, { TextColor3 = THEME.Text })
-			self:_tween(iconLabel, 0.13, { TextColor3 = THEME.Text, BackgroundColor3 = THEME.AccentSoft })
+			self:_tween(iconLabel, 0.13, { TextColor3 = THEME.Text, BackgroundColor3 = THEME.SurfaceHover })
 		end
 	end)
 	self:_connect(button.MouseLeave, function()
@@ -516,12 +545,12 @@ function Window:AddTab(name, icon, subtitle)
 end
 
 function Module:_refreshHeight()
-	if self.Window._destroyed then return end
+	if self.Window._destroyed or self.IsScriptCard then return end
 	local bodyHeight = self.BodyLayout.AbsoluteContentSize.Y + 30
 	self.Body.Size = UDim2.new(1, -(CARD_BODY_INSET * 2), 0, bodyHeight)
 	local target = self.Expanded and self.HeaderHeight + bodyHeight or self.HeaderHeight
 	self.Window:_tween(self.Card, 0.2, { Size = UDim2.new(1, -CARD_HORIZONTAL_GUTTER, 0, target) })
-	self.Chevron.Text = self.Expanded and "⌃" or "⌄"
+	self.Chevron.Rotation = self.Expanded and 180 or 0
 	self.Window:_queueTextScale()
 end
 
@@ -581,7 +610,7 @@ function Module:AddToggle(name, default, callback, description)
 		Text = name,
 		TextColor3 = THEME.Text,
 		TextXAlignment = Enum.TextXAlignment.Left,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.BuilderSansBold,
 		TextSize = 14,
 		Parent = row,
 	})
@@ -593,7 +622,7 @@ function Module:AddToggle(name, default, callback, description)
 			Text = description,
 			TextColor3 = THEME.Muted,
 			TextXAlignment = Enum.TextXAlignment.Left,
-			Font = Enum.Font.GothamMedium,
+			Font = Enum.Font.BuilderSansMedium,
 			TextSize = 12,
 			Parent = row,
 		})
@@ -650,7 +679,7 @@ function Module:AddSlider(name, minimum, maximum, default, callback, options)
 		Text = name,
 		TextColor3 = THEME.Text,
 		TextXAlignment = Enum.TextXAlignment.Left,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.BuilderSansBold,
 		TextSize = 14,
 		Parent = row,
 	})
@@ -662,7 +691,7 @@ function Module:AddSlider(name, minimum, maximum, default, callback, options)
 			Text = options.Description,
 			TextColor3 = THEME.Muted,
 			TextXAlignment = Enum.TextXAlignment.Left,
-			Font = Enum.Font.GothamMedium,
+			Font = Enum.Font.BuilderSansMedium,
 			TextSize = 12,
 			Parent = row,
 		})
@@ -674,7 +703,7 @@ function Module:AddSlider(name, minimum, maximum, default, callback, options)
 		BackgroundColor3 = THEME.PanelRaised,
 		BorderSizePixel = 0,
 		TextColor3 = THEME.Text,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.BuilderSansBold,
 		TextSize = 12,
 		Parent = row,
 	}, { corner(7), stroke(THEME.Border, 0.55) })
@@ -771,7 +800,7 @@ function Module:AddDropdown(name, options, default, callback)
 		Text = name,
 		TextColor3 = THEME.Text,
 		TextXAlignment = Enum.TextXAlignment.Left,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.BuilderSansBold,
 		TextSize = 14,
 		Parent = row,
 	})
@@ -783,10 +812,11 @@ function Module:AddDropdown(name, options, default, callback)
 		BackgroundColor3 = THEME.PanelRaised,
 		BorderSizePixel = 0,
 		TextColor3 = THEME.Text,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.BuilderSansBold,
 		TextSize = 13,
 		Parent = row,
 	}, { corner(8), stroke(THEME.Border, 0.45) })
+	chevron(button, UDim2.new(1, -30, 0.5, -9))
 	self.Window:_hover(button, THEME.PanelRaised, THEME.SurfaceHover)
 	local control = { Module = self, Value = default, Index = 1 }
 	for index, option in ipairs(options) do
@@ -801,7 +831,7 @@ function Module:AddDropdown(name, options, default, callback)
 			local label, candidate = optionParts(option)
 			if candidate == value then
 				self.Index, self.Value = index, candidate
-				button.Text = label .. "   ▾"
+				button.Text = label
 				if not silent then safeCall(self.Module.Window, callback, candidate) end
 				return
 			end
@@ -828,7 +858,7 @@ function Module:AddMultiDropdown(name, options, defaults, callback, colors)
 		Text = name,
 		TextColor3 = THEME.Text,
 		TextXAlignment = Enum.TextXAlignment.Left,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.BuilderSansBold,
 		TextSize = 14,
 		Parent = row,
 	})
@@ -856,7 +886,7 @@ function Module:AddMultiDropdown(name, options, defaults, callback, colors)
 			AutoButtonColor = false,
 			BorderSizePixel = 0,
 			Text = option,
-			Font = Enum.Font.GothamBold,
+			Font = Enum.Font.BuilderSansBold,
 			TextSize = 12,
 			Parent = row,
 		}, { corner(7) })
@@ -882,7 +912,7 @@ function Module:AddNumberInput(name, default, callback, options)
 		Text = name,
 		TextColor3 = THEME.Text,
 		TextXAlignment = Enum.TextXAlignment.Left,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.BuilderSansBold,
 		TextSize = 14,
 		Parent = row,
 	})
@@ -895,7 +925,7 @@ function Module:AddNumberInput(name, default, callback, options)
 		Text = tostring(default),
 		TextColor3 = THEME.Text,
 		PlaceholderColor3 = THEME.Muted,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.BuilderSansBold,
 		TextSize = 13,
 		Parent = row,
 	}, { corner(8), stroke(THEME.Border, 0.45) })
@@ -925,7 +955,7 @@ function Module:AddButton(name, callback, options)
 		BorderSizePixel = 0,
 		Text = name,
 		TextColor3 = danger and THEME.Danger or THEME.Text,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.BuilderSansBold,
 		TextSize = 14,
 		Parent = row,
 	}, { corner(10), stroke(danger and THEME.Danger or THEME.Accent, 0.35) })
@@ -950,7 +980,7 @@ function Module:AddParagraph(title, text, options)
 		Text = title,
 		TextColor3 = THEME.Text,
 		TextXAlignment = Enum.TextXAlignment.Left,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.BuilderSansBold,
 		TextSize = 14,
 		Parent = row,
 	})
@@ -963,7 +993,7 @@ function Module:AddParagraph(title, text, options)
 		TextWrapped = true,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		TextYAlignment = Enum.TextYAlignment.Top,
-		Font = Enum.Font.GothamMedium,
+		Font = Enum.Font.BuilderSansMedium,
 		TextSize = 12,
 		Parent = row,
 	})
@@ -1010,7 +1040,7 @@ function Tab:AddModule(options)
 		Text = module.Name,
 		TextColor3 = THEME.Text,
 		TextXAlignment = Enum.TextXAlignment.Left,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.BuilderSansBold,
 		TextSize = options.TitleSize or 16,
 		Parent = module.Card,
 	})
@@ -1022,22 +1052,12 @@ function Tab:AddModule(options)
 		TextColor3 = THEME.Muted,
 		TextTruncate = Enum.TextTruncate.AtEnd,
 		TextXAlignment = Enum.TextXAlignment.Left,
-		Font = Enum.Font.GothamMedium,
+		Font = Enum.Font.BuilderSansMedium,
 		TextSize = 12,
 		Parent = module.Card,
 	})
-	module.Chevron = create("TextLabel", {
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, options.Toggleable and -88 or -19, 0, 20),
-		Size = UDim2.fromOffset(18, 24),
-		BackgroundTransparency = 1,
-		Text = module.Expanded and "⌃" or "⌄",
-		TextColor3 = THEME.Muted,
-		Font = Enum.Font.GothamBold,
-		TextSize = 15,
-		Visible = module.Collapsible,
-		Parent = module.Card,
-	})
+	module.Chevron = chevron(module.Card, UDim2.new(1, options.Toggleable and -100 or -36, 0, 25))
+	module.Chevron.Visible = module.Collapsible
 	local headerButton = create("TextButton", {
 		Size = UDim2.new(1, options.Toggleable and -78 or 0, 0, module.HeaderHeight),
 		AutoButtonColor = false,
@@ -1133,17 +1153,17 @@ end
 function Module:AddKeybind(options)
 	options = options or {}
 	self:_index(options.Name or "Keybind")
-	local row = self:_row(92)
+	local row = self:_row(60)
 	create("TextLabel", {
-		Position = UDim2.fromOffset(16, 6), Size = UDim2.new(1, -32, 0, 24),
+		Position = UDim2.fromOffset(16, 0), Size = UDim2.new(1, -172, 1, 0),
 		Text = options.Name or "Toggle key", TextColor3 = THEME.Text,
-		TextSize = 13, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Left,
+		TextSize = 13, Font = Enum.Font.BuilderSansBold, TextXAlignment = Enum.TextXAlignment.Left,
 		BackgroundTransparency = 1, Parent = row,
 	})
 	local button = create("TextButton", {
-		Position = UDim2.fromOffset(12, 38), Size = UDim2.new(1, -24, 0, 44),
+		Position = UDim2.new(1, -148, 0, 8), Size = UDim2.fromOffset(136, 44),
 		BackgroundColor3 = THEME.PanelRaised, BorderSizePixel = 0,
-		TextColor3 = THEME.Text, TextSize = 13, Font = Enum.Font.GothamBold,
+		TextColor3 = THEME.Text, TextSize = 13, Font = Enum.Font.BuilderSansBold,
 		AutoButtonColor = false, Parent = row,
 	}, { corner(9), stroke(THEME.Border, 0.3) })
 	local binding = {
@@ -1161,7 +1181,7 @@ function Module:AddKeybind(options)
 		self.Button.Text = key == Enum.KeyCode.Unknown and "None" or key.Name
 		self.Button.TextColor3 = THEME.Text
 	end
-	self.Window:_hover(button, THEME.Surface, THEME.SurfaceHover)
+	self.Window:_hover(button, THEME.PanelRaised, THEME.SurfaceHover)
 	self.Window:_connect(button.Activated, function()
 		if self.Window._rebinding then self.Window._rebinding:Refresh() end
 		self.Window._rebinding = binding
@@ -1216,7 +1236,7 @@ function Window:_handleKeyboard(input, processed)
 	if input.KeyCode == Enum.KeyCode.K and (UserInputService:IsKeyDown(Enum.KeyCode.LeftControl)
 		or UserInputService:IsKeyDown(Enum.KeyCode.RightControl)) and not processed then
 		self:SetVisible(true)
-		self.Search:CaptureFocus()
+		if self.ActiveTab and self.ActiveTab.SearchEnabled ~= false then self.Search:CaptureFocus() end
 		return
 	end
 	if UserInputService:GetFocusedTextBox() == self.Search and input.KeyCode == Enum.KeyCode.Escape then
@@ -1263,7 +1283,7 @@ function Window:SetMonitor(key, text)
 			TextXAlignment = Enum.TextXAlignment.Left,
 			TextYAlignment = Enum.TextYAlignment.Center,
 			TextWrapped = true,
-			Font = Enum.Font.GothamBold,
+			Font = Enum.Font.BuilderSansBold,
 			TextSize = 13,
 			Parent = frame,
 		})
@@ -1318,13 +1338,13 @@ function Window:Notify(options)
 		BackgroundColor3 = tint, BorderSizePixel = 0, Parent = frame }, { corner(2) })
 	create("TextLabel", { Position = UDim2.fromOffset(16, 12), Size = UDim2.new(1, -66, 0, 22),
 		Text = options.Title or "FrostScripts", TextColor3 = tint, BackgroundTransparency = 1,
-		TextXAlignment = Enum.TextXAlignment.Left, TextSize = 14, Font = Enum.Font.GothamBold, Parent = frame })
+		TextXAlignment = Enum.TextXAlignment.Left, TextSize = 14, Font = Enum.Font.BuilderSansBold, Parent = frame })
 	create("TextLabel", { Position = UDim2.fromOffset(16, 38), Size = UDim2.new(1, -32, 0, 44),
 		Text = options.Text or "", TextColor3 = THEME.Text, BackgroundTransparency = 1, TextWrapped = true,
 		TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top,
-		TextSize = 12, Font = Enum.Font.GothamMedium, Parent = frame })
+		TextSize = 12, Font = Enum.Font.BuilderSansMedium, Parent = frame })
 	local close = create("TextButton", { Position = UDim2.new(1, -44, 0, 0), Size = UDim2.fromOffset(44, 44),
-		Text = "×", TextColor3 = THEME.Muted, TextSize = 20, Font = Enum.Font.Gotham,
+		Text = "×", TextColor3 = THEME.Muted, TextSize = 20, Font = Enum.Font.BuilderSans,
 		BackgroundTransparency = 1, Parent = frame })
 	local progress = create("Frame", { Position = UDim2.new(0, 0, 1, -2), Size = UDim2.new(1, 0, 0, 2),
 		BackgroundColor3 = tint, BorderSizePixel = 0, Parent = frame })
@@ -1411,7 +1431,7 @@ function Window:AddWorldMarker(instances, object, options)
 		Text = options.Title or "Marker",
 		TextColor3 = THEME.Text,
 		TextXAlignment = Enum.TextXAlignment.Left,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.BuilderSansBold,
 		TextSize = titleTextSize * scale,
 		TextTruncate = Enum.TextTruncate.AtEnd,
 		Parent = panel,
@@ -1423,7 +1443,7 @@ function Window:AddWorldMarker(instances, object, options)
 		Text = options.Detail or "Marker",
 		TextColor3 = color,
 		TextXAlignment = Enum.TextXAlignment.Left,
-		Font = Enum.Font.GothamMedium,
+		Font = Enum.Font.BuilderSansMedium,
 		TextSize = detailTextSize * scale,
 		TextTruncate = Enum.TextTruncate.AtEnd,
 		Parent = panel,
@@ -1581,7 +1601,7 @@ function Module:AddColorPicker(name, default, callback)
 		Text = name,
 		TextColor3 = THEME.Text,
 		TextXAlignment = Enum.TextXAlignment.Left,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.BuilderSansBold,
 		TextSize = 14,
 		Parent = preview,
 	})
@@ -1686,9 +1706,6 @@ function Window:_syncAmbient()
 			item.Frame.Rotation = -24 + math.sin(t * 0.11 + index) * 9
 			item.Frame.Position = UDim2.fromScale(0.32 + math.sin(t * 0.08 + index) * 0.12, 0.15 + (index - 1) * 0.32)
 		end
-		for index, dot in ipairs(self._stars) do
-			dot.BackgroundTransparency = 0.76 + math.sin(t * 0.65 + index * 1.7) * 0.18
-		end
 		for index, gradient in ipairs(self._coverGradients) do
 			gradient.Offset = Vector2.new(math.sin(t * 0.15 + index) * 0.2, 0)
 		end
@@ -1719,7 +1736,7 @@ function Window:_wireFeedback(button)
 end
 
 function Window:_initExperience()
-	self._aurora, self._stars, self._coverGradients, self._feedbackButtons = {}, {}, {}, setmetatable({}, { __mode = "k" })
+	self._aurora, self._coverGradients, self._feedbackButtons = {}, {}, setmetatable({}, { __mode = "k" })
 	self.Ambient = create("Frame", {
 		Name = "AuroraBackground", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1,
 		ClipsDescendants = true, ZIndex = 0, Parent = self.Frame,
@@ -1737,15 +1754,6 @@ function Window:_initExperience()
 			Parent = ribbon,
 		})
 		table.insert(self._aurora, { Frame = ribbon, Gradient = gradient })
-	end
-	for index = 1, 18 do
-		local dot = create("Frame", {
-			Name = "AmbientDot", Position = UDim2.fromScale(0.24 + ((index * 37) % 73) / 100, ((index * 23) % 97) / 100),
-			Size = UDim2.fromOffset(index % 3 == 0 and 3 or 2, index % 3 == 0 and 3 or 2),
-			BackgroundColor3 = THEME.Accent, BackgroundTransparency = 0.85, BorderSizePixel = 0,
-			ZIndex = 0, Parent = self.Ambient,
-		}, { corner(3) })
-		table.insert(self._stars, dot)
 	end
 	self.UISound = create("Sound", {
 		Name = "FrostInterfaceSound", SoundId = self.UIState.SoundAsset or UI_DEFAULTS.SoundAsset,
@@ -1790,7 +1798,7 @@ function Window:AddClientSettings(tab)
 	bind(motion:AddToggle("Interface animations", self.Animations, function(value) self:SetAnimations(value) end,
 		"Turn off all movement for a still interface"), "Animations")
 	bind(motion:AddToggle("Decorative background", self.BackgroundEffects, function(value) self:SetBackgroundEffects(value) end,
-		"Aurora ribbons and soft points of light"), "BackgroundEffects")
+		"Soft gradients behind your workspace"), "BackgroundEffects")
 	bind(motion:AddToggle("Animate background", self.BackgroundAnimations, function(value) self:SetBackgroundAnimations(value) end,
 		"Pause ambient movement while keeping the artwork"), "BackgroundAnimations")
 	local audio = tab:AddModule({ Name = "Sound & feedback", Description = "Small details, on your terms" })
@@ -1827,77 +1835,87 @@ function Library.ImageContent(image)
 end
 
 function Tab:AddScriptCard(entry, onLaunch)
+	self.ItemNoun = "scripts"
 	if not self.CardLayout then
 		local list = self.Scroll:FindFirstChildWhichIsA("UIListLayout")
 		if list then list:Destroy() end
+		self.ScriptCards = {}
 		self.CardLayout = create("UIGridLayout", {
-			CellSize = UDim2.new(0.5, -12, 0, 448), CellPadding = UDim2.fromOffset(12, 16),
+			CellSize = UDim2.new(0.5, -10, 0, 300), CellPadding = UDim2.fromOffset(12, 12),
 			SortOrder = Enum.SortOrder.LayoutOrder, HorizontalAlignment = Enum.HorizontalAlignment.Center,
 			Parent = self.Scroll,
 		})
 	end
 	local module = self:AddModule({ Name = entry.Name, Description = entry.Description, HeaderHeight = 0, Collapsible = false })
-	-- Cards share module search/filtering, but have their own editorial layout.
+	module.IsScriptCard = true
 	for _, object in ipairs(module.Card:GetChildren()) do
-		if object:IsA("GuiObject") and object ~= module.Body then object.Visible = false end
+		if object:IsA("GuiObject") then object.Visible = false end
 	end
-	module.Body.Position = UDim2.fromOffset(CARD_BODY_INSET, 16)
-	local cover = module:_row(140)
-	cover.Name = "ScriptCover"
-	cover.ClipsDescendants = true
-	cover.BackgroundColor3 = THEME.AccentSoft
-	cover:SetAttribute("FrostTheme_BackgroundColor3", "AccentSoft")
-	local coverGradient = create("UIGradient", { Rotation = 25, Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(70, 100, 145)), Parent = cover })
-	table.insert(self.Window._coverGradients, coverGradient)
-	local orbit = create("Frame", {
-		AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.82, 0.45), Size = UDim2.fromOffset(196, 196),
-		BackgroundTransparency = 1, BorderSizePixel = 0, Parent = cover,
-	}, { corner(100), stroke(THEME.Accent, 0.78) })
-	create("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(142, 142),
-		BackgroundTransparency = 1, Parent = orbit }, { corner(90), stroke(THEME.Accent, 0.88) })
+	local cover = create("Frame", { Name = "ScriptCover", ClipsDescendants = true,
+		BackgroundColor3 = THEME.AccentSoft, BorderSizePixel = 0, Parent = module.Card }, { corner(10) })
+	local gradient = create("UIGradient", { Rotation = 25,
+		Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(90, 95, 110)), Parent = cover })
+	table.insert(self.Window._coverGradients, gradient)
 	local fallback = create("TextLabel", {
-		Position = UDim2.fromOffset(24, 22), Size = UDim2.new(1, -48, 0, 72), Text = entry.Monogram or entry.Name:sub(1, 2):upper(),
-		TextSize = 52, Font = Enum.Font.GothamBold, TextColor3 = THEME.Accent,
-		TextXAlignment = Enum.TextXAlignment.Left, BackgroundTransparency = 1, Parent = cover,
+		Size = UDim2.fromScale(1, 1), Text = entry.Monogram or entry.Name:sub(1, 2):upper(),
+		TextSize = 36, Font = Enum.Font.BuilderSansBold, TextColor3 = THEME.Accent,
+		BackgroundTransparency = 1, Parent = cover,
 	})
 	local image = create("ImageLabel", {
 		Name = "CustomCover", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1,
-		Image = Library.ImageContent(entry.Image), ScaleType = entry.Image and entry.Image.ScaleType == "Fit" and Enum.ScaleType.Fit or Enum.ScaleType.Crop,
+		Image = Library.ImageContent(entry.Image),
+		ScaleType = type(entry.Image) == "table" and entry.Image.ScaleType == "Fit" and Enum.ScaleType.Fit or Enum.ScaleType.Crop,
 		ZIndex = 2, Parent = cover,
 	}, { corner(10) })
 	image.Visible = image.Image ~= ""
-	self.Window:_connect(image:GetPropertyChangedSignal("IsLoaded"), function()
-		fallback.Visible = not image.IsLoaded
-		orbit.Visible = not image.IsLoaded
-	end)
-	create("TextLabel", {
-		Position = UDim2.new(0, 20, 1, -32), Size = UDim2.new(1, -40, 0, 18), Text = entry.Tag or "FROSTSCRIPTS COLLECTION",
-		TextSize = 10, Font = Enum.Font.GothamBold, TextColor3 = THEME.Text,
-		TextXAlignment = Enum.TextXAlignment.Left, BackgroundTransparency = 1, Visible = image.Image == "", Parent = cover,
-	})
-	module:AddParagraph(entry.Name, entry.Description, { Height = 100 })
-	local button = module:AddButton("Launch script  →", onLaunch)
-	button.Name = "LaunchScript"
-	local status = module:AddParagraph("Ready when you are", "Open while playing this game", { Height = 64 })
-	local card = { Module = module, Button = button, Cover = cover, Image = image }
+	local function imageReady() fallback.Visible = not (image.Visible and image.IsLoaded) end
+	self.Window:_connect(image:GetPropertyChangedSignal("IsLoaded"), imageReady)
+	imageReady()
+	local function label(name, text, size, color, font)
+		return create("TextLabel", { Name = name, Text = text, TextSize = size, Font = font,
+			TextColor3 = color, TextXAlignment = Enum.TextXAlignment.Left,
+			TextYAlignment = Enum.TextYAlignment.Top, BackgroundTransparency = 1, Parent = module.Card })
+	end
+	local title = label("ScriptTitle", entry.Name, 17, THEME.Text, Enum.Font.BuilderSansBold)
+	local description = label("ScriptDescription", entry.Description, 13, THEME.Muted, Enum.Font.BuilderSans)
+	description.TextWrapped = true
+	local status = label("LaunchStatus", "Open in the matching game", 11, THEME.Muted, Enum.Font.BuilderSans)
+	local button = create("TextButton", { Name = "LaunchScript", Text = "Launch script",
+		TextSize = 14, Font = Enum.Font.BuilderSansMedium, TextColor3 = THEME.Text,
+		BackgroundColor3 = THEME.AccentSoft, BorderSizePixel = 0, AutoButtonColor = false, Parent = module.Card,
+	}, { corner(8), stroke(THEME.Accent, 0.65) })
+	self.Window:_hover(button, THEME.AccentSoft, THEME.SurfaceHover)
+	self.Window:_connect(button.Activated, function() if button.Active then safeCall(self.Window, onLaunch) end end)
+	local card = { Module = module, Button = button, Cover = cover, Image = image, Title = title, Description = description, Status = status }
+	function card:Layout(horizontal, height)
+		if horizontal then
+			local side = math.min(104, height - 24)
+			local left = side + 26
+			cover.Position, cover.Size = UDim2.fromOffset(12, 12), UDim2.fromOffset(side, side)
+			title.Position, title.Size = UDim2.fromOffset(left, 12), UDim2.new(1, -left - 12, 0, 24)
+			description.Position, description.Size = UDim2.fromOffset(left, 42), UDim2.new(1, -left - 12, 0, math.max(18, height - 98))
+			button.Position, button.Size = UDim2.new(0, left, 1, -48), UDim2.new(1, -left - 12, 0, 36)
+			status.Visible = false
+		else
+			local coverHeight = height - 192
+			cover.Position, cover.Size = UDim2.fromOffset(12, 12), UDim2.new(1, -24, 0, coverHeight)
+			title.Position, title.Size = UDim2.fromOffset(14, coverHeight + 24), UDim2.new(1, -28, 0, 24)
+			description.Position, description.Size = UDim2.fromOffset(14, coverHeight + 55), UDim2.new(1, -28, 0, 52)
+			button.Position, button.Size = UDim2.new(0, 12, 1, -68), UDim2.new(1, -24, 0, 38)
+			status.Position, status.Size = UDim2.new(0, 14, 1, -23), UDim2.new(1, -28, 0, 16)
+			status.Visible = true
+		end
+	end
 	function card:SetLaunchState(state, detail)
-		self.Button.Text = state == "Loading" and "Loading…" or state == "Retry" and "Try again  →" or "Launch script  →"
-		status:SetText(detail or "")
+		self.Button.Text = state == "Loading" and "Loading..." or state == "Retry" and "Try again" or "Launch script"
+		status.Text = detail or "Open in the matching game"
 	end
 	function card:SetLaunchEnabled(enabled)
-		self.Button.Active = enabled
-		self.Button.Selectable = enabled
-		self.Button.AutoButtonColor = enabled
+		self.Button.Active, self.Button.Selectable = enabled, enabled
+		self.Button.TextTransparency = enabled and 0 or 0.4
 	end
-	local scale = create("UIScale", { Parent = cover })
-	self.Window:_connect(cover.MouseEnter, function()
-		self.Window:_tween(scale, 0.35, { Scale = 1.015 }, Enum.EasingStyle.Back)
-		self.Window:_tween(orbit, 0.5, { Rotation = 12 })
-	end)
-	self.Window:_connect(cover.MouseLeave, function()
-		self.Window:_tween(scale, 0.3, { Scale = 1 })
-		self.Window:_tween(orbit, 0.5, { Rotation = 0 })
-	end)
+	card:SetLaunchEnabled(true)
+	table.insert(self.ScriptCards, card)
 	self.Window:_layoutScriptCards()
 	return card
 end
@@ -1942,9 +1960,18 @@ end
 
 function Window:_layoutScriptCards()
 	if not self.TargetSize then return end
-	local columns = self.TargetSize.X - (self._compact and 72 or 216) - 40 >= 710 and 2 or 1
+	local availableWidth = self.TargetSize.X - (self._compact and 72 or 216) - 40
+	local availableHeight = self.TargetSize.Y - 202
+	local horizontal = availableWidth < 600 or availableHeight < 280
+	local columns = horizontal and 1 or 2
 	for _, tab in ipairs(self.Tabs) do
-		if tab.CardLayout then tab.CardLayout.CellSize = UDim2.new(1 / columns, -12, 0, 448) end
+		if tab.CardLayout then
+			local count = math.min(2, math.max(1, #tab.ScriptCards))
+			local height = horizontal and math.clamp(math.floor((availableHeight - 8 - (count - 1) * 12) / count), 112, 174)
+				or math.min(300, availableHeight - 8)
+			tab.CardLayout.CellSize = UDim2.new(1 / columns, columns == 2 and -10 or -8, 0, height)
+			for _, card in ipairs(tab.ScriptCards) do card:Layout(horizontal, height) end
+		end
 	end
 end
 
@@ -2013,12 +2040,12 @@ function Window:_openDropdown(control, name, options, anchor)
 	}, { corner(14), stroke(THEME.Border, 0) })
 	create("TextLabel", {
 		Position = UDim2.fromOffset(16, 8), Size = UDim2.new(1, -70, 0, 32), Text = name,
-		BackgroundTransparency = 1, TextColor3 = THEME.Text, Font = Enum.Font.GothamBold,
+		BackgroundTransparency = 1, TextColor3 = THEME.Text, Font = Enum.Font.BuilderSansBold,
 		TextSize = 14, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 22, Parent = panel,
 	})
 	local close = create("TextButton", {
 		Position = UDim2.new(1, -48, 0, 0), Size = UDim2.fromOffset(44, 44), Text = "×",
-		BackgroundTransparency = 1, TextColor3 = THEME.Muted, TextSize = 22, Font = Enum.Font.Gotham,
+		BackgroundTransparency = 1, TextColor3 = THEME.Muted, TextSize = 22, Font = Enum.Font.BuilderSans,
 		ZIndex = 22, Parent = panel,
 	})
 	connect(close.Activated, function() self:CloseDropdown() end)
@@ -2026,7 +2053,7 @@ function Window:_openDropdown(control, name, options, anchor)
 		Position = UDim2.fromOffset(12, 46), Size = UDim2.new(1, -24, 0, 40), Text = "",
 		PlaceholderText = "Find an option…", ClearTextOnFocus = false,
 		BackgroundColor3 = THEME.Surface, BorderSizePixel = 0, TextColor3 = THEME.Text,
-		PlaceholderColor3 = THEME.Muted, TextSize = 13, Font = Enum.Font.Gotham,
+		PlaceholderColor3 = THEME.Muted, TextSize = 13, Font = Enum.Font.BuilderSans,
 		ZIndex = 22, Parent = panel,
 	}, { corner(8) })
 	local list = create("ScrollingFrame", {
@@ -2042,7 +2069,7 @@ function Window:_openDropdown(control, name, options, anchor)
 		local button = create("TextButton", {
 			Size = UDim2.new(1, -5, 0, 44), LayoutOrder = index,
 			Text = (selected and "✓  " or "    ") .. label,
-			TextColor3 = selected and THEME.Accent or THEME.Text, Font = Enum.Font.GothamMedium,
+			TextColor3 = selected and THEME.Accent or THEME.Text, Font = Enum.Font.BuilderSansMedium,
 			TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left,
 			BackgroundColor3 = selected and THEME.AccentSoft or THEME.PanelRaised,
 			BorderSizePixel = 0, AutoButtonColor = true, ZIndex = 23, Parent = list,
@@ -2125,12 +2152,12 @@ function Library:CreateWindow(options)
 		BackgroundColor3 = THEME.Border, BackgroundTransparency = 0.45, BorderSizePixel = 0, Parent = window.Sidebar })
 	window.Logo = create("TextLabel", {
 		Position = UDim2.fromOffset(20, 24), Size = UDim2.fromOffset(44, 44), Text = options.Logo or "F",
-		BackgroundColor3 = THEME.AccentSoft, TextColor3 = THEME.Accent, Font = Enum.Font.GothamBold,
+		BackgroundColor3 = THEME.AccentSoft, TextColor3 = THEME.Accent, Font = Enum.Font.BuilderSansBold,
 		TextSize = 26, BorderSizePixel = 0, Parent = window.Sidebar,
 	}, { corner(13), stroke(THEME.Accent, 0.65) })
 	local function label(parentObject, text, position, size, fontSize, color, bold)
 		return create("TextLabel", { Text = text, Position = position, Size = size, BackgroundTransparency = 1,
-			TextSize = fontSize, TextColor3 = color, Font = bold and Enum.Font.GothamBold or Enum.Font.GothamMedium,
+			TextSize = fontSize, TextColor3 = color, Font = bold and Enum.Font.BuilderSansBold or Enum.Font.BuilderSansMedium,
 			TextXAlignment = Enum.TextXAlignment.Left, Parent = parentObject })
 	end
 	window.BrandName = label(window.Sidebar, options.Name or "FrostScripts", UDim2.fromOffset(76, 24), UDim2.new(1, -84, 0, 24), 16, THEME.Text, true)
@@ -2145,11 +2172,17 @@ function Library:CreateWindow(options)
 		Position = UDim2.new(0, 12, 1, -78), Size = UDim2.new(1, -24, 0, 58),
 		BackgroundColor3 = THEME.PanelRaised, BorderSizePixel = 0, Parent = window.Sidebar,
 	}, { corner(12), stroke(THEME.Border, 0.55) })
-	window.Avatar = label(playerCard, string.upper(player.Name:sub(1, 1)), UDim2.fromOffset(10, 10), UDim2.fromOffset(38, 38), 15, THEME.Accent, true)
-	window.Avatar.BackgroundColor3 = THEME.AccentSoft
-	window.Avatar.BackgroundTransparency = 0
-	window.Avatar.TextXAlignment = Enum.TextXAlignment.Center
-	corner(10).Parent = window.Avatar
+	window.Avatar = create("ImageLabel", {
+		Name = "PlayerAvatar", Position = UDim2.fromOffset(10, 10), Size = UDim2.fromOffset(38, 38),
+		BackgroundColor3 = THEME.Surface, BorderSizePixel = 0,
+		Image = "rbxthumb://type=AvatarHeadShot&id=" .. tostring(player.UserId) .. "&w=150&h=150",
+		ScaleType = Enum.ScaleType.Crop, Parent = playerCard,
+	}, { corner(12), stroke(THEME.Border, 0.4) })
+	task.spawn(function()
+		local ok, content, ready = pcall(Players.GetUserThumbnailAsync, Players, player.UserId,
+			Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size150x150)
+		if ok and ready and not window._destroyed then window.Avatar.Image = content end
+	end)
 	window.PlayerName = label(playerCard, player.DisplayName or player.Name, UDim2.fromOffset(60, 0), UDim2.new(1, -68, 1, 0), 12, THEME.Text, true)
 	window.Main = create("Frame", { Name = "Main", BackgroundTransparency = 1, Parent = window.Frame })
 	local topbar = create("Frame", { Name = "Header", Size = UDim2.new(1, 0, 0, 108), BackgroundTransparency = 1, Parent = window.Main })
@@ -2159,47 +2192,48 @@ function Library:CreateWindow(options)
 	local close = create("TextButton", {
 		Position = UDim2.new(1, -68, 0, 24), Size = UDim2.fromOffset(44, 44), Text = "−",
 		BackgroundColor3 = THEME.PanelRaised, TextColor3 = THEME.Muted, BorderSizePixel = 0,
-		Font = Enum.Font.Gotham, TextSize = 24, AutoButtonColor = false, Parent = topbar,
+		Font = Enum.Font.BuilderSans, TextSize = 24, AutoButtonColor = false, Parent = topbar,
 	}, { corner(12), stroke(THEME.Border, 0.5) })
 	window:_hover(close, THEME.PanelRaised, THEME.SurfaceHover)
 	window:_connect(close.Activated, function() window:SetVisible(false) end)
 	if options.OnReturnToLibrary then
 		local back = create("TextButton", {
 			Name = "ReturnToLibrary", Position = UDim2.new(1, -118, 0, 24), Size = UDim2.fromOffset(44, 44),
-			Text = "←", TextSize = 20, Font = Enum.Font.GothamBold, TextColor3 = THEME.Accent,
+			Text = "←", TextSize = 20, Font = Enum.Font.BuilderSansBold, TextColor3 = THEME.Accent,
 			BackgroundColor3 = THEME.AccentSoft, BorderSizePixel = 0, Parent = topbar,
 		}, { corner(12), stroke(THEME.Border, 0.5) })
 		window.PageTitle.Size = UDim2.new(1, -154, 0, 32)
 		window:_connect(back.Activated, function() safeCall(window, options.OnReturnToLibrary) end)
 	end
-	local toolbar = create("Frame", { Position = UDim2.fromOffset(24, 114), Size = UDim2.new(1, -48, 0, 44), BackgroundTransparency = 1, Parent = window.Main })
+	local toolbar = create("Frame", { Position = UDim2.fromOffset(24, 104), Size = UDim2.new(1, -48, 0, 44), BackgroundTransparency = 1, Parent = window.Main })
+	window.Toolbar = toolbar
 	local searchFrame = create("Frame", { Size = UDim2.new(1, -92, 1, 0), BackgroundColor3 = THEME.PanelRaised, BorderSizePixel = 0, Parent = toolbar }, { corner(10), stroke(THEME.Border, 0.4) })
 	window.Search = create("TextBox", {
 		Position = UDim2.fromOffset(14, 0), Size = UDim2.new(1, -56, 1, 0), Text = "",
 		PlaceholderText = "Search this tab…", ClearTextOnFocus = false,
 		BackgroundTransparency = 1, TextColor3 = THEME.Text, PlaceholderColor3 = THEME.Muted,
-		TextSize = 13, Font = Enum.Font.GothamMedium, TextXAlignment = Enum.TextXAlignment.Left, Parent = searchFrame,
+		TextSize = 13, Font = Enum.Font.BuilderSansMedium, TextXAlignment = Enum.TextXAlignment.Left, Parent = searchFrame,
 	})
 	local clear = create("TextButton", { Position = UDim2.new(1, -44, 0, 0), Size = UDim2.fromOffset(44, 44),
-		Text = "×", TextSize = 18, Font = Enum.Font.Gotham, TextColor3 = THEME.Muted,
+		Text = "×", TextSize = 18, Font = Enum.Font.BuilderSans, TextColor3 = THEME.Muted,
 		BackgroundTransparency = 1, Parent = searchFrame })
 	window:_connect(clear.Activated, function() window:SetSearch("") end)
 	window:_connect(window.Search:GetPropertyChangedSignal("Text"), function() window:_refreshSearch() end)
 	window.ActiveFilter = create("TextButton", { Position = UDim2.new(1, -82, 0, 0), Size = UDim2.fromOffset(82, 44),
-		Text = "Active", TextSize = 12, Font = Enum.Font.GothamBold, TextColor3 = THEME.Muted,
+		Text = "Active", TextSize = 12, Font = Enum.Font.BuilderSansBold, TextColor3 = THEME.Muted,
 		BackgroundColor3 = THEME.PanelRaised, AutoButtonColor = false, BorderSizePixel = 0, Parent = toolbar,
 	}, { corner(10), stroke(THEME.Border, 0.4) })
 	window:_connect(window.ActiveFilter.Activated, function() window:SetActiveOnly(not window.ActiveOnly) end)
-	window.Content = create("Frame", { Position = UDim2.fromOffset(20, 174), Size = UDim2.new(1, -40, 1, -218),
+	window.Content = create("Frame", { Position = UDim2.fromOffset(20, 158), Size = UDim2.new(1, -40, 1, -202),
 		BackgroundTransparency = 1, ClipsDescendants = true, Parent = window.Main })
 	window.Empty = label(window.Main, "", UDim2.new(0, 32, 0.5, 0), UDim2.new(1, -64, 0, 90), 14, THEME.Muted, false)
 	window.Empty.TextXAlignment = Enum.TextXAlignment.Center
 	window.Empty.Visible = false
 	window.Footer = label(window.Main, "Ready", UDim2.new(0, 24, 1, -32), UDim2.new(1, -180, 0, 20), 11, THEME.Muted, false)
-	label(window.Main, "CTRL K  /  SEARCH", UDim2.new(1, -152, 1, -32), UDim2.fromOffset(132, 20), 9, THEME.Muted, true)
+	window.SearchHint = label(window.Main, "CTRL K  /  SEARCH", UDim2.new(1, -152, 1, -32), UDim2.fromOffset(132, 20), 9, THEME.Muted, true)
 	window.Launcher = create("TextButton", { Name = "ReopenFrostScripts", AnchorPoint = Vector2.new(0, 1),
 		Position = UDim2.new(0, 20, 1, -20), Size = UDim2.fromOffset(52, 52), Text = "F",
-		TextSize = 24, Font = Enum.Font.GothamBold, TextColor3 = THEME.Accent,
+		TextSize = 24, Font = Enum.Font.BuilderSansBold, TextColor3 = THEME.Accent,
 		BackgroundColor3 = THEME.Panel, BorderSizePixel = 0, Visible = false, Parent = window.OverlayGui,
 	}, { corner(16), stroke(THEME.Accent, 0.25) })
 	window:_connect(window.Launcher.Activated, function() window:SetVisible(true) end)

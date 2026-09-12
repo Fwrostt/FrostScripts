@@ -132,6 +132,63 @@ test("catalog cards normalize optional images and adapt their grid", function()
 	Mock.Resize(390, 844)
 	assert(library.CardLayout.CellSize.X.Scale == 1)
 end)
+test("two script cards fit without scrolling across supported viewports", function()
+	local library = window._tabsByName.Library
+	library:AddScriptCard({ Name = "Second script", Description = "A second game with a longer description", Image = { AssetId = "12345" } }, function() end)
+	window:SelectTab(library)
+	for _, preset in ipairs({ "Comfortable", "Large", "Extra Large" }) do
+		window:SetSizePreset(preset)
+		for _, size in ipairs({ { 1064, 678 }, { 1280, 720 }, { 1920, 1080 }, { 390, 844 }, { 844, 390 }, { 320, 568 } }) do
+			Mock.Resize(size[1], size[2])
+			local cell = library.CardLayout.CellSize
+			local columns = cell.X.Scale == 0.5 and 2 or 1
+			local height = cell.Y.Offset
+			local content = window.Content.AbsoluteSize
+			assert(height * math.ceil(2 / columns) + (columns == 1 and 12 or 0) + 8 <= content.Y + 0.01,
+				"both complete cards must fit without scrolling at " .. size[1] .. "x" .. size[2])
+			for _, card in ipairs(library.ScriptCards) do
+				for _, child in ipairs({ card.Cover, card.Title, card.Description, card.Button, card.Status }) do
+					if child.Visible then
+						local top = height * child.Position.Y.Scale + child.Position.Y.Offset
+						local bottom = top + height * child.Size.Y.Scale + child.Size.Y.Offset
+						assert(top >= 0 and bottom <= height, child.Name .. " must stay inside its card")
+					end
+				end
+			end
+		end
+	end
+	Mock.Resize(1280, 800)
+end)
+test("search belongs to searchable pages and restores each query", function()
+	window:SelectTab(modules)
+	window:SetSearch("flight")
+	local settings = window._tabsByName.Settings
+	local item = settings:AddModule({ Name = "Appearance" })
+	window:SelectTab(settings)
+	assert(not window.Toolbar.Visible and not window.SearchHint.Visible and item.Card.Visible)
+	assert(window.Search.Text == "" and not Mock.Focused)
+	window:SelectTab(modules)
+	assert(window.Toolbar.Visible and window.Search.Text == "flight")
+	assert(window.Search.PlaceholderText == "Search modules...")
+	window:SelectTab(window._tabsByName.Library)
+	assert(window.Search.PlaceholderText == "Find a script..." and not window.ActiveFilter.Visible)
+end)
+test("controls use border strokes, drawn disclosures, emoji navigation and avatar thumbnails", function()
+	assert(window.Avatar:IsA("ImageLabel") and window.Avatar.Image:find("AvatarHeadShot", 1, true))
+	assert(window._tabsByName.Library.Icon == "📚" and window._tabsByName.Settings.Icon == "⚙️")
+	assert(alpha.Chevron:IsA("Frame"))
+	for _, object in ipairs(window.Gui:GetDescendants()) do
+		assert(object.Name ~= "AmbientDot", "dots were removed")
+		if object:IsA("UIStroke") then assert(object.ApplyStrokeMode == Mock.Env.Enum.ApplyStrokeMode.Border) end
+		if object:IsA("TextLabel") or object:IsA("TextButton") then
+			assert(object.Text ~= "⌃" and object.Text ~= "⌄" and not object.Text:find("▾", 1, true))
+		end
+	end
+	local binding = window.Keybinds[1]
+	assert(binding.Button.Size.X.Offset == 136 and binding.Button.Parent.Size.Y.Offset == 60)
+	binding.Button.MouseLeave:Fire()
+	assert(binding.Button.BackgroundColor3 ~= binding.Button.Parent.BackgroundColor3, "keycap must stand out from its row")
+end)
 test("destroy disconnects listeners and is safe to repeat", function()
 	local connections = table.clone(window._connections)
 	window:Destroy(); window:Destroy()

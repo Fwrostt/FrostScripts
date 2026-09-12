@@ -38,9 +38,18 @@ end
 
 function Window:_layoutScriptCards()
 	if not self.TargetSize then return end
-	local columns = self.TargetSize.X - (self._compact and 72 or 216) - 40 >= 710 and 2 or 1
+	local availableWidth = self.TargetSize.X - (self._compact and 72 or 216) - 40
+	local availableHeight = self.TargetSize.Y - 202
+	local horizontal = availableWidth < 600 or availableHeight < 280
+	local columns = horizontal and 1 or 2
 	for _, tab in ipairs(self.Tabs) do
-		if tab.CardLayout then tab.CardLayout.CellSize = UDim2.new(1 / columns, -12, 0, 448) end
+		if tab.CardLayout then
+			local count = math.min(2, math.max(1, #tab.ScriptCards))
+			local height = horizontal and math.clamp(math.floor((availableHeight - 8 - (count - 1) * 12) / count), 112, 174)
+				or math.min(300, availableHeight - 8)
+			tab.CardLayout.CellSize = UDim2.new(1 / columns, columns == 2 and -10 or -8, 0, height)
+			for _, card in ipairs(tab.ScriptCards) do card:Layout(horizontal, height) end
+		end
 	end
 end
 
@@ -109,12 +118,12 @@ function Window:_openDropdown(control, name, options, anchor)
 	}, { corner(14), stroke(THEME.Border, 0) })
 	create("TextLabel", {
 		Position = UDim2.fromOffset(16, 8), Size = UDim2.new(1, -70, 0, 32), Text = name,
-		BackgroundTransparency = 1, TextColor3 = THEME.Text, Font = Enum.Font.GothamBold,
+		BackgroundTransparency = 1, TextColor3 = THEME.Text, Font = Enum.Font.BuilderSansBold,
 		TextSize = 14, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 22, Parent = panel,
 	})
 	local close = create("TextButton", {
 		Position = UDim2.new(1, -48, 0, 0), Size = UDim2.fromOffset(44, 44), Text = "×",
-		BackgroundTransparency = 1, TextColor3 = THEME.Muted, TextSize = 22, Font = Enum.Font.Gotham,
+		BackgroundTransparency = 1, TextColor3 = THEME.Muted, TextSize = 22, Font = Enum.Font.BuilderSans,
 		ZIndex = 22, Parent = panel,
 	})
 	connect(close.Activated, function() self:CloseDropdown() end)
@@ -122,7 +131,7 @@ function Window:_openDropdown(control, name, options, anchor)
 		Position = UDim2.fromOffset(12, 46), Size = UDim2.new(1, -24, 0, 40), Text = "",
 		PlaceholderText = "Find an option…", ClearTextOnFocus = false,
 		BackgroundColor3 = THEME.Surface, BorderSizePixel = 0, TextColor3 = THEME.Text,
-		PlaceholderColor3 = THEME.Muted, TextSize = 13, Font = Enum.Font.Gotham,
+		PlaceholderColor3 = THEME.Muted, TextSize = 13, Font = Enum.Font.BuilderSans,
 		ZIndex = 22, Parent = panel,
 	}, { corner(8) })
 	local list = create("ScrollingFrame", {
@@ -138,7 +147,7 @@ function Window:_openDropdown(control, name, options, anchor)
 		local button = create("TextButton", {
 			Size = UDim2.new(1, -5, 0, 44), LayoutOrder = index,
 			Text = (selected and "✓  " or "    ") .. label,
-			TextColor3 = selected and THEME.Accent or THEME.Text, Font = Enum.Font.GothamMedium,
+			TextColor3 = selected and THEME.Accent or THEME.Text, Font = Enum.Font.BuilderSansMedium,
 			TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left,
 			BackgroundColor3 = selected and THEME.AccentSoft or THEME.PanelRaised,
 			BorderSizePixel = 0, AutoButtonColor = true, ZIndex = 23, Parent = list,
@@ -221,12 +230,12 @@ function Library:CreateWindow(options)
 		BackgroundColor3 = THEME.Border, BackgroundTransparency = 0.45, BorderSizePixel = 0, Parent = window.Sidebar })
 	window.Logo = create("TextLabel", {
 		Position = UDim2.fromOffset(20, 24), Size = UDim2.fromOffset(44, 44), Text = options.Logo or "F",
-		BackgroundColor3 = THEME.AccentSoft, TextColor3 = THEME.Accent, Font = Enum.Font.GothamBold,
+		BackgroundColor3 = THEME.AccentSoft, TextColor3 = THEME.Accent, Font = Enum.Font.BuilderSansBold,
 		TextSize = 26, BorderSizePixel = 0, Parent = window.Sidebar,
 	}, { corner(13), stroke(THEME.Accent, 0.65) })
 	local function label(parentObject, text, position, size, fontSize, color, bold)
 		return create("TextLabel", { Text = text, Position = position, Size = size, BackgroundTransparency = 1,
-			TextSize = fontSize, TextColor3 = color, Font = bold and Enum.Font.GothamBold or Enum.Font.GothamMedium,
+			TextSize = fontSize, TextColor3 = color, Font = bold and Enum.Font.BuilderSansBold or Enum.Font.BuilderSansMedium,
 			TextXAlignment = Enum.TextXAlignment.Left, Parent = parentObject })
 	end
 	window.BrandName = label(window.Sidebar, options.Name or "FrostScripts", UDim2.fromOffset(76, 24), UDim2.new(1, -84, 0, 24), 16, THEME.Text, true)
@@ -241,11 +250,17 @@ function Library:CreateWindow(options)
 		Position = UDim2.new(0, 12, 1, -78), Size = UDim2.new(1, -24, 0, 58),
 		BackgroundColor3 = THEME.PanelRaised, BorderSizePixel = 0, Parent = window.Sidebar,
 	}, { corner(12), stroke(THEME.Border, 0.55) })
-	window.Avatar = label(playerCard, string.upper(player.Name:sub(1, 1)), UDim2.fromOffset(10, 10), UDim2.fromOffset(38, 38), 15, THEME.Accent, true)
-	window.Avatar.BackgroundColor3 = THEME.AccentSoft
-	window.Avatar.BackgroundTransparency = 0
-	window.Avatar.TextXAlignment = Enum.TextXAlignment.Center
-	corner(10).Parent = window.Avatar
+	window.Avatar = create("ImageLabel", {
+		Name = "PlayerAvatar", Position = UDim2.fromOffset(10, 10), Size = UDim2.fromOffset(38, 38),
+		BackgroundColor3 = THEME.Surface, BorderSizePixel = 0,
+		Image = "rbxthumb://type=AvatarHeadShot&id=" .. tostring(player.UserId) .. "&w=150&h=150",
+		ScaleType = Enum.ScaleType.Crop, Parent = playerCard,
+	}, { corner(12), stroke(THEME.Border, 0.4) })
+	task.spawn(function()
+		local ok, content, ready = pcall(Players.GetUserThumbnailAsync, Players, player.UserId,
+			Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size150x150)
+		if ok and ready and not window._destroyed then window.Avatar.Image = content end
+	end)
 	window.PlayerName = label(playerCard, player.DisplayName or player.Name, UDim2.fromOffset(60, 0), UDim2.new(1, -68, 1, 0), 12, THEME.Text, true)
 	window.Main = create("Frame", { Name = "Main", BackgroundTransparency = 1, Parent = window.Frame })
 	local topbar = create("Frame", { Name = "Header", Size = UDim2.new(1, 0, 0, 108), BackgroundTransparency = 1, Parent = window.Main })
@@ -255,47 +270,48 @@ function Library:CreateWindow(options)
 	local close = create("TextButton", {
 		Position = UDim2.new(1, -68, 0, 24), Size = UDim2.fromOffset(44, 44), Text = "−",
 		BackgroundColor3 = THEME.PanelRaised, TextColor3 = THEME.Muted, BorderSizePixel = 0,
-		Font = Enum.Font.Gotham, TextSize = 24, AutoButtonColor = false, Parent = topbar,
+		Font = Enum.Font.BuilderSans, TextSize = 24, AutoButtonColor = false, Parent = topbar,
 	}, { corner(12), stroke(THEME.Border, 0.5) })
 	window:_hover(close, THEME.PanelRaised, THEME.SurfaceHover)
 	window:_connect(close.Activated, function() window:SetVisible(false) end)
 	if options.OnReturnToLibrary then
 		local back = create("TextButton", {
 			Name = "ReturnToLibrary", Position = UDim2.new(1, -118, 0, 24), Size = UDim2.fromOffset(44, 44),
-			Text = "←", TextSize = 20, Font = Enum.Font.GothamBold, TextColor3 = THEME.Accent,
+			Text = "←", TextSize = 20, Font = Enum.Font.BuilderSansBold, TextColor3 = THEME.Accent,
 			BackgroundColor3 = THEME.AccentSoft, BorderSizePixel = 0, Parent = topbar,
 		}, { corner(12), stroke(THEME.Border, 0.5) })
 		window.PageTitle.Size = UDim2.new(1, -154, 0, 32)
 		window:_connect(back.Activated, function() safeCall(window, options.OnReturnToLibrary) end)
 	end
-	local toolbar = create("Frame", { Position = UDim2.fromOffset(24, 114), Size = UDim2.new(1, -48, 0, 44), BackgroundTransparency = 1, Parent = window.Main })
+	local toolbar = create("Frame", { Position = UDim2.fromOffset(24, 104), Size = UDim2.new(1, -48, 0, 44), BackgroundTransparency = 1, Parent = window.Main })
+	window.Toolbar = toolbar
 	local searchFrame = create("Frame", { Size = UDim2.new(1, -92, 1, 0), BackgroundColor3 = THEME.PanelRaised, BorderSizePixel = 0, Parent = toolbar }, { corner(10), stroke(THEME.Border, 0.4) })
 	window.Search = create("TextBox", {
 		Position = UDim2.fromOffset(14, 0), Size = UDim2.new(1, -56, 1, 0), Text = "",
 		PlaceholderText = "Search this tab…", ClearTextOnFocus = false,
 		BackgroundTransparency = 1, TextColor3 = THEME.Text, PlaceholderColor3 = THEME.Muted,
-		TextSize = 13, Font = Enum.Font.GothamMedium, TextXAlignment = Enum.TextXAlignment.Left, Parent = searchFrame,
+		TextSize = 13, Font = Enum.Font.BuilderSansMedium, TextXAlignment = Enum.TextXAlignment.Left, Parent = searchFrame,
 	})
 	local clear = create("TextButton", { Position = UDim2.new(1, -44, 0, 0), Size = UDim2.fromOffset(44, 44),
-		Text = "×", TextSize = 18, Font = Enum.Font.Gotham, TextColor3 = THEME.Muted,
+		Text = "×", TextSize = 18, Font = Enum.Font.BuilderSans, TextColor3 = THEME.Muted,
 		BackgroundTransparency = 1, Parent = searchFrame })
 	window:_connect(clear.Activated, function() window:SetSearch("") end)
 	window:_connect(window.Search:GetPropertyChangedSignal("Text"), function() window:_refreshSearch() end)
 	window.ActiveFilter = create("TextButton", { Position = UDim2.new(1, -82, 0, 0), Size = UDim2.fromOffset(82, 44),
-		Text = "Active", TextSize = 12, Font = Enum.Font.GothamBold, TextColor3 = THEME.Muted,
+		Text = "Active", TextSize = 12, Font = Enum.Font.BuilderSansBold, TextColor3 = THEME.Muted,
 		BackgroundColor3 = THEME.PanelRaised, AutoButtonColor = false, BorderSizePixel = 0, Parent = toolbar,
 	}, { corner(10), stroke(THEME.Border, 0.4) })
 	window:_connect(window.ActiveFilter.Activated, function() window:SetActiveOnly(not window.ActiveOnly) end)
-	window.Content = create("Frame", { Position = UDim2.fromOffset(20, 174), Size = UDim2.new(1, -40, 1, -218),
+	window.Content = create("Frame", { Position = UDim2.fromOffset(20, 158), Size = UDim2.new(1, -40, 1, -202),
 		BackgroundTransparency = 1, ClipsDescendants = true, Parent = window.Main })
 	window.Empty = label(window.Main, "", UDim2.new(0, 32, 0.5, 0), UDim2.new(1, -64, 0, 90), 14, THEME.Muted, false)
 	window.Empty.TextXAlignment = Enum.TextXAlignment.Center
 	window.Empty.Visible = false
 	window.Footer = label(window.Main, "Ready", UDim2.new(0, 24, 1, -32), UDim2.new(1, -180, 0, 20), 11, THEME.Muted, false)
-	label(window.Main, "CTRL K  /  SEARCH", UDim2.new(1, -152, 1, -32), UDim2.fromOffset(132, 20), 9, THEME.Muted, true)
+	window.SearchHint = label(window.Main, "CTRL K  /  SEARCH", UDim2.new(1, -152, 1, -32), UDim2.fromOffset(132, 20), 9, THEME.Muted, true)
 	window.Launcher = create("TextButton", { Name = "ReopenFrostScripts", AnchorPoint = Vector2.new(0, 1),
 		Position = UDim2.new(0, 20, 1, -20), Size = UDim2.fromOffset(52, 52), Text = "F",
-		TextSize = 24, Font = Enum.Font.GothamBold, TextColor3 = THEME.Accent,
+		TextSize = 24, Font = Enum.Font.BuilderSansBold, TextColor3 = THEME.Accent,
 		BackgroundColor3 = THEME.Panel, BorderSizePixel = 0, Visible = false, Parent = window.OverlayGui,
 	}, { corner(16), stroke(THEME.Accent, 0.25) })
 	window:_connect(window.Launcher.Activated, function() window:SetVisible(true) end)

@@ -7,77 +7,87 @@ function Library.ImageContent(image)
 end
 
 function Tab:AddScriptCard(entry, onLaunch)
+	self.ItemNoun = "scripts"
 	if not self.CardLayout then
 		local list = self.Scroll:FindFirstChildWhichIsA("UIListLayout")
 		if list then list:Destroy() end
+		self.ScriptCards = {}
 		self.CardLayout = create("UIGridLayout", {
-			CellSize = UDim2.new(0.5, -12, 0, 448), CellPadding = UDim2.fromOffset(12, 16),
+			CellSize = UDim2.new(0.5, -10, 0, 300), CellPadding = UDim2.fromOffset(12, 12),
 			SortOrder = Enum.SortOrder.LayoutOrder, HorizontalAlignment = Enum.HorizontalAlignment.Center,
 			Parent = self.Scroll,
 		})
 	end
 	local module = self:AddModule({ Name = entry.Name, Description = entry.Description, HeaderHeight = 0, Collapsible = false })
-	-- Cards share module search/filtering, but have their own editorial layout.
+	module.IsScriptCard = true
 	for _, object in ipairs(module.Card:GetChildren()) do
-		if object:IsA("GuiObject") and object ~= module.Body then object.Visible = false end
+		if object:IsA("GuiObject") then object.Visible = false end
 	end
-	module.Body.Position = UDim2.fromOffset(CARD_BODY_INSET, 16)
-	local cover = module:_row(140)
-	cover.Name = "ScriptCover"
-	cover.ClipsDescendants = true
-	cover.BackgroundColor3 = THEME.AccentSoft
-	cover:SetAttribute("FrostTheme_BackgroundColor3", "AccentSoft")
-	local coverGradient = create("UIGradient", { Rotation = 25, Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(70, 100, 145)), Parent = cover })
-	table.insert(self.Window._coverGradients, coverGradient)
-	local orbit = create("Frame", {
-		AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.82, 0.45), Size = UDim2.fromOffset(196, 196),
-		BackgroundTransparency = 1, BorderSizePixel = 0, Parent = cover,
-	}, { corner(100), stroke(THEME.Accent, 0.78) })
-	create("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(142, 142),
-		BackgroundTransparency = 1, Parent = orbit }, { corner(90), stroke(THEME.Accent, 0.88) })
+	local cover = create("Frame", { Name = "ScriptCover", ClipsDescendants = true,
+		BackgroundColor3 = THEME.AccentSoft, BorderSizePixel = 0, Parent = module.Card }, { corner(10) })
+	local gradient = create("UIGradient", { Rotation = 25,
+		Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(90, 95, 110)), Parent = cover })
+	table.insert(self.Window._coverGradients, gradient)
 	local fallback = create("TextLabel", {
-		Position = UDim2.fromOffset(24, 22), Size = UDim2.new(1, -48, 0, 72), Text = entry.Monogram or entry.Name:sub(1, 2):upper(),
-		TextSize = 52, Font = Enum.Font.GothamBold, TextColor3 = THEME.Accent,
-		TextXAlignment = Enum.TextXAlignment.Left, BackgroundTransparency = 1, Parent = cover,
+		Size = UDim2.fromScale(1, 1), Text = entry.Monogram or entry.Name:sub(1, 2):upper(),
+		TextSize = 36, Font = Enum.Font.BuilderSansBold, TextColor3 = THEME.Accent,
+		BackgroundTransparency = 1, Parent = cover,
 	})
 	local image = create("ImageLabel", {
 		Name = "CustomCover", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1,
-		Image = Library.ImageContent(entry.Image), ScaleType = entry.Image and entry.Image.ScaleType == "Fit" and Enum.ScaleType.Fit or Enum.ScaleType.Crop,
+		Image = Library.ImageContent(entry.Image),
+		ScaleType = type(entry.Image) == "table" and entry.Image.ScaleType == "Fit" and Enum.ScaleType.Fit or Enum.ScaleType.Crop,
 		ZIndex = 2, Parent = cover,
 	}, { corner(10) })
 	image.Visible = image.Image ~= ""
-	self.Window:_connect(image:GetPropertyChangedSignal("IsLoaded"), function()
-		fallback.Visible = not image.IsLoaded
-		orbit.Visible = not image.IsLoaded
-	end)
-	create("TextLabel", {
-		Position = UDim2.new(0, 20, 1, -32), Size = UDim2.new(1, -40, 0, 18), Text = entry.Tag or "FROSTSCRIPTS COLLECTION",
-		TextSize = 10, Font = Enum.Font.GothamBold, TextColor3 = THEME.Text,
-		TextXAlignment = Enum.TextXAlignment.Left, BackgroundTransparency = 1, Visible = image.Image == "", Parent = cover,
-	})
-	module:AddParagraph(entry.Name, entry.Description, { Height = 100 })
-	local button = module:AddButton("Launch script  →", onLaunch)
-	button.Name = "LaunchScript"
-	local status = module:AddParagraph("Ready when you are", "Open while playing this game", { Height = 64 })
-	local card = { Module = module, Button = button, Cover = cover, Image = image }
+	local function imageReady() fallback.Visible = not (image.Visible and image.IsLoaded) end
+	self.Window:_connect(image:GetPropertyChangedSignal("IsLoaded"), imageReady)
+	imageReady()
+	local function label(name, text, size, color, font)
+		return create("TextLabel", { Name = name, Text = text, TextSize = size, Font = font,
+			TextColor3 = color, TextXAlignment = Enum.TextXAlignment.Left,
+			TextYAlignment = Enum.TextYAlignment.Top, BackgroundTransparency = 1, Parent = module.Card })
+	end
+	local title = label("ScriptTitle", entry.Name, 17, THEME.Text, Enum.Font.BuilderSansBold)
+	local description = label("ScriptDescription", entry.Description, 13, THEME.Muted, Enum.Font.BuilderSans)
+	description.TextWrapped = true
+	local status = label("LaunchStatus", "Open in the matching game", 11, THEME.Muted, Enum.Font.BuilderSans)
+	local button = create("TextButton", { Name = "LaunchScript", Text = "Launch script",
+		TextSize = 14, Font = Enum.Font.BuilderSansMedium, TextColor3 = THEME.Text,
+		BackgroundColor3 = THEME.AccentSoft, BorderSizePixel = 0, AutoButtonColor = false, Parent = module.Card,
+	}, { corner(8), stroke(THEME.Accent, 0.65) })
+	self.Window:_hover(button, THEME.AccentSoft, THEME.SurfaceHover)
+	self.Window:_connect(button.Activated, function() if button.Active then safeCall(self.Window, onLaunch) end end)
+	local card = { Module = module, Button = button, Cover = cover, Image = image, Title = title, Description = description, Status = status }
+	function card:Layout(horizontal, height)
+		if horizontal then
+			local side = math.min(104, height - 24)
+			local left = side + 26
+			cover.Position, cover.Size = UDim2.fromOffset(12, 12), UDim2.fromOffset(side, side)
+			title.Position, title.Size = UDim2.fromOffset(left, 12), UDim2.new(1, -left - 12, 0, 24)
+			description.Position, description.Size = UDim2.fromOffset(left, 42), UDim2.new(1, -left - 12, 0, math.max(18, height - 98))
+			button.Position, button.Size = UDim2.new(0, left, 1, -48), UDim2.new(1, -left - 12, 0, 36)
+			status.Visible = false
+		else
+			local coverHeight = height - 192
+			cover.Position, cover.Size = UDim2.fromOffset(12, 12), UDim2.new(1, -24, 0, coverHeight)
+			title.Position, title.Size = UDim2.fromOffset(14, coverHeight + 24), UDim2.new(1, -28, 0, 24)
+			description.Position, description.Size = UDim2.fromOffset(14, coverHeight + 55), UDim2.new(1, -28, 0, 52)
+			button.Position, button.Size = UDim2.new(0, 12, 1, -68), UDim2.new(1, -24, 0, 38)
+			status.Position, status.Size = UDim2.new(0, 14, 1, -23), UDim2.new(1, -28, 0, 16)
+			status.Visible = true
+		end
+	end
 	function card:SetLaunchState(state, detail)
-		self.Button.Text = state == "Loading" and "Loading…" or state == "Retry" and "Try again  →" or "Launch script  →"
-		status:SetText(detail or "")
+		self.Button.Text = state == "Loading" and "Loading..." or state == "Retry" and "Try again" or "Launch script"
+		status.Text = detail or "Open in the matching game"
 	end
 	function card:SetLaunchEnabled(enabled)
-		self.Button.Active = enabled
-		self.Button.Selectable = enabled
-		self.Button.AutoButtonColor = enabled
+		self.Button.Active, self.Button.Selectable = enabled, enabled
+		self.Button.TextTransparency = enabled and 0 or 0.4
 	end
-	local scale = create("UIScale", { Parent = cover })
-	self.Window:_connect(cover.MouseEnter, function()
-		self.Window:_tween(scale, 0.35, { Scale = 1.015 }, Enum.EasingStyle.Back)
-		self.Window:_tween(orbit, 0.5, { Rotation = 12 })
-	end)
-	self.Window:_connect(cover.MouseLeave, function()
-		self.Window:_tween(scale, 0.3, { Scale = 1 })
-		self.Window:_tween(orbit, 0.5, { Rotation = 0 })
-	end)
+	card:SetLaunchEnabled(true)
+	table.insert(self.ScriptCards, card)
 	self.Window:_layoutScriptCards()
 	return card
 end

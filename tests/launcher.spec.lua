@@ -47,7 +47,7 @@ print("PASS selected game loads alone and returns to library with UI preferences
 SOURCES["games/NeedleInHay/main.lua"] = 'error("test startup failed")'
 local failed = launcher:Launch("NeedleInHay")
 assert(not failed and not launcher.Busy and launcher.Window.Visible)
-assert(launcher.Cards.NeedleInHay.Button.Text == "Try again  →")
+assert(launcher.Cards.NeedleInHay.Button.Text == "Try again")
 SOURCES["games/NeedleInHay/main.lua"] = suiteSource("TestNeedle")
 local retried, needle = launcher:Launch("NeedleInHay")
 assert(retried and requests["games/NeedleInHay/main.lua"] == 2)

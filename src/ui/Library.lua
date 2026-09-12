@@ -135,7 +135,20 @@ local function stroke(color, transparency)
 		Color = color or THEME.Border,
 		Transparency = transparency or 0,
 		Thickness = 1,
+		ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 	})
+end
+
+-- Draw disclosure arrows with geometry so missing font glyphs cannot become squares.
+local function chevron(parent, position)
+	local root = create("Frame", { Name = "Disclosure", Position = position, Size = UDim2.fromOffset(18, 18),
+		BackgroundTransparency = 1, Parent = parent })
+	for index, rotation in ipairs({ 45, -45 }) do
+		create("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(index == 1 and 6 or 12, 9),
+			Size = UDim2.fromOffset(9, 2), Rotation = rotation, BackgroundColor3 = THEME.Muted,
+			BorderSizePixel = 0, Parent = root }, { corner(1) })
+	end
+	return root
 end
 
 local function safeCall(window, callback, ...)
@@ -373,7 +386,21 @@ function Window:SelectTab(tab)
 	if type(tab) == "string" then tab = self._tabsByName[tab] end
 	if not tab or tab.Window ~= self then return end
 	self:CloseDropdown()
+	if self.ActiveTab then
+		self.ActiveTab.Query, self.ActiveTab.ActiveOnly = self.Search.Text, self.ActiveOnly
+	end
 	self.ActiveTab = tab
+	local searchable = tab.SearchEnabled ~= false
+	self.Toolbar.Visible, self.SearchHint.Visible = searchable, searchable
+	self.Search:ReleaseFocus()
+	self.Search.Text = tab.Query or ""
+	self.ActiveOnly = tab.ActiveOnly == true
+	self.Search.PlaceholderText = tab.ItemNoun == "scripts" and "Find a script..." or "Search modules..."
+	self.ActiveFilter.Visible = searchable and tab.ItemNoun ~= "scripts"
+	self.Search.Parent.Size = UDim2.new(1, tab.ItemNoun == "scripts" and 0 or -92, 1, 0)
+	self.Content.Position = UDim2.fromOffset(20, searchable and 158 or 112)
+	self.Content.Size = UDim2.new(1, -40, 1, searchable and -202 or -156)
+	self:SetActiveOnly(self.ActiveOnly)
 	for _, item in ipairs(self.Tabs) do
 		local selected = item == tab
 		item.Page.Visible = selected
@@ -395,7 +422,8 @@ function Window:AddTab(name, icon, subtitle)
 	local tab = setmetatable({
 		Window = self,
 		Name = name,
-		Icon = icon or "•",
+		Icon = ({ H = "🏠", L = "📚", S = "⚙️", M = "🧩", C = "🎛️" })[icon] or icon or "📄",
+		SearchEnabled = name == "Library" or name == "Modules" or name == "Controls",
 		Subtitle = subtitle or "",
 		Modules = {},
 	}, Tab)
@@ -426,7 +454,8 @@ function Window:AddTab(name, icon, subtitle)
 			HorizontalAlignment = Enum.HorizontalAlignment.Center,
 		}),
 		create("UIPadding", {
-			PaddingBottom = UDim.new(0, 16),
+			PaddingTop = UDim.new(0, 4),
+			PaddingBottom = UDim.new(0, 4),
 		}),
 	})
 	local button = create("TextButton", {
@@ -455,8 +484,8 @@ function Window:AddTab(name, icon, subtitle)
 		BorderSizePixel = 0,
 		Text = tostring(tab.Icon),
 		TextColor3 = THEME.Muted,
-		Font = Enum.Font.GothamBold,
-		TextSize = 12,
+		Font = Enum.Font.BuilderSansBold,
+		TextSize = 18,
 		Parent = button,
 	}, { corner(8), stroke(THEME.Border, 0.55) })
 	local label = create("TextLabel", {
@@ -466,7 +495,7 @@ function Window:AddTab(name, icon, subtitle)
 		Text = name,
 		TextColor3 = THEME.Muted,
 		TextXAlignment = Enum.TextXAlignment.Left,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.BuilderSansBold,
 		TextSize = 14,
 		Parent = button,
 	})
@@ -478,7 +507,7 @@ function Window:AddTab(name, icon, subtitle)
 		if self.ActiveTab ~= tab then
 			self:_tween(button, 0.13, { BackgroundColor3 = THEME.PanelRaised })
 		self:_tween(label, 0.13, { TextColor3 = THEME.Text })
-			self:_tween(iconLabel, 0.13, { TextColor3 = THEME.Text, BackgroundColor3 = THEME.AccentSoft })
+			self:_tween(iconLabel, 0.13, { TextColor3 = THEME.Text, BackgroundColor3 = THEME.SurfaceHover })
 		end
 	end)
 	self:_connect(button.MouseLeave, function()
@@ -494,12 +523,12 @@ function Window:AddTab(name, icon, subtitle)
 end
 
 function Module:_refreshHeight()
-	if self.Window._destroyed then return end
+	if self.Window._destroyed or self.IsScriptCard then return end
 	local bodyHeight = self.BodyLayout.AbsoluteContentSize.Y + 30
 	self.Body.Size = UDim2.new(1, -(CARD_BODY_INSET * 2), 0, bodyHeight)
 	local target = self.Expanded and self.HeaderHeight + bodyHeight or self.HeaderHeight
 	self.Window:_tween(self.Card, 0.2, { Size = UDim2.new(1, -CARD_HORIZONTAL_GUTTER, 0, target) })
-	self.Chevron.Text = self.Expanded and "⌃" or "⌄"
+	self.Chevron.Rotation = self.Expanded and 180 or 0
 	self.Window:_queueTextScale()
 end
 
@@ -559,7 +588,7 @@ function Module:AddToggle(name, default, callback, description)
 		Text = name,
 		TextColor3 = THEME.Text,
 		TextXAlignment = Enum.TextXAlignment.Left,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.BuilderSansBold,
 		TextSize = 14,
 		Parent = row,
 	})
@@ -571,7 +600,7 @@ function Module:AddToggle(name, default, callback, description)
 			Text = description,
 			TextColor3 = THEME.Muted,
 			TextXAlignment = Enum.TextXAlignment.Left,
-			Font = Enum.Font.GothamMedium,
+			Font = Enum.Font.BuilderSansMedium,
 			TextSize = 12,
 			Parent = row,
 		})
@@ -628,7 +657,7 @@ function Module:AddSlider(name, minimum, maximum, default, callback, options)
 		Text = name,
 		TextColor3 = THEME.Text,
 		TextXAlignment = Enum.TextXAlignment.Left,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.BuilderSansBold,
 		TextSize = 14,
 		Parent = row,
 	})
@@ -640,7 +669,7 @@ function Module:AddSlider(name, minimum, maximum, default, callback, options)
 			Text = options.Description,
 			TextColor3 = THEME.Muted,
 			TextXAlignment = Enum.TextXAlignment.Left,
-			Font = Enum.Font.GothamMedium,
+			Font = Enum.Font.BuilderSansMedium,
 			TextSize = 12,
 			Parent = row,
 		})
@@ -652,7 +681,7 @@ function Module:AddSlider(name, minimum, maximum, default, callback, options)
 		BackgroundColor3 = THEME.PanelRaised,
 		BorderSizePixel = 0,
 		TextColor3 = THEME.Text,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.BuilderSansBold,
 		TextSize = 12,
 		Parent = row,
 	}, { corner(7), stroke(THEME.Border, 0.55) })
@@ -749,7 +778,7 @@ function Module:AddDropdown(name, options, default, callback)
 		Text = name,
 		TextColor3 = THEME.Text,
 		TextXAlignment = Enum.TextXAlignment.Left,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.BuilderSansBold,
 		TextSize = 14,
 		Parent = row,
 	})
@@ -761,10 +790,11 @@ function Module:AddDropdown(name, options, default, callback)
 		BackgroundColor3 = THEME.PanelRaised,
 		BorderSizePixel = 0,
 		TextColor3 = THEME.Text,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.BuilderSansBold,
 		TextSize = 13,
 		Parent = row,
 	}, { corner(8), stroke(THEME.Border, 0.45) })
+	chevron(button, UDim2.new(1, -30, 0.5, -9))
 	self.Window:_hover(button, THEME.PanelRaised, THEME.SurfaceHover)
 	local control = { Module = self, Value = default, Index = 1 }
 	for index, option in ipairs(options) do
@@ -779,7 +809,7 @@ function Module:AddDropdown(name, options, default, callback)
 			local label, candidate = optionParts(option)
 			if candidate == value then
 				self.Index, self.Value = index, candidate
-				button.Text = label .. "   ▾"
+				button.Text = label
 				if not silent then safeCall(self.Module.Window, callback, candidate) end
 				return
 			end
@@ -806,7 +836,7 @@ function Module:AddMultiDropdown(name, options, defaults, callback, colors)
 		Text = name,
 		TextColor3 = THEME.Text,
 		TextXAlignment = Enum.TextXAlignment.Left,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.BuilderSansBold,
 		TextSize = 14,
 		Parent = row,
 	})
@@ -834,7 +864,7 @@ function Module:AddMultiDropdown(name, options, defaults, callback, colors)
 			AutoButtonColor = false,
 			BorderSizePixel = 0,
 			Text = option,
-			Font = Enum.Font.GothamBold,
+			Font = Enum.Font.BuilderSansBold,
 			TextSize = 12,
 			Parent = row,
 		}, { corner(7) })
@@ -860,7 +890,7 @@ function Module:AddNumberInput(name, default, callback, options)
 		Text = name,
 		TextColor3 = THEME.Text,
 		TextXAlignment = Enum.TextXAlignment.Left,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.BuilderSansBold,
 		TextSize = 14,
 		Parent = row,
 	})
@@ -873,7 +903,7 @@ function Module:AddNumberInput(name, default, callback, options)
 		Text = tostring(default),
 		TextColor3 = THEME.Text,
 		PlaceholderColor3 = THEME.Muted,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.BuilderSansBold,
 		TextSize = 13,
 		Parent = row,
 	}, { corner(8), stroke(THEME.Border, 0.45) })
@@ -903,7 +933,7 @@ function Module:AddButton(name, callback, options)
 		BorderSizePixel = 0,
 		Text = name,
 		TextColor3 = danger and THEME.Danger or THEME.Text,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.BuilderSansBold,
 		TextSize = 14,
 		Parent = row,
 	}, { corner(10), stroke(danger and THEME.Danger or THEME.Accent, 0.35) })
@@ -928,7 +958,7 @@ function Module:AddParagraph(title, text, options)
 		Text = title,
 		TextColor3 = THEME.Text,
 		TextXAlignment = Enum.TextXAlignment.Left,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.BuilderSansBold,
 		TextSize = 14,
 		Parent = row,
 	})
@@ -941,7 +971,7 @@ function Module:AddParagraph(title, text, options)
 		TextWrapped = true,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		TextYAlignment = Enum.TextYAlignment.Top,
-		Font = Enum.Font.GothamMedium,
+		Font = Enum.Font.BuilderSansMedium,
 		TextSize = 12,
 		Parent = row,
 	})
@@ -988,7 +1018,7 @@ function Tab:AddModule(options)
 		Text = module.Name,
 		TextColor3 = THEME.Text,
 		TextXAlignment = Enum.TextXAlignment.Left,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.BuilderSansBold,
 		TextSize = options.TitleSize or 16,
 		Parent = module.Card,
 	})
@@ -1000,22 +1030,12 @@ function Tab:AddModule(options)
 		TextColor3 = THEME.Muted,
 		TextTruncate = Enum.TextTruncate.AtEnd,
 		TextXAlignment = Enum.TextXAlignment.Left,
-		Font = Enum.Font.GothamMedium,
+		Font = Enum.Font.BuilderSansMedium,
 		TextSize = 12,
 		Parent = module.Card,
 	})
-	module.Chevron = create("TextLabel", {
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, options.Toggleable and -88 or -19, 0, 20),
-		Size = UDim2.fromOffset(18, 24),
-		BackgroundTransparency = 1,
-		Text = module.Expanded and "⌃" or "⌄",
-		TextColor3 = THEME.Muted,
-		Font = Enum.Font.GothamBold,
-		TextSize = 15,
-		Visible = module.Collapsible,
-		Parent = module.Card,
-	})
+	module.Chevron = chevron(module.Card, UDim2.new(1, options.Toggleable and -100 or -36, 0, 25))
+	module.Chevron.Visible = module.Collapsible
 	local headerButton = create("TextButton", {
 		Size = UDim2.new(1, options.Toggleable and -78 or 0, 0, module.HeaderHeight),
 		AutoButtonColor = false,
@@ -1111,17 +1131,17 @@ end
 function Module:AddKeybind(options)
 	options = options or {}
 	self:_index(options.Name or "Keybind")
-	local row = self:_row(92)
+	local row = self:_row(60)
 	create("TextLabel", {
-		Position = UDim2.fromOffset(16, 6), Size = UDim2.new(1, -32, 0, 24),
+		Position = UDim2.fromOffset(16, 0), Size = UDim2.new(1, -172, 1, 0),
 		Text = options.Name or "Toggle key", TextColor3 = THEME.Text,
-		TextSize = 13, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Left,
+		TextSize = 13, Font = Enum.Font.BuilderSansBold, TextXAlignment = Enum.TextXAlignment.Left,
 		BackgroundTransparency = 1, Parent = row,
 	})
 	local button = create("TextButton", {
-		Position = UDim2.fromOffset(12, 38), Size = UDim2.new(1, -24, 0, 44),
+		Position = UDim2.new(1, -148, 0, 8), Size = UDim2.fromOffset(136, 44),
 		BackgroundColor3 = THEME.PanelRaised, BorderSizePixel = 0,
-		TextColor3 = THEME.Text, TextSize = 13, Font = Enum.Font.GothamBold,
+		TextColor3 = THEME.Text, TextSize = 13, Font = Enum.Font.BuilderSansBold,
 		AutoButtonColor = false, Parent = row,
 	}, { corner(9), stroke(THEME.Border, 0.3) })
 	local binding = {
@@ -1139,7 +1159,7 @@ function Module:AddKeybind(options)
 		self.Button.Text = key == Enum.KeyCode.Unknown and "None" or key.Name
 		self.Button.TextColor3 = THEME.Text
 	end
-	self.Window:_hover(button, THEME.Surface, THEME.SurfaceHover)
+	self.Window:_hover(button, THEME.PanelRaised, THEME.SurfaceHover)
 	self.Window:_connect(button.Activated, function()
 		if self.Window._rebinding then self.Window._rebinding:Refresh() end
 		self.Window._rebinding = binding
@@ -1194,7 +1214,7 @@ function Window:_handleKeyboard(input, processed)
 	if input.KeyCode == Enum.KeyCode.K and (UserInputService:IsKeyDown(Enum.KeyCode.LeftControl)
 		or UserInputService:IsKeyDown(Enum.KeyCode.RightControl)) and not processed then
 		self:SetVisible(true)
-		self.Search:CaptureFocus()
+		if self.ActiveTab and self.ActiveTab.SearchEnabled ~= false then self.Search:CaptureFocus() end
 		return
 	end
 	if UserInputService:GetFocusedTextBox() == self.Search and input.KeyCode == Enum.KeyCode.Escape then
@@ -1241,7 +1261,7 @@ function Window:SetMonitor(key, text)
 			TextXAlignment = Enum.TextXAlignment.Left,
 			TextYAlignment = Enum.TextYAlignment.Center,
 			TextWrapped = true,
-			Font = Enum.Font.GothamBold,
+			Font = Enum.Font.BuilderSansBold,
 			TextSize = 13,
 			Parent = frame,
 		})
@@ -1296,13 +1316,13 @@ function Window:Notify(options)
 		BackgroundColor3 = tint, BorderSizePixel = 0, Parent = frame }, { corner(2) })
 	create("TextLabel", { Position = UDim2.fromOffset(16, 12), Size = UDim2.new(1, -66, 0, 22),
 		Text = options.Title or "FrostScripts", TextColor3 = tint, BackgroundTransparency = 1,
-		TextXAlignment = Enum.TextXAlignment.Left, TextSize = 14, Font = Enum.Font.GothamBold, Parent = frame })
+		TextXAlignment = Enum.TextXAlignment.Left, TextSize = 14, Font = Enum.Font.BuilderSansBold, Parent = frame })
 	create("TextLabel", { Position = UDim2.fromOffset(16, 38), Size = UDim2.new(1, -32, 0, 44),
 		Text = options.Text or "", TextColor3 = THEME.Text, BackgroundTransparency = 1, TextWrapped = true,
 		TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top,
-		TextSize = 12, Font = Enum.Font.GothamMedium, Parent = frame })
+		TextSize = 12, Font = Enum.Font.BuilderSansMedium, Parent = frame })
 	local close = create("TextButton", { Position = UDim2.new(1, -44, 0, 0), Size = UDim2.fromOffset(44, 44),
-		Text = "×", TextColor3 = THEME.Muted, TextSize = 20, Font = Enum.Font.Gotham,
+		Text = "×", TextColor3 = THEME.Muted, TextSize = 20, Font = Enum.Font.BuilderSans,
 		BackgroundTransparency = 1, Parent = frame })
 	local progress = create("Frame", { Position = UDim2.new(0, 0, 1, -2), Size = UDim2.new(1, 0, 0, 2),
 		BackgroundColor3 = tint, BorderSizePixel = 0, Parent = frame })
@@ -1389,7 +1409,7 @@ function Window:AddWorldMarker(instances, object, options)
 		Text = options.Title or "Marker",
 		TextColor3 = THEME.Text,
 		TextXAlignment = Enum.TextXAlignment.Left,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.BuilderSansBold,
 		TextSize = titleTextSize * scale,
 		TextTruncate = Enum.TextTruncate.AtEnd,
 		Parent = panel,
@@ -1401,7 +1421,7 @@ function Window:AddWorldMarker(instances, object, options)
 		Text = options.Detail or "Marker",
 		TextColor3 = color,
 		TextXAlignment = Enum.TextXAlignment.Left,
-		Font = Enum.Font.GothamMedium,
+		Font = Enum.Font.BuilderSansMedium,
 		TextSize = detailTextSize * scale,
 		TextTruncate = Enum.TextTruncate.AtEnd,
 		Parent = panel,
@@ -1559,7 +1579,7 @@ function Module:AddColorPicker(name, default, callback)
 		Text = name,
 		TextColor3 = THEME.Text,
 		TextXAlignment = Enum.TextXAlignment.Left,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.BuilderSansBold,
 		TextSize = 14,
 		Parent = preview,
 	})
