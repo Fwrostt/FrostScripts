@@ -12,20 +12,20 @@ HTTP loading requires publicly readable source files. Private GitHub repositorie
 
 ```lua
 -- Grass Cutter
-loadstring(game:HttpGet("https://raw.githubusercontent.com/Fwrostt/FrostScripts/main/GrassCutter.lua"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Fwrostt/FrostScripts/main/dist/launchers/GrassCutter.lua"))()
 ```
 
 ```lua
 -- NeedleInHay
-loadstring(game:HttpGet("https://raw.githubusercontent.com/Fwrostt/FrostScripts/main/NeedleInHay.lua"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Fwrostt/FrostScripts/main/dist/launchers/NeedleInHay.lua"))()
 ```
 
-The launcher downloads `FrostScriptsAPI.lua` through `loadstring`. The API loads the UI and only the selected game's entry point. Use the correct launcher while inside its game. These entry points are not ordinary Studio LocalScripts; standard Roblox clients do not expose the required execution capabilities.
+The launcher downloads `dist/api/FrostScriptsAPI.lua` through `loadstring`. The API loads the UI and only the selected game's entry point. Use the correct launcher while inside its game. These entry points are not ordinary Studio LocalScripts; standard Roblox clients do not expose the required execution capabilities.
 
 ## Project layout
 
 ```text
-src/api/                 Shared loader, utilities, feature lifecycle, universal modules
+src/api/                Shared loader, utilities, feature lifecycle, universal modules
 src/ui/                 UI controls and responsive window shell
 src/loader/Bootstrap.lua Shared launcher source
 games/GrassCutter/       Grass Cutter logic and UI bindings
@@ -34,20 +34,20 @@ tools/                  Build and verification commands
 tests/                  API regression tests
 examples/UIGallery.lua   Game-independent control gallery
 docs/                   API contract and manual UI verification
-FrostScriptsAPI.lua     Generated, independently loadable API
-UI.lua                  Generated, independently loadable UI
-GrassCutter.lua          Generated game launcher
-NeedleInHay.lua          Generated game launcher
-Loader.lua              Generated launcher using FrostScriptsConfig.Game
+dist/api/               Generated FrostScriptsAPI.lua
+dist/ui/                Generated UI.lua
+dist/launchers/         Generated GrassCutter.lua, NeedleInHay.lua, and Loader.lua
 ```
 
-Edit `src/` and `games/`, then run `python tools/build.py`. Commit the generated root files with their sources so raw URLs work without a build server.
+Edit `src/` and `games/`, then run `python tools/build.py`. Commit the generated `dist/` files with their sources so raw URLs work without a build server.
+
+The project root contains documentation and configuration only. All scripts live in subdirectories; project checks enforce this. `BaseUrl` and `LocalRoot` still point to the project root.
 
 ## Shared API
 
 ```lua
 local base = "https://raw.githubusercontent.com/Fwrostt/FrostScripts/main"
-local API = loadstring(game:HttpGet(base .. "/FrostScriptsAPI.lua"))()
+local API = loadstring(game:HttpGet(base .. "/dist/api/FrostScriptsAPI.lua"))()
 API.Configure({ BaseUrl = base })
 local UI = API.LoadUI()
 local window = UI.new({ Name = "FrostScripts", Game = "My game" })
@@ -64,7 +64,7 @@ Copy the project into your execution environment's readable `FrostScripts` direc
 
 ```lua
 getgenv().FrostScriptsConfig = { Mode = "local", LocalRoot = "FrostScripts" }
-loadstring(readfile("FrostScripts/GrassCutter.lua"))()
+loadstring(readfile("FrostScripts/dist/launchers/GrassCutter.lua"))()
 ```
 
 To load from another branch or an immutable commit, set `FrostScriptsConfig.BaseUrl` to its raw GitHub base URL before launching. Use the same revision for all files. The default is this repository's `main` branch.

@@ -4,6 +4,8 @@ Run `python tools/build.py` then `python tools/check.py`. The suite compiles all
 
 ## In-game checks
 
+Project checks also reject scripts in the repository root and verify generated files in `dist/`. Launchers are in `dist/launchers/`; `BaseUrl` and `LocalRoot` continue to identify the project root.
+
 1. Launch the correct game entry point, in both HTTP and local mode. Confirm the game title and its feature list.
 2. Open every tab and module. Adjust toggles, sliders, single/multiple selections, numeric inputs, color controls, and keybinds. Check labels at normal and large text sizes.
 3. Exercise all themes, hover states, enabled toggles, monitors and notifications; colors should remain consistent after switching themes.

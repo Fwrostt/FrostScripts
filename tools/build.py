@@ -13,14 +13,14 @@ def outputs():
         source = (ROOT / f"src/api/{name}.lua").read_text(encoding="utf-8")
         api.append(f"\n-- {name}\ndo\n{source.rstrip()}\nend\n")
     api.append("\nreturn API\n")
-    result = {"FrostScriptsAPI.lua": "".join(api)}
+    result = {"dist/api/FrostScriptsAPI.lua": "".join(api)}
     ui = (ROOT / "src/ui/Library.lua").read_text(encoding="utf-8")
     shell = (ROOT / "src/ui/Shell.lua").read_text(encoding="utf-8")
-    result["UI.lua"] = HEADER + ui.replace("-- @include Shell.lua", shell.rstrip())
+    result["dist/ui/UI.lua"] = HEADER + ui.replace("-- @include Shell.lua", shell.rstrip())
     bootstrap = (ROOT / "src/loader/Bootstrap.lua").read_text(encoding="utf-8")
     for name in ("GrassCutter", "NeedleInHay"):
-        result[f"{name}.lua"] = HEADER + bootstrap.replace("__GAME__", f'"{name}"')
-    result["Loader.lua"] = HEADER + bootstrap.replace("__GAME__", 'config.Game or ""')
+        result[f"dist/launchers/{name}.lua"] = HEADER + bootstrap.replace("__GAME__", f'"{name}"')
+    result["dist/launchers/Loader.lua"] = HEADER + bootstrap.replace("__GAME__", 'config.Game or ""')
     return result
 
 
@@ -35,6 +35,7 @@ def main():
             if not path.exists() or path.read_bytes() != content.encode("utf-8"):
                 stale.append(name)
         else:
+            path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(content, encoding="utf-8", newline="\n")
     if stale:
         print("Stale generated files: " + ", ".join(stale), file=sys.stderr)

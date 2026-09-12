@@ -1,6 +1,6 @@
 -- A game-independent gallery for checking controls in a Roblox client.
 local base = "https://raw.githubusercontent.com/Fwrostt/FrostScripts/main"
-local API = loadstring(game:HttpGet(base .. "/FrostScriptsAPI.lua"))()
+local API = loadstring(game:HttpGet(base .. "/dist/api/FrostScriptsAPI.lua"))()
 API.Configure({ BaseUrl = base })
 local UI = API.LoadUI()
 local window = UI.new({ Name = "FrostScripts", Game = "UI Gallery", GuiName = "FrostGallery", OverlayName = "FrostGalleryOverlays" })

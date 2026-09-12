@@ -1,6 +1,6 @@
 -- Game-specific entry; invoked by FrostScriptsAPI.RunGame.
 local API = ...
-assert(type(API) == "table" and type(API.CreateFeature) == "function", "Launch this game through its root entry point")
+assert(type(API) == "table" and type(API.CreateFeature) == "function", "Launch this game through its dist/launchers entry point")
 
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")

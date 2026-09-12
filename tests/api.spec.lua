@@ -133,6 +133,9 @@ end)
 
 test("local mode and game selection load exactly one game", function()
 	API.Configure({ Mode = "local", LocalRoot = "project/" })
+	sources["project/dist/ui/UI.lua"] = "return { new = function() end }"
+	assert(type(API.LoadUI().new) == "function")
+	assert(API.LoadUI() ~= API.LoadUI(), "UI loads must remain isolated after relocation")
 	sources["project/games/GrassCutter/main.lua"] = "local api = ...; return { Version = api.Version, Unload = function() end }"
 	assert(API.RunGame("GrassCutter").Version == API.Version)
 	assert(API.GetConfig().LocalRoot == "project")

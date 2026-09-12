@@ -9,11 +9,11 @@ The API returns a table from `loadstring(source)()`. Game methods and remotes st
 | `Configure({ Mode, BaseUrl, LocalRoot })` | Validates configuration and clears this API instance's module cache. Mode is `http` or `local`. HTTPS is required for HTTP mode. |
 | `GetConfig()` | Copy of current configuration. |
 | `LoadModule(path, expectedMethod?, fresh?, ...)` | Reads, compiles and executes a relative `.lua` file; validates its returned table. Additional arguments are passed to the chunk. |
-| `LoadUI()` | Fresh UI library from `UI.lua`, isolating theme state between game suites. |
+| `LoadUI()` | Fresh UI library from `dist/ui/UI.lua`, isolating theme state between game suites. |
 | `RunGame(name)` | Loads one supported game and returns its suite with `Unload()`. |
 | `GetGames()` | Copy of supported game names. |
 
-Failed loads do not poison the cache. A fresh load bypasses the cache. Execution errors include the module path. Root launchers require API version `2.0.0`.
+Failed loads do not poison the cache. A fresh load bypasses the cache. Execution errors include the module path. Launchers in `dist/launchers/` require API version `2.0.0`.
 
 ## Features and cleanup
 
@@ -58,4 +58,4 @@ Window methods include `SelectTab`, `Toggle`, `SetVisible`, `SetAnimations`, `Se
 
 ## Migration from the original files
 
-`UI.CreateFeature`, `UI.Feature`, and `UI.UniversalModules` moved to `API.CreateFeature`, `API.Feature`, and `API.UniversalModules`. Root game files are launchers; edit `games/<name>/main.lua`. UI control methods remain on the UI library. All prior external paste-host loading has been removed.
+`UI.CreateFeature`, `UI.Feature`, and `UI.UniversalModules` moved to `API.CreateFeature`, `API.Feature`, and `API.UniversalModules`. Game launchers live in `dist/launchers/`; edit `games/<name>/main.lua`. UI control methods remain on the UI library. All prior external paste-host loading has been removed.

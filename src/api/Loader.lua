@@ -57,7 +57,7 @@ end
 
 function API.LoadUI()
 	-- Fresh UI factories isolate window theme state between game suites.
-	return API.LoadModule("UI.lua", "new", true)
+	return API.LoadModule("dist/ui/UI.lua", "new", true)
 end
 
 function API.RunGame(name)

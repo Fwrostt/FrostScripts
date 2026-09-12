@@ -10,11 +10,11 @@ assert(mode == "local" or mode == "http", "FrostScripts Mode must be local or ht
 local ok, source = pcall(function()
 	if mode == "local" then
 		assert(type(readfile) == "function", "Local mode requires readfile")
-		return readfile((config.LocalRoot or "FrostScripts"):gsub("[/\\]+$", "") .. "/FrostScriptsAPI.lua")
+		return readfile((config.LocalRoot or "FrostScripts"):gsub("[/\\]+$", "") .. "/dist/api/FrostScriptsAPI.lua")
 	end
 	assert(type(config.BaseUrl) == "string" and config.BaseUrl:match("^https://"),
 		"Set getgenv().FrostScriptsConfig.BaseUrl to the HTTPS raw URL of your published project")
-	return game:HttpGet(config.BaseUrl:gsub("/+$", "") .. "/FrostScriptsAPI.lua")
+	return game:HttpGet(config.BaseUrl:gsub("/+$", "") .. "/dist/api/FrostScriptsAPI.lua")
 end)
 assert(ok, "FrostScriptsAPI download failed: " .. tostring(source)
 	.. ". Check the source URL and repository visibility, or use Mode = local with readfile.")

@@ -26,18 +26,22 @@ def main():
         return found
 
     run(sys.executable, "tools/build.py", "--check")
-    files = list(ROOT.glob("*.lua")) + list((ROOT / "games").rglob("*.lua")) + list((ROOT / "examples").rglob("*.lua"))
+    script_extensions = {".lua", ".luau", ".py", ".js", ".ts", ".ps1", ".sh", ".bat", ".cmd"}
+    root_scripts = sorted(path.name for path in ROOT.iterdir() if path.is_file() and path.suffix.lower() in script_extensions)
+    if root_scripts:
+        parser.error("Scripts must live in project subdirectories: " + ", ".join(root_scripts))
+    files = list((ROOT / "dist").rglob("*.lua")) + list((ROOT / "games").rglob("*.lua")) + list((ROOT / "examples").rglob("*.lua"))
     # API fragments are compiled through their generated bundle.
     run(binary("luau-compile"), "--null", *files)
     temp = ROOT / ".local/tests"
     temp.mkdir(parents=True, exist_ok=True)
-    api = (ROOT / "FrostScriptsAPI.lua").read_text(encoding="utf-8")
+    api = (ROOT / "dist/api/FrostScriptsAPI.lua").read_text(encoding="utf-8")
     spec = (ROOT / "tests/api.spec.lua").read_text(encoding="utf-8")
     assert "]====]" not in api
     test_file = temp / "api.spec.luau"
     test_file.write_text("local API_SOURCE = [====[" + api + "]====]\n" + spec, encoding="utf-8")
     run(binary("luau"), test_file)
-    ui = (ROOT / "UI.lua").read_text(encoding="utf-8")
+    ui = (ROOT / "dist/ui/UI.lua").read_text(encoding="utf-8")
     mock = (ROOT / "tests/roblox-ui-mock.lua").read_text(encoding="utf-8")
     ui_spec = (ROOT / "tests/ui.spec.lua").read_text(encoding="utf-8")
     assert "]====]" not in ui
