@@ -19,7 +19,7 @@ def outputs():
     result = {"dist/api/FrostScriptsAPI.lua": "".join(api)}
     ui = (ROOT / "src/ui/Library.lua").read_text(encoding="utf-8")
     shell = (ROOT / "src/ui/Shell.lua").read_text(encoding="utf-8")
-    for name in ("Experience", "Cards"):
+    for name in ("Themes", "ThemeGallery", "Experience", "Cards"):
         source = (ROOT / f"src/ui/{name}.lua").read_text(encoding="utf-8")
         ui = ui.replace(f"-- @include {name}.lua", source.rstrip())
     defaults = (ROOT / "config/UI.lua").read_text(encoding="utf-8")

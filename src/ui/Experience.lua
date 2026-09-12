@@ -129,7 +129,7 @@ function Window:ApplyPreferences()
 	self:SetSizePreset(state.SizePreset or "Large")
 	self:SetMonitorWidth(state.MonitorWidth or 380)
 	self:SetMonitorSide(state.MonitorSide or "Right")
-	self:SetTheme(state.ThemeName or "Frost")
+	self:SetTheme(state.ThemeName or "Black")
 	if accent then self:SetThemeColor("Accent", accent) end
 	if success then self:SetThemeColor("Success", success) end
 	for _, binding in ipairs(self.Keybinds) do binding:Refresh() end
@@ -145,7 +145,8 @@ function Window:AddClientSettings(tab)
 		end)
 		return control
 	end
-	local motion = tab:AddModule({ Name = "Motion & atmosphere", Description = "Set the pace of your workspace", Expanded = true })
+	self:AddThemeGallery(tab)
+	local motion = tab:AddModule({ Name = "Motion & atmosphere", Description = "Set the pace of your workspace" })
 	bind(motion:AddToggle("Interface animations", self.Animations, function(value) self:SetAnimations(value) end,
 		"Turn off all movement for a still interface"), "Animations")
 	bind(motion:AddToggle("Decorative background", self.BackgroundEffects, function(value) self:SetBackgroundEffects(value) end,
@@ -159,7 +160,6 @@ function Window:AddClientSettings(tab)
 	audio:AddButton("Preview sound", function() self:PlaySound("Open") end)
 	bind(audio:AddToggle("Notifications", self.NotificationsEnabled, function(value) self:SetNotifications(value) end), "NotificationsEnabled")
 	local appearance = tab:AddModule({ Name = "Appearance", Description = "Color, type, and spacing" })
-	bind(appearance:AddDropdown("Theme", self:GetThemeNames(), self.ThemeName, function(value) self:SetTheme(value) end), "ThemeName")
 	appearance:AddColorPicker("Accent", THEME.Accent, function(value) self:SetThemeColor("Accent", value) end)
 	bind(appearance:AddDropdown("Window size", { "Comfortable", "Large", "Extra Large" }, self.SizePreset,
 		function(value) self:SetSizePreset(value) end), "SizePreset")

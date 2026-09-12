@@ -24,6 +24,7 @@ end
 
 test("tabs and controls construct without gameplay dependencies", function()
 	assert(window.ActiveTab == home and #modules.Modules == 2)
+	assert(window.ThemeName == "Black" and UI.Theme.Background.R < 0.04)
 	assert(empty.Value == nil and dropdown.Value == "Nearest")
 	slider:SetValue(9, true)
 	assert(slider.Value == 8, "slider step must be relative to minimum")
@@ -188,6 +189,32 @@ test("controls use border strokes, drawn disclosures, emoji navigation and avata
 	assert(binding.Button.Size.X.Offset == 136 and binding.Button.Parent.Size.Y.Offset == 60)
 	binding.Button.MouseLeave:Fire()
 	assert(binding.Button.BackgroundColor3 ~= binding.Button.Parent.BackgroundColor3, "keycap must stand out from its row")
+end)
+test("all theme previews apply complete palettes with distinct hover and selection", function()
+	local gallery = window:AddThemeGallery(window._tabsByName.Settings)
+	assert(#gallery.Tiles == 10 and gallery.Tiles[1].Name == "Black" and gallery.Tiles[2].Name == "Graphite")
+	for _, tile in ipairs(gallery.Tiles) do
+		tile.Button.Activated:Fire()
+		assert(window.ThemeName == tile.Name and window.UIState.ThemeName == tile.Name)
+		assert(window.Frame.BackgroundColor3 == UI.Themes[tile.Name].Background)
+		assert(window.PlayerName.TextColor3 == UI.Theme.Text and window.BrandName.TextColor3 == UI.Theme.Text)
+		assert(window.Avatar.BackgroundColor3 == UI.Theme.Surface)
+		for _, other in ipairs(gallery.Tiles) do
+			assert(other.Preview.BackgroundColor3 == UI.Themes[other.Name].Background, "previews must not inherit selected theme colors")
+			assert(other.Selected.Visible == (other == tile))
+			if other ~= tile then
+				other.Button.MouseEnter:Fire()
+				assert(other.Button.BackgroundColor3 ~= tile.Button.BackgroundColor3)
+				other.Button.MouseLeave:Fire()
+			end
+		end
+		window:SelectTab(modules)
+		local selected = modules.Button.BackgroundColor3
+		home.Button.MouseEnter:Fire()
+		assert(home.Button.BackgroundColor3 ~= selected and home.IconLabel.BackgroundColor3 ~= modules.IconLabel.BackgroundColor3)
+		home.Button.MouseLeave:Fire()
+	end
+	window:SetTheme("Black")
 end)
 test("destroy disconnects listeners and is safe to repeat", function()
 	local connections = table.clone(window._connections)

@@ -1,12 +1,13 @@
 -- UI defaults only. Feature settings belong to their game modules.
 return {
+	DesignRevision = 3,
 	Animations = true,
 	BackgroundEffects = true,
 	BackgroundAnimations = true,
 	Sounds = true,
 	SoundVolume = 0.18,
 	NotificationsEnabled = true,
-	ThemeName = "Frost",
+	ThemeName = "Black",
 	SizePreset = "Large",
 	TextScale = 1,
 	DimAmount = 40,

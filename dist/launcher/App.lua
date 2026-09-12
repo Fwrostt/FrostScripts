@@ -5,7 +5,11 @@ local env = (type(getgenv) == "function" and getgenv()) or _G
 if env.FrostScriptsLauncher then env.FrostScriptsLauncher:Unload() end
 if type(env.FrostScriptsUIPreferences) == "table" then
 	for key in pairs(API.UIState) do
-		if env.FrostScriptsUIPreferences[key] ~= nil then API.UIState[key] = env.FrostScriptsUIPreferences[key] end
+		local old = env.FrostScriptsUIPreferences
+		local currentDesign = old.DesignRevision == API.UIState.DesignRevision
+		if key ~= "DesignRevision" and (key ~= "ThemeName" or currentDesign) and old[key] ~= nil then
+			API.UIState[key] = old[key]
+		end
 	end
 end
 env.FrostScriptsUIPreferences = API.UIState

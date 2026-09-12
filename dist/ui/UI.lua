@@ -2,13 +2,14 @@
 local UI_DEFAULTS = (function()
 -- UI defaults only. Feature settings belong to their game modules.
 return {
+	DesignRevision = 3,
 	Animations = true,
 	BackgroundEffects = true,
 	BackgroundAnimations = true,
 	Sounds = true,
 	SoundVolume = 0.18,
 	NotificationsEnabled = true,
-	ThemeName = "Frost",
+	ThemeName = "Black",
 	SizePreset = "Large",
 	TextScale = 1,
 	DimAmount = 40,
@@ -36,70 +37,167 @@ Tab.__index = Tab
 local Module = {}
 Module.__index = Module
 
+-- Neutral and tinted palettes. Keep semantic colors distinct for theme bindings.
 local THEMES = {
+	Black = {
+		Background = Color3.fromRGB(7, 7, 8),
+		Panel = Color3.fromRGB(13, 13, 15),
+		PanelRaised = Color3.fromRGB(21, 21, 24),
+		Surface = Color3.fromRGB(29, 29, 33),
+		SurfaceHover = Color3.fromRGB(43, 43, 49),
+		Border = Color3.fromRGB(56, 56, 63),
+		Text = Color3.fromRGB(245, 245, 247),
+		Muted = Color3.fromRGB(165, 165, 175),
+		Accent = Color3.fromRGB(215, 218, 230),
+		AccentHover = Color3.fromRGB(255, 255, 255),
+		AccentSoft = Color3.fromRGB(39, 39, 47),
+		Success = Color3.fromRGB(131, 219, 166),
+		Danger = Color3.fromRGB(255, 173, 179),
+		DangerSurface = Color3.fromRGB(66, 36, 42),
+	},
+	Graphite = {
+		Background = Color3.fromRGB(20, 22, 25),
+		Panel = Color3.fromRGB(27, 29, 33),
+		PanelRaised = Color3.fromRGB(35, 38, 43),
+		Surface = Color3.fromRGB(44, 48, 54),
+		SurfaceHover = Color3.fromRGB(60, 66, 74),
+		Border = Color3.fromRGB(74, 81, 91),
+		Text = Color3.fromRGB(241, 244, 248),
+		Muted = Color3.fromRGB(176, 185, 198),
+		Accent = Color3.fromRGB(191, 207, 227),
+		AccentHover = Color3.fromRGB(218, 230, 247),
+		AccentSoft = Color3.fromRGB(50, 61, 77),
+		Success = Color3.fromRGB(131, 219, 166),
+		Danger = Color3.fromRGB(255, 173, 179),
+		DangerSurface = Color3.fromRGB(66, 36, 42),
+	},
+	Midnight = {
+		Background = Color3.fromRGB(8, 12, 22),
+		Panel = Color3.fromRGB(14, 20, 35),
+		PanelRaised = Color3.fromRGB(21, 30, 48),
+		Surface = Color3.fromRGB(30, 41, 64),
+		SurfaceHover = Color3.fromRGB(44, 61, 89),
+		Border = Color3.fromRGB(60, 80, 109),
+		Text = Color3.fromRGB(239, 244, 254),
+		Muted = Color3.fromRGB(161, 179, 207),
+		Accent = Color3.fromRGB(140, 174, 255),
+		AccentHover = Color3.fromRGB(182, 201, 255),
+		AccentSoft = Color3.fromRGB(38, 60, 104),
+		Success = Color3.fromRGB(131, 219, 166),
+		Danger = Color3.fromRGB(255, 173, 179),
+		DangerSurface = Color3.fromRGB(66, 36, 42),
+	},
 	Frost = {
-		Background = Color3.fromRGB(10, 15, 24),
-		Panel = Color3.fromRGB(13, 20, 31),
-		PanelRaised = Color3.fromRGB(18, 27, 40),
-		Surface = Color3.fromRGB(23, 34, 49),
-		SurfaceHover = Color3.fromRGB(30, 44, 61),
-		Border = Color3.fromRGB(44, 60, 78),
-		Text = Color3.fromRGB(235, 243, 252),
-		Muted = Color3.fromRGB(156, 175, 196),
-		Accent = Color3.fromRGB(122, 213, 246),
-		AccentHover = Color3.fromRGB(170, 230, 255),
-		AccentSoft = Color3.fromRGB(24, 54, 70),
-		Success = Color3.fromRGB(92, 196, 146),
-		Danger = Color3.fromRGB(255, 185, 195),
-		DangerSurface = Color3.fromRGB(51, 31, 36),
+		Background = Color3.fromRGB(11, 16, 20),
+		Panel = Color3.fromRGB(17, 25, 31),
+		PanelRaised = Color3.fromRGB(26, 36, 43),
+		Surface = Color3.fromRGB(36, 49, 57),
+		SurfaceHover = Color3.fromRGB(52, 74, 85),
+		Border = Color3.fromRGB(69, 96, 108),
+		Text = Color3.fromRGB(238, 248, 252),
+		Muted = Color3.fromRGB(162, 189, 201),
+		Accent = Color3.fromRGB(154, 220, 236),
+		AccentHover = Color3.fromRGB(198, 240, 250),
+		AccentSoft = Color3.fromRGB(41, 73, 86),
+		Success = Color3.fromRGB(131, 219, 166),
+		Danger = Color3.fromRGB(255, 173, 179),
+		DangerSurface = Color3.fromRGB(66, 36, 42),
 	},
-	Neon = {
-		Background = Color3.fromRGB(5, 8, 12),
-		Panel = Color3.fromRGB(9, 13, 19),
-		PanelRaised = Color3.fromRGB(13, 19, 27),
-		Surface = Color3.fromRGB(17, 25, 36),
-		SurfaceHover = Color3.fromRGB(23, 35, 49),
-		Border = Color3.fromRGB(36, 56, 72),
-		Text = Color3.fromRGB(234, 251, 255),
-		Muted = Color3.fromRGB(134, 169, 180),
-		Accent = Color3.fromRGB(0, 230, 255),
-		AccentHover = Color3.fromRGB(75, 240, 255),
-		AccentSoft = Color3.fromRGB(10, 49, 65),
-		Success = Color3.fromRGB(55, 245, 144),
-		Danger = Color3.fromRGB(255, 120, 144),
-		DangerSurface = Color3.fromRGB(58, 22, 36),
+	Amethyst = {
+		Background = Color3.fromRGB(16, 13, 25),
+		Panel = Color3.fromRGB(25, 20, 35),
+		PanelRaised = Color3.fromRGB(35, 29, 49),
+		Surface = Color3.fromRGB(48, 40, 63),
+		SurfaceHover = Color3.fromRGB(73, 57, 92),
+		Border = Color3.fromRGB(96, 80, 117),
+		Text = Color3.fromRGB(246, 240, 254),
+		Muted = Color3.fromRGB(187, 170, 207),
+		Accent = Color3.fromRGB(194, 162, 255),
+		AccentHover = Color3.fromRGB(219, 197, 255),
+		AccentSoft = Color3.fromRGB(73, 50, 103),
+		Success = Color3.fromRGB(131, 219, 166),
+		Danger = Color3.fromRGB(255, 173, 179),
+		DangerSurface = Color3.fromRGB(66, 36, 42),
 	},
-	Hayfield = {
-		Background = Color3.fromRGB(12, 11, 8),
-		Panel = Color3.fromRGB(19, 17, 12),
-		PanelRaised = Color3.fromRGB(28, 24, 16),
-		Surface = Color3.fromRGB(37, 31, 19),
-		SurfaceHover = Color3.fromRGB(47, 39, 24),
-		Border = Color3.fromRGB(73, 60, 34),
-		Text = Color3.fromRGB(255, 246, 218),
-		Muted = Color3.fromRGB(176, 158, 115),
-		Accent = Color3.fromRGB(255, 196, 80),
-		AccentHover = Color3.fromRGB(255, 213, 118),
-		AccentSoft = Color3.fromRGB(66, 48, 19),
-		Success = Color3.fromRGB(88, 214, 128),
-		Danger = Color3.fromRGB(255, 159, 142),
-		DangerSurface = Color3.fromRGB(67, 31, 26),
+	Forest = {
+		Background = Color3.fromRGB(11, 18, 15),
+		Panel = Color3.fromRGB(18, 28, 23),
+		PanelRaised = Color3.fromRGB(28, 40, 33),
+		Surface = Color3.fromRGB(41, 55, 46),
+		SurfaceHover = Color3.fromRGB(57, 78, 65),
+		Border = Color3.fromRGB(74, 100, 83),
+		Text = Color3.fromRGB(237, 247, 239),
+		Muted = Color3.fromRGB(168, 192, 175),
+		Accent = Color3.fromRGB(141, 216, 165),
+		AccentHover = Color3.fromRGB(180, 236, 197),
+		AccentSoft = Color3.fromRGB(41, 79, 57),
+		Success = Color3.fromRGB(131, 219, 166),
+		Danger = Color3.fromRGB(255, 173, 179),
+		DangerSurface = Color3.fromRGB(66, 36, 42),
+	},
+	Ember = {
+		Background = Color3.fromRGB(22, 15, 12),
+		Panel = Color3.fromRGB(32, 23, 17),
+		PanelRaised = Color3.fromRGB(44, 33, 25),
+		Surface = Color3.fromRGB(58, 44, 34),
+		SurfaceHover = Color3.fromRGB(82, 61, 46),
+		Border = Color3.fromRGB(107, 80, 64),
+		Text = Color3.fromRGB(255, 243, 233),
+		Muted = Color3.fromRGB(203, 178, 161),
+		Accent = Color3.fromRGB(242, 177, 132),
+		AccentHover = Color3.fromRGB(255, 209, 173),
+		AccentSoft = Color3.fromRGB(91, 57, 38),
+		Success = Color3.fromRGB(131, 219, 166),
+		Danger = Color3.fromRGB(255, 173, 179),
+		DangerSurface = Color3.fromRGB(66, 36, 42),
 	},
 	Rose = {
-		Background = Color3.fromRGB(13, 8, 13),
-		Panel = Color3.fromRGB(21, 12, 20),
-		PanelRaised = Color3.fromRGB(29, 16, 28),
-		Surface = Color3.fromRGB(39, 22, 38),
-		SurfaceHover = Color3.fromRGB(51, 29, 49),
-		Border = Color3.fromRGB(78, 45, 73),
-		Text = Color3.fromRGB(255, 238, 248),
-		Muted = Color3.fromRGB(183, 137, 166),
-		Accent = Color3.fromRGB(255, 88, 177),
-		AccentHover = Color3.fromRGB(255, 124, 197),
-		AccentSoft = Color3.fromRGB(72, 24, 54),
-		Success = Color3.fromRGB(111, 222, 151),
-		Danger = Color3.fromRGB(255, 146, 146),
-		DangerSurface = Color3.fromRGB(67, 28, 35),
+		Background = Color3.fromRGB(22, 13, 18),
+		Panel = Color3.fromRGB(32, 20, 27),
+		PanelRaised = Color3.fromRGB(45, 30, 39),
+		Surface = Color3.fromRGB(59, 41, 52),
+		SurfaceHover = Color3.fromRGB(84, 59, 74),
+		Border = Color3.fromRGB(108, 77, 96),
+		Text = Color3.fromRGB(255, 240, 247),
+		Muted = Color3.fromRGB(203, 174, 190),
+		Accent = Color3.fromRGB(242, 166, 201),
+		AccentHover = Color3.fromRGB(255, 206, 227),
+		AccentSoft = Color3.fromRGB(90, 48, 71),
+		Success = Color3.fromRGB(131, 219, 166),
+		Danger = Color3.fromRGB(255, 173, 179),
+		DangerSurface = Color3.fromRGB(66, 36, 42),
+	},
+	Neon = {
+		Background = Color3.fromRGB(8, 13, 16),
+		Panel = Color3.fromRGB(16, 25, 29),
+		PanelRaised = Color3.fromRGB(23, 37, 43),
+		Surface = Color3.fromRGB(32, 52, 58),
+		SurfaceHover = Color3.fromRGB(47, 75, 82),
+		Border = Color3.fromRGB(65, 98, 105),
+		Text = Color3.fromRGB(238, 253, 255),
+		Muted = Color3.fromRGB(160, 196, 201),
+		Accent = Color3.fromRGB(80, 230, 219),
+		AccentHover = Color3.fromRGB(161, 255, 244),
+		AccentSoft = Color3.fromRGB(31, 83, 82),
+		Success = Color3.fromRGB(131, 219, 166),
+		Danger = Color3.fromRGB(255, 173, 179),
+		DangerSurface = Color3.fromRGB(66, 36, 42),
+	},
+	Hayfield = {
+		Background = Color3.fromRGB(20, 18, 9),
+		Panel = Color3.fromRGB(30, 27, 16),
+		PanelRaised = Color3.fromRGB(43, 38, 23),
+		Surface = Color3.fromRGB(57, 51, 31),
+		SurfaceHover = Color3.fromRGB(80, 71, 44),
+		Border = Color3.fromRGB(105, 94, 60),
+		Text = Color3.fromRGB(255, 248, 228),
+		Muted = Color3.fromRGB(200, 189, 153),
+		Accent = Color3.fromRGB(235, 201, 108),
+		AccentHover = Color3.fromRGB(255, 229, 162),
+		AccentSoft = Color3.fromRGB(83, 69, 31),
+		Success = Color3.fromRGB(131, 219, 166),
+		Danger = Color3.fromRGB(255, 173, 179),
+		DangerSurface = Color3.fromRGB(66, 36, 42),
 	},
 }
 
@@ -111,7 +209,7 @@ local function copyTheme(source)
 	return result
 end
 
-local THEME = copyTheme(THEMES.Frost)
+local THEME = copyTheme(THEMES.Black)
 
 local SIZE_PRESETS = {
 	Comfortable = Vector2.new(900, 580),
@@ -1565,6 +1663,7 @@ function Window:SetTheme(themeName)
 		THEME[key] = value
 	end
 	self:_applyTheme()
+	for _, gallery in ipairs(self.ThemeGalleries or {}) do gallery:Refresh() end
 	return true
 end
 
@@ -1582,12 +1681,7 @@ function Window:GetThemeColor(key)
 end
 
 function Window:GetThemeNames()
-	local names = {}
-	for name in pairs(THEMES) do
-		table.insert(names, name)
-	end
-	table.sort(names)
-	return names
+	return { "Black", "Graphite", "Midnight", "Frost", "Amethyst", "Forest", "Ember", "Rose", "Neon", "Hayfield" }
 end
 
 function Module:AddColorPicker(name, default, callback)
@@ -1645,6 +1739,72 @@ function Module:AddColorPicker(name, default, callback)
 		refresh(silent)
 	end
 	return control
+end
+
+-- Inline palette previews, with separate hover and selected treatments.
+function Window:AddThemeGallery(tab)
+	local module = tab:AddModule({ Name = "Themes", Description = "Choose a palette. Your whole workspace changes together.", Expanded = true })
+	local row = module:_row(348)
+	row.Name, row.BackgroundTransparency = "ThemeGallery", 1
+	local layout = create("UIGridLayout", { CellSize = UDim2.new(1 / 3, -8, 0, 78),
+		CellPadding = UDim2.fromOffset(10, 10), SortOrder = Enum.SortOrder.LayoutOrder, Parent = row })
+	local gallery = { Window = self, Module = module, Row = row, LayoutObject = layout, Tiles = {} }
+	local function fixed(object)
+		-- Palette previews show their own colors even when another theme is selected.
+		for name in pairs(object:GetAttributes()) do
+			if name:match("^FrostTheme_") then object:SetAttribute(name, nil) end
+		end
+		return object
+	end
+	for index, name in ipairs(self:GetThemeNames()) do
+		local palette = THEMES[name]
+		local border = stroke(THEME.Border, 0.35)
+		local button = create("TextButton", { Name = name .. "Theme", Text = "", LayoutOrder = index,
+			AutoButtonColor = false, BackgroundColor3 = THEME.PanelRaised, BorderSizePixel = 0, Parent = row,
+		}, { corner(10), border })
+		local preview = fixed(create("Frame", { Name = "PalettePreview", Position = UDim2.fromOffset(7, 7),
+			Size = UDim2.new(1, -14, 0, 34), BackgroundColor3 = palette.Background, BorderSizePixel = 0, Parent = button }, { corner(6) }))
+		fixed(create("Frame", { Size = UDim2.new(0.2, 0, 1, 0), BackgroundColor3 = palette.Panel,
+			BorderSizePixel = 0, Parent = preview }, { corner(6) }))
+		for bar, key in ipairs({ "Accent", "Surface", "Muted" }) do
+			fixed(create("Frame", { Position = UDim2.new(0.28, 0, 0, 7 + (bar - 1) * 8),
+				Size = UDim2.new(bar == 3 and 0.35 or 0.6, 0, 0, 3), BackgroundColor3 = palette[key],
+				BorderSizePixel = 0, Parent = preview }, { corner(2) }))
+		end
+		local label = create("TextLabel", { Text = name, Position = UDim2.fromOffset(10, 47),
+			Size = UDim2.new(1, -20, 0, 24), BackgroundTransparency = 1, TextColor3 = THEME.Text,
+			Font = Enum.Font.BuilderSansMedium, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, Parent = button })
+		local selected = create("Frame", { Name = "SelectedIndicator", Position = UDim2.new(1, -16, 0, 53),
+			Size = UDim2.fromOffset(6, 6), BackgroundColor3 = THEME.Accent, BorderSizePixel = 0, Parent = button }, { corner(3) })
+		local tile = { Name = name, Button = button, Border = border, Label = label, Selected = selected, Preview = preview }
+		table.insert(gallery.Tiles, tile)
+		self:_connect(button.Activated, function() self:SetTheme(name) end)
+		self:_connect(button.MouseEnter, function()
+			if self.ThemeName ~= name then self:_tween(button, 0.14, { BackgroundColor3 = THEME.SurfaceHover }) end
+		end)
+		self:_connect(button.MouseLeave, function() gallery:Refresh() end)
+	end
+	function gallery:Refresh()
+		for _, tile in ipairs(self.Tiles) do
+			local selected = self.Window.ThemeName == tile.Name
+			self.Window:_tween(tile.Button, 0.14, { BackgroundColor3 = selected and THEME.AccentSoft or THEME.PanelRaised })
+			self.Window:_tween(tile.Border, 0.14, { Color = selected and THEME.Accent or THEME.Border, Transparency = selected and 0 or 0.35 })
+			tile.Selected.Visible = selected
+		end
+		self.Module:SetStatus("Current palette: " .. self.Window.ThemeName)
+	end
+	function gallery:Layout()
+		local width = self.Window.TargetSize.X - (self.Window._compact and 72 or 216) - 80
+		local columns = width >= 560 and 3 or 2
+		self.LayoutObject.CellSize = UDim2.new(1 / columns, -7, 0, 78)
+		self.Row.Size = UDim2.new(1, 0, 0, math.ceil(#self.Tiles / columns) * 88 - 10)
+		self.Module:_refreshHeight()
+	end
+	self.ThemeGalleries = self.ThemeGalleries or {}
+	table.insert(self.ThemeGalleries, gallery)
+	gallery:Layout()
+	gallery:Refresh()
+	return gallery
 end
 
 -- UI-only motion, background, feedback, and preferences.
@@ -1778,7 +1938,7 @@ function Window:ApplyPreferences()
 	self:SetSizePreset(state.SizePreset or "Large")
 	self:SetMonitorWidth(state.MonitorWidth or 380)
 	self:SetMonitorSide(state.MonitorSide or "Right")
-	self:SetTheme(state.ThemeName or "Frost")
+	self:SetTheme(state.ThemeName or "Black")
 	if accent then self:SetThemeColor("Accent", accent) end
 	if success then self:SetThemeColor("Success", success) end
 	for _, binding in ipairs(self.Keybinds) do binding:Refresh() end
@@ -1794,7 +1954,8 @@ function Window:AddClientSettings(tab)
 		end)
 		return control
 	end
-	local motion = tab:AddModule({ Name = "Motion & atmosphere", Description = "Set the pace of your workspace", Expanded = true })
+	self:AddThemeGallery(tab)
+	local motion = tab:AddModule({ Name = "Motion & atmosphere", Description = "Set the pace of your workspace" })
 	bind(motion:AddToggle("Interface animations", self.Animations, function(value) self:SetAnimations(value) end,
 		"Turn off all movement for a still interface"), "Animations")
 	bind(motion:AddToggle("Decorative background", self.BackgroundEffects, function(value) self:SetBackgroundEffects(value) end,
@@ -1808,7 +1969,6 @@ function Window:AddClientSettings(tab)
 	audio:AddButton("Preview sound", function() self:PlaySound("Open") end)
 	bind(audio:AddToggle("Notifications", self.NotificationsEnabled, function(value) self:SetNotifications(value) end), "NotificationsEnabled")
 	local appearance = tab:AddModule({ Name = "Appearance", Description = "Color, type, and spacing" })
-	bind(appearance:AddDropdown("Theme", self:GetThemeNames(), self.ThemeName, function(value) self:SetTheme(value) end), "ThemeName")
 	appearance:AddColorPicker("Accent", THEME.Accent, function(value) self:SetThemeColor("Accent", value) end)
 	bind(appearance:AddDropdown("Window size", { "Comfortable", "Large", "Extra Large" }, self.SizePreset,
 		function(value) self:SetSizePreset(value) end), "SizePreset")
@@ -1951,6 +2111,7 @@ function Window:_resizeWindow(animate)
 	end
 	self._compact = compact
 	self:_layoutScriptCards()
+	for _, gallery in ipairs(self.ThemeGalleries or {}) do gallery:Layout() end
 	local size = UDim2.fromOffset(self.TargetSize.X, self.TargetSize.Y)
 	if animate then self:_tween(self.Frame, 0.2, { Size = size }) else self.Frame.Size = size end
 	self.Frame.Position = UDim2.fromScale(0.5, 0.5)
@@ -2108,7 +2269,7 @@ function Library:CreateWindow(options)
 		BackgroundAnimations = options.BackgroundAnimations ~= false,
 		Sounds = options.Sounds ~= false, SoundVolume = math.clamp(tonumber(options.SoundVolume) or 0.18, 0, 1),
 		NotificationsEnabled = options.NotificationsEnabled ~= false,
-		SizePreset = options.SizePreset or "Large", ThemeName = options.Theme or "Frost",
+		SizePreset = options.SizePreset or "Large", ThemeName = options.Theme or "Black",
 		TextScale = math.clamp(tonumber(options.TextScale) or 1, 1, 1.3),
 		DimAmount = math.clamp(tonumber(options.DimAmount) or 40, 0, 75),
 		MonitorWidth = math.clamp(tonumber(options.MonitorWidth) or 380, 320, 520),
@@ -2184,6 +2345,8 @@ function Library:CreateWindow(options)
 		if ok and ready and not window._destroyed then window.Avatar.Image = content end
 	end)
 	window.PlayerName = label(playerCard, player.DisplayName or player.Name, UDim2.fromOffset(60, 0), UDim2.new(1, -68, 1, 0), 12, THEME.Text, true)
+	window.PlayerName:SetAttribute("FrostTheme_TextColor3", "Text")
+	window.BrandName:SetAttribute("FrostTheme_TextColor3", "Text")
 	window.Main = create("Frame", { Name = "Main", BackgroundTransparency = 1, Parent = window.Frame })
 	local topbar = create("Frame", { Name = "Header", Size = UDim2.new(1, 0, 0, 108), BackgroundTransparency = 1, Parent = window.Main })
 	label(topbar, string.upper(options.Game or "FROSTSCRIPTS"), UDim2.fromOffset(24, 18), UDim2.new(1, -96, 0, 16), 10, THEME.Accent, true)

@@ -29,6 +29,7 @@ function Window:_resizeWindow(animate)
 	end
 	self._compact = compact
 	self:_layoutScriptCards()
+	for _, gallery in ipairs(self.ThemeGalleries or {}) do gallery:Layout() end
 	local size = UDim2.fromOffset(self.TargetSize.X, self.TargetSize.Y)
 	if animate then self:_tween(self.Frame, 0.2, { Size = size }) else self.Frame.Size = size end
 	self.Frame.Position = UDim2.fromScale(0.5, 0.5)
@@ -186,7 +187,7 @@ function Library:CreateWindow(options)
 		BackgroundAnimations = options.BackgroundAnimations ~= false,
 		Sounds = options.Sounds ~= false, SoundVolume = math.clamp(tonumber(options.SoundVolume) or 0.18, 0, 1),
 		NotificationsEnabled = options.NotificationsEnabled ~= false,
-		SizePreset = options.SizePreset or "Large", ThemeName = options.Theme or "Frost",
+		SizePreset = options.SizePreset or "Large", ThemeName = options.Theme or "Black",
 		TextScale = math.clamp(tonumber(options.TextScale) or 1, 1, 1.3),
 		DimAmount = math.clamp(tonumber(options.DimAmount) or 40, 0, 75),
 		MonitorWidth = math.clamp(tonumber(options.MonitorWidth) or 380, 320, 520),
@@ -262,6 +263,8 @@ function Library:CreateWindow(options)
 		if ok and ready and not window._destroyed then window.Avatar.Image = content end
 	end)
 	window.PlayerName = label(playerCard, player.DisplayName or player.Name, UDim2.fromOffset(60, 0), UDim2.new(1, -68, 1, 0), 12, THEME.Text, true)
+	window.PlayerName:SetAttribute("FrostTheme_TextColor3", "Text")
+	window.BrandName:SetAttribute("FrostTheme_TextColor3", "Text")
 	window.Main = create("Frame", { Name = "Main", BackgroundTransparency = 1, Parent = window.Frame })
 	local topbar = create("Frame", { Name = "Header", Size = UDim2.new(1, 0, 0, 108), BackgroundTransparency = 1, Parent = window.Main })
 	label(topbar, string.upper(options.Game or "FROSTSCRIPTS"), UDim2.fromOffset(24, 18), UDim2.new(1, -96, 0, 16), 10, THEME.Accent, true)

@@ -1,5 +1,5 @@
 -- Exercise the real entry point -> API -> launcher -> UI chain with mocked HTTPS.
-local session, requests = {}, {}
+local session, requests = { FrostScriptsUIPreferences = { ThemeName = "Frost", Sounds = false } }, {}
 local prefix = "https://raw.githubusercontent.com/Fwrostt/FrostScripts/main/"
 Mock.Env.getgenv = function() return session end
 Mock.Env.loadstring = function(source, name)
@@ -23,6 +23,8 @@ local main = assert(Mock.Env.loadstring(SOURCES["dist/launchers/Loader.lua"]))
 local launcher = main()
 Mock.Flush()
 assert(launcher.Window.ActiveTab.Name == "Library")
+assert(launcher.Window.ThemeName == "Black" and not launcher.Window.Sounds, "new design resets the legacy theme while preserving other preferences")
+launcher.Window:SetTheme("Graphite")
 assert(requests["dist/api/FrostScriptsAPI.lua"] == 1)
 assert(requests["dist/launcher/App.lua"] == 1)
 assert(requests["dist/ui/UI.lua"] == 1)
@@ -34,7 +36,7 @@ launcher.Window:SetBackgroundAnimations(false)
 local ok, grass = launcher:Launch("GrassCutter")
 assert(ok and not launcher.Window.Visible and launcher.Window.InputEnabled == false)
 assert(requests["games/GrassCutter/main.lua"] == 1 and not requests["games/NeedleInHay/main.lua"])
-assert(grass.Window.Sounds == false and grass.Window.BackgroundAnimations == false)
+assert(grass.Window.Sounds == false and grass.Window.BackgroundAnimations == false and grass.Window.ThemeName == "Graphite")
 local back = grass.Window.Gui:FindFirstChildWhichIsA("TextButton", true)
 for _, object in ipairs(grass.Window.Gui:GetDescendants()) do
 	if object.Name == "ReturnToLibrary" then back = object; break end
@@ -56,7 +58,7 @@ print("PASS failed script startup keeps the launcher usable and supports retry")
 local replacement = main()
 assert(launcher.Unloaded and needle.Stopped)
 assert(replacement ~= launcher and session.FrostScriptsLauncher == replacement)
-assert(replacement.Window.Sounds == false)
+assert(replacement.Window.Sounds == false and replacement.Window.ThemeName == "Graphite")
 replacement:Unload()
 assert(session.FrostScriptsLauncher == nil)
 print("PASS rerunning the one loader unloads the prior session")

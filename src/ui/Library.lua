@@ -14,72 +14,7 @@ Tab.__index = Tab
 local Module = {}
 Module.__index = Module
 
-local THEMES = {
-	Frost = {
-		Background = Color3.fromRGB(10, 15, 24),
-		Panel = Color3.fromRGB(13, 20, 31),
-		PanelRaised = Color3.fromRGB(18, 27, 40),
-		Surface = Color3.fromRGB(23, 34, 49),
-		SurfaceHover = Color3.fromRGB(30, 44, 61),
-		Border = Color3.fromRGB(44, 60, 78),
-		Text = Color3.fromRGB(235, 243, 252),
-		Muted = Color3.fromRGB(156, 175, 196),
-		Accent = Color3.fromRGB(122, 213, 246),
-		AccentHover = Color3.fromRGB(170, 230, 255),
-		AccentSoft = Color3.fromRGB(24, 54, 70),
-		Success = Color3.fromRGB(92, 196, 146),
-		Danger = Color3.fromRGB(255, 185, 195),
-		DangerSurface = Color3.fromRGB(51, 31, 36),
-	},
-	Neon = {
-		Background = Color3.fromRGB(5, 8, 12),
-		Panel = Color3.fromRGB(9, 13, 19),
-		PanelRaised = Color3.fromRGB(13, 19, 27),
-		Surface = Color3.fromRGB(17, 25, 36),
-		SurfaceHover = Color3.fromRGB(23, 35, 49),
-		Border = Color3.fromRGB(36, 56, 72),
-		Text = Color3.fromRGB(234, 251, 255),
-		Muted = Color3.fromRGB(134, 169, 180),
-		Accent = Color3.fromRGB(0, 230, 255),
-		AccentHover = Color3.fromRGB(75, 240, 255),
-		AccentSoft = Color3.fromRGB(10, 49, 65),
-		Success = Color3.fromRGB(55, 245, 144),
-		Danger = Color3.fromRGB(255, 120, 144),
-		DangerSurface = Color3.fromRGB(58, 22, 36),
-	},
-	Hayfield = {
-		Background = Color3.fromRGB(12, 11, 8),
-		Panel = Color3.fromRGB(19, 17, 12),
-		PanelRaised = Color3.fromRGB(28, 24, 16),
-		Surface = Color3.fromRGB(37, 31, 19),
-		SurfaceHover = Color3.fromRGB(47, 39, 24),
-		Border = Color3.fromRGB(73, 60, 34),
-		Text = Color3.fromRGB(255, 246, 218),
-		Muted = Color3.fromRGB(176, 158, 115),
-		Accent = Color3.fromRGB(255, 196, 80),
-		AccentHover = Color3.fromRGB(255, 213, 118),
-		AccentSoft = Color3.fromRGB(66, 48, 19),
-		Success = Color3.fromRGB(88, 214, 128),
-		Danger = Color3.fromRGB(255, 159, 142),
-		DangerSurface = Color3.fromRGB(67, 31, 26),
-	},
-	Rose = {
-		Background = Color3.fromRGB(13, 8, 13),
-		Panel = Color3.fromRGB(21, 12, 20),
-		PanelRaised = Color3.fromRGB(29, 16, 28),
-		Surface = Color3.fromRGB(39, 22, 38),
-		SurfaceHover = Color3.fromRGB(51, 29, 49),
-		Border = Color3.fromRGB(78, 45, 73),
-		Text = Color3.fromRGB(255, 238, 248),
-		Muted = Color3.fromRGB(183, 137, 166),
-		Accent = Color3.fromRGB(255, 88, 177),
-		AccentHover = Color3.fromRGB(255, 124, 197),
-		AccentSoft = Color3.fromRGB(72, 24, 54),
-		Success = Color3.fromRGB(111, 222, 151),
-		Danger = Color3.fromRGB(255, 146, 146),
-		DangerSurface = Color3.fromRGB(67, 28, 35),
-	},
-}
+-- @include Themes.lua
 
 local function copyTheme(source)
 	local result = {}
@@ -89,7 +24,7 @@ local function copyTheme(source)
 	return result
 end
 
-local THEME = copyTheme(THEMES.Frost)
+local THEME = copyTheme(THEMES.Black)
 
 local SIZE_PRESETS = {
 	Comfortable = Vector2.new(900, 580),
@@ -1543,6 +1478,7 @@ function Window:SetTheme(themeName)
 		THEME[key] = value
 	end
 	self:_applyTheme()
+	for _, gallery in ipairs(self.ThemeGalleries or {}) do gallery:Refresh() end
 	return true
 end
 
@@ -1560,12 +1496,7 @@ function Window:GetThemeColor(key)
 end
 
 function Window:GetThemeNames()
-	local names = {}
-	for name in pairs(THEMES) do
-		table.insert(names, name)
-	end
-	table.sort(names)
-	return names
+	return { "Black", "Graphite", "Midnight", "Frost", "Amethyst", "Forest", "Ember", "Rose", "Neon", "Hayfield" }
 end
 
 function Module:AddColorPicker(name, default, callback)
@@ -1624,6 +1555,8 @@ function Module:AddColorPicker(name, default, callback)
 	end
 	return control
 end
+
+-- @include ThemeGallery.lua
 
 -- @include Experience.lua
 
