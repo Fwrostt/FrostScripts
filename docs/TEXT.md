@@ -24,4 +24,4 @@ Keep dynamic placeholders (`%s`, `%d`, `%.2f`) in the same order. For example, `
 
 Translations apply only to displayed text. Tab routing, theme selection, dropdown values, shortcuts, and feature settings keep their original internal IDs. Search uses the edited module/control names. An invalid or unavailable Text.lua falls back to the built-in English strings so a bad edit does not stop the loader.
 
-Adding scripts, changing their entry paths, and UI behavior still use `config/Scripts.lua`, `config/UI.lua`, and the normal build workflow. Images use `games/<GameFolder>/icon.png` (or `.jpg`/`.jpeg`); see [CATALOG.md](CATALOG.md). SVG icon sources live in `assets/icons/` and require a rebuild after editing.
+Adding scripts, changing their entry paths, and UI behavior still use `config/Scripts.lua`, `config/UI.lua`, and the normal build workflow. Images use `games/<GameFolder>/icon.png` (or `.jpg`/`.jpeg`); see [CATALOG.md](CATALOG.md). Navigation icons use public Roblox image assets; see [ASSETS.md](ASSETS.md).
