@@ -90,7 +90,7 @@ return {
 		["Large"] = "Large",
 		["Launch script"] = "Launch script",
 		["Left"] = "Left",
-		["Library"] = "Utility Client",
+		["Library"] = "Library",
 		["Midnight"] = "Midnight",
 		["Missing"] = "Missing",
 		["Modules"] = "Modules",
@@ -148,7 +148,7 @@ return {
 		["Workspace opened"] = "Workspace opened",
 		["Your complete cutting companion. Farming, loot discovery, world navigation, and live progress in one workspace."] = "Your complete cutting companion. Farming, loot discovery, world navigation, and live progress in one workspace.",
 		["YOUR GAME. YOUR WAY."] = "Cheating is Fun",
-		["YOUR SCRIPT LIBRARY"] = "UTILITY CLIENT",
+		["YOUR SCRIPT LIBRARY"] = "YOUR SCRIPT LIBRARY",
 		["Your workspace is ready.\nAdd a module to get started."] = "Your workspace is ready.\nAdd a module to get started.",
 	},
 	GrassCutter = {
