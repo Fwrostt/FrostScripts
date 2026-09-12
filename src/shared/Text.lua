@@ -18,6 +18,10 @@ return function(catalog, scope)
 				cursor, count = last + 1, count + 1
 			end
 			table.insert(templates, { Pattern = pattern .. escape(source:sub(cursor)) .. "$", Replacement = replacement, Length = #source })
+		elseif source ~= replacement and source:match("%s$") then
+			table.insert(templates, { Pattern = "^" .. escape(source) .. "(.*)$", Replacement = replacement .. "%s", Length = #source })
+		elseif source ~= replacement and source:match("^%s") then
+			table.insert(templates, { Pattern = "^(.*)" .. escape(source) .. "$", Replacement = "%s" .. replacement, Length = #source })
 		end
 	end
 	table.sort(templates, function(a, b) return a.Length > b.Length end)
@@ -32,7 +36,8 @@ return function(catalog, scope)
 				local index = 0
 				local result = template.Replacement:gsub(specifier, function()
 					index += 1
-					return captures[index] or ""
+					local captured = captures[index] or ""
+					return values[captured] or captured
 				end)
 				cacheCount += 1
 				if cacheCount > 256 then table.clear(cache); cacheCount = 1 end

@@ -241,7 +241,7 @@ test("editable copy changes presentation without changing tab or option IDs", fu
 	local choice = feature:AddDropdown("Priority", { "Nearest", "Farthest" }, "Nearest", function() end)
 	assert(choice.Value == "Nearest", "translated labels must not change option values")
 	custom:SelectTab(mods); custom:SetSearch("grass flight"); assert(feature.Card.Visible)
-	feature:SetStatus("Toggle Flight"); assert(feature.Status.Text == "Shortcut for Flight")
+	feature:SetStatus("Toggle Flight"); assert(feature.Status.Text == "Shortcut for Grass flight")
 	local second = UI.new({ GuiName = "OtherCopyTest", TextData = { Shared = { Flight = "Other window" } }, Animations = false })
 	local oldButton = feature:AddButton("Flight", function() end)
 	assert(oldButton.Text == "Grass flight", "windows must retain their own text scopes")
