@@ -234,6 +234,7 @@ function Library:CreateWindow(options)
 		BackgroundColor3 = THEME.AccentSoft, TextColor3 = THEME.Accent, Font = Enum.Font.BuilderSansBold,
 		TextSize = 26, BorderSizePixel = 0, Parent = window.Sidebar,
 	}, { corner(13), stroke(THEME.Accent, 0.65) })
+	if not options.Logo then window:_attachIcon(window.Logo, "snowflake") end
 	local function label(parentObject, text, position, size, fontSize, color, bold)
 		return create("TextLabel", { Text = text, Position = position, Size = size, BackgroundTransparency = 1,
 			TextSize = fontSize, TextColor3 = color, Font = bold and Enum.Font.BuilderSansBold or Enum.Font.BuilderSansMedium,
@@ -317,6 +318,7 @@ function Library:CreateWindow(options)
 		TextSize = 24, Font = Enum.Font.BuilderSansBold, TextColor3 = THEME.Accent,
 		BackgroundColor3 = THEME.Panel, BorderSizePixel = 0, Visible = false, Parent = window.OverlayGui,
 	}, { corner(16), stroke(THEME.Accent, 0.25) })
+	window:_attachIcon(window.Launcher, "snowflake")
 	window:_connect(window.Launcher.Activated, function() window:SetVisible(true) end)
 	window:_makeDraggable(window.Frame, topbar)
 	window:_resizeWindow(false)

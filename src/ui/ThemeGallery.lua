@@ -37,7 +37,7 @@ function Window:AddThemeGallery(tab)
 		table.insert(gallery.Tiles, tile)
 		self:_connect(button.Activated, function() self:SetTheme(name) end)
 		self:_connect(button.MouseEnter, function()
-			if self.ThemeName ~= name then self:_tween(button, 0.14, { BackgroundColor3 = THEME.SurfaceHover }) end
+			if self.ThemeName ~= name then self:_tween(button, 0.14, { BackgroundColor3 = THEME.Surface }) end
 		end)
 		self:_connect(button.MouseLeave, function() gallery:Refresh() end)
 	end

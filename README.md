@@ -17,7 +17,7 @@ The execution environment must support `loadstring` and `game:HttpGet`. Raw GitH
 - Script cards with a name, description, optional image, and launch/retry status.
 - Compact cards that fit together on desktop and become short rows on smaller screens, animated cover gradients, a soft background, and subtle interface sounds.
 - Black by default, with 10 clickable palette previews including Graphite, Midnight, Amethyst, Forest, and Ember.
-- Roblox avatar thumbnails, emoji navigation, Builder Sans typography, and search only on library/module pages.
+- Roblox avatar thumbnails, SVG line icons, Builder Sans typography, and search only on library/module pages.
 - One **UI Settings** page for themes, text, window size, sound, notifications, and separate animation/background switches.
 - Each feature owns its settings and keybind inside its module. There is no separate keybind page.
 - The back arrow returns to the library and unloads the active game suite. Starting another script unloads the previous one.

@@ -19,9 +19,9 @@ local window = UI.new({
 	GuiName = "FrostScriptsLibrary", OverlayName = "FrostScriptsLibraryOverlays",
 })
 local launcher = { Window = window, Cards = {}, Busy = false, Unloaded = false }
-local library = window:AddTab("Library", "📚", "Pick your world. Make it yours.")
+local library = window:AddTab("Library", "library", "Pick your world. Make it yours.")
 library.ItemNoun = "scripts"
-local settings = window:AddTab("UI Settings", "⚙️", "The look, motion, and sound of FrostScripts")
+local settings = window:AddTab("UI Settings", "settings", "The look, motion, and sound of FrostScripts")
 window:AddClientSettings(settings)
 
 function launcher:Launch(id)

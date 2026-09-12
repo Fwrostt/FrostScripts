@@ -66,9 +66,9 @@ function Tab:AddScriptCard(entry, onLaunch)
 	local status = label("LaunchStatus", "Open in the matching game", 11, THEME.Muted, Enum.Font.BuilderSans)
 	local button = create("TextButton", { Name = "LaunchScript", Text = "Launch script",
 		TextSize = 14, Font = Enum.Font.BuilderSansMedium, TextColor3 = THEME.Text,
-		BackgroundColor3 = THEME.AccentSoft, BorderSizePixel = 0, AutoButtonColor = false, Parent = module.Card,
+		BackgroundColor3 = THEME.Surface, BorderSizePixel = 0, AutoButtonColor = false, Parent = module.Card,
 	}, { corner(8), stroke(THEME.Accent, 0.65) })
-	self.Window:_hover(button, THEME.AccentSoft, THEME.SurfaceHover)
+	self.Window:_hover(button, THEME.Surface, THEME.SurfaceHover)
 	self.Window:_connect(button.Activated, function() if button.Active then safeCall(self.Window, onLaunch) end end)
 	local card = { Module = module, Button = button, Cover = cover, Image = image, Title = title, Description = description, Status = status }
 	function card:Layout(horizontal, height)

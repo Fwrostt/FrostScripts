@@ -53,7 +53,7 @@ The clicker also exposes `feature:Click()` for one click through the same input 
 
 `UI.new(options)` creates a window. Window options include `Name`, `Game`, `GuiName`, `OverlayName`, `Animations`, `SizePreset`, `TextScale`, `DimAmount`, `MonitorWidth`, and `MonitorSide`.
 
-Use `window:AddTab(name, icon, subtitle)` (emoji icons are supported; legacy H/L/S/M/C icons map to emoji). Library, Modules, and Controls show search by default; other pages hide it. Set `tab.SearchEnabled` to override and select the tab again to refresh its toolbar. Then `tab:AddModule(options)`. Modules support `AddToggle`, `AddSlider`, `AddDropdown`, `AddMultiDropdown`, `AddNumberInput`, `AddButton`, `AddParagraph`, `AddColorPicker`, and `AddKeybind`. Shortcuts belong inside their owning modules. Pass a feature as `options.Feature` to bind its UI state.
+Use `window:AddTab(name, icon, subtitle)` (use library/home/settings/modules/controls SVG icon names; legacy H/L/S/M/C names map to these icons). Library, Modules, and Controls show search by default; other pages hide it. Set `tab.SearchEnabled` to override and select the tab again to refresh its toolbar. Then `tab:AddModule(options)`. Modules support `AddToggle`, `AddSlider`, `AddDropdown`, `AddMultiDropdown`, `AddNumberInput`, `AddButton`, `AddParagraph`, `AddColorPicker`, and `AddKeybind`. Shortcuts belong inside their owning modules. Pass a feature as `options.Feature` to bind its UI state.
 
 Window methods include `SelectTab`, `Toggle`, `SetVisible`, `SetAnimations`, `SetSizePreset`, `SetTextScale`, `SetTheme`, `SetThemeColor`, `GetThemeNames`, `AddClientSettings`, `Notify`, `SetMonitor`, `HideMonitor`, `AddWorldMarker`, and `Destroy`.
 

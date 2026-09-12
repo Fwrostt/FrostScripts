@@ -21,6 +21,7 @@ return {
 }
 
 end)()
+local SVG_ICONS = {["controls"]={{"line",6.0,3.0,6.0,21.0,1.8},{"line",12.0,3.0,12.0,21.0,1.8},{"line",18.0,3.0,18.0,21.0,1.8},{"rect",4.0,7.0,4.0,4.0,1.0,1.8},{"rect",10.0,14.0,4.0,4.0,1.0,1.8},{"rect",16.0,5.0,4.0,4.0,1.0,1.8}},["home"]={{"line",3.0,10.0,12.0,3.0,1.8},{"line",12.0,3.0,21.0,10.0,1.8},{"line",5.0,9.0,5.0,21.0,1.8},{"line",5.0,21.0,10.0,21.0,1.8},{"line",10.0,21.0,10.0,14.0,1.8},{"line",10.0,14.0,14.0,14.0,1.8},{"line",14.0,14.0,14.0,21.0,1.8},{"line",14.0,21.0,19.0,21.0,1.8},{"line",19.0,21.0,19.0,9.0,1.8}},["library"]={{"rect",3.0,4.0,5.0,16.0,1.0,1.8},{"rect",11.0,4.0,4.0,16.0,1.0,1.8},{"line",18.0,5.0,21.0,19.0,1.8},{"line",3.0,8.0,8.0,8.0,1.8}},["modules"]={{"rect",3.0,3.0,7.0,7.0,1.5,1.8},{"rect",14.0,3.0,7.0,7.0,1.5,1.8},{"rect",3.0,14.0,7.0,7.0,1.5,1.8},{"rect",14.0,14.0,7.0,7.0,1.5,1.8}},["settings"]={{"line",4.0,6.0,20.0,6.0,1.8},{"line",4.0,12.0,20.0,12.0,1.8},{"line",4.0,18.0,20.0,18.0,1.8},{"circle",8.0,6.0,2.0,1.8},{"circle",16.0,12.0,2.0,1.8},{"circle",10.0,18.0,2.0,1.8}},["snowflake"]={{"line",12.0,2.0,12.0,22.0,1.8},{"line",3.3,7.0,20.7,17.0,1.8},{"line",3.3,17.0,20.7,7.0,1.8},{"line",9.0,4.0,12.0,7.0,1.8},{"line",12.0,7.0,15.0,4.0,1.8},{"line",9.0,20.0,12.0,17.0,1.8},{"line",12.0,17.0,15.0,20.0,1.8}}}
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -544,7 +545,7 @@ function Window:AddTab(name, icon, subtitle)
 	local tab = setmetatable({
 		Window = self,
 		Name = name,
-		Icon = ({ H = "🏠", L = "📚", S = "⚙️", M = "🧩", C = "🎛️" })[icon] or icon or "📄",
+		Icon = ({ H = "home", L = "library", S = "settings", M = "modules", C = "controls" })[icon] or icon or "controls",
 		SearchEnabled = name == "Library" or name == "Modules" or name == "Controls",
 		Subtitle = subtitle or "",
 		Modules = {},
@@ -621,6 +622,7 @@ function Window:AddTab(name, icon, subtitle)
 		TextSize = 14,
 		Parent = button,
 	})
+	self:_attachIcon(iconLabel, tab.Icon)
 	tab.Button, tab.Indicator, tab.IconLabel, tab.Label = button, indicator, iconLabel, label
 	label.Visible = not self._compact
 	table.insert(self.Tabs, tab)
@@ -1051,7 +1053,7 @@ function Module:AddButton(name, callback, options)
 	local button = create("TextButton", {
 		Size = UDim2.fromScale(1, 1),
 		AutoButtonColor = false,
-		BackgroundColor3 = danger and THEME.DangerSurface or THEME.AccentSoft,
+		BackgroundColor3 = danger and THEME.DangerSurface or THEME.Surface,
 		BorderSizePixel = 0,
 		Text = name,
 		TextColor3 = danger and THEME.Danger or THEME.Text,
@@ -1061,7 +1063,7 @@ function Module:AddButton(name, callback, options)
 	}, { corner(10), stroke(danger and THEME.Danger or THEME.Accent, 0.35) })
 	self.Window:_hover(
 		button,
-		danger and THEME.DangerSurface or THEME.AccentSoft,
+		danger and THEME.DangerSurface or THEME.Surface,
 		danger and THEME.DangerSurface or THEME.SurfaceHover
 	)
 	self.Window:_connect(button.Activated, function() safeCall(self.Window, callback) end)
@@ -1743,6 +1745,47 @@ function Module:AddColorPicker(name, default, callback)
 	return control
 end
 
+-- Geometry is compiled from assets/icons/*.svg; no font glyphs or raster scaling.
+function Window:_attachIcon(host, name)
+	host.Text = ""
+	local root = create("Frame", { Name = "VectorIcon_" .. name, Size = UDim2.fromOffset(24, 24),
+		AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
+		BackgroundTransparency = 1, Parent = host })
+	create("UIScale", { Scale = 0.8, Parent = root })
+	local objects = {}
+	for _, shape in ipairs(SVG_ICONS[name] or SVG_ICONS.controls) do
+		local frame
+		if shape[1] == "line" then
+			local dx, dy = shape[4] - shape[2], shape[5] - shape[3]
+			frame = create("Frame", { AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = UDim2.fromOffset((shape[2] + shape[4]) / 2, (shape[3] + shape[5]) / 2),
+				Size = UDim2.fromOffset(math.sqrt(dx * dx + dy * dy), shape[6]),
+				Rotation = math.deg(math.atan2(dy, dx)), BackgroundColor3 = host.TextColor3,
+				BorderSizePixel = 0, Parent = root }, { corner(shape[6]) })
+			table.insert(objects, { frame, "BackgroundColor3" })
+		else
+			local circle = shape[1] == "circle"
+			local outline = stroke(host.TextColor3, 0)
+			outline.Thickness = circle and shape[5] or shape[7]
+			frame = create("Frame", {
+				Position = UDim2.fromOffset(circle and shape[2] - shape[4] or shape[2], circle and shape[3] - shape[4] or shape[3]),
+				Size = UDim2.fromOffset(circle and shape[4] * 2 or shape[4], circle and shape[4] * 2 or shape[5]),
+				BackgroundTransparency = 1, Parent = root,
+			}, { corner(circle and shape[4] or shape[6]), outline })
+			table.insert(objects, { outline, "Color" })
+		end
+	end
+	local function tint()
+		for _, item in ipairs(objects) do
+			item[1][item[2]] = host.TextColor3
+			item[1]:SetAttribute("FrostTheme_" .. item[2], host:GetAttribute("FrostTheme_TextColor3") or "Muted")
+		end
+	end
+	self:_connect(host:GetPropertyChangedSignal("TextColor3"), tint)
+	tint()
+	return root
+end
+
 -- Inline palette previews, with separate hover and selected treatments.
 function Window:AddThemeGallery(tab)
 	local module = tab:AddModule({ Name = "Themes", Description = "Choose a palette. Your whole workspace changes together.", Expanded = true })
@@ -1782,7 +1825,7 @@ function Window:AddThemeGallery(tab)
 		table.insert(gallery.Tiles, tile)
 		self:_connect(button.Activated, function() self:SetTheme(name) end)
 		self:_connect(button.MouseEnter, function()
-			if self.ThemeName ~= name then self:_tween(button, 0.14, { BackgroundColor3 = THEME.SurfaceHover }) end
+			if self.ThemeName ~= name then self:_tween(button, 0.14, { BackgroundColor3 = THEME.Surface }) end
 		end)
 		self:_connect(button.MouseLeave, function() gallery:Refresh() end)
 	end
@@ -2056,9 +2099,9 @@ function Tab:AddScriptCard(entry, onLaunch)
 	local status = label("LaunchStatus", "Open in the matching game", 11, THEME.Muted, Enum.Font.BuilderSans)
 	local button = create("TextButton", { Name = "LaunchScript", Text = "Launch script",
 		TextSize = 14, Font = Enum.Font.BuilderSansMedium, TextColor3 = THEME.Text,
-		BackgroundColor3 = THEME.AccentSoft, BorderSizePixel = 0, AutoButtonColor = false, Parent = module.Card,
+		BackgroundColor3 = THEME.Surface, BorderSizePixel = 0, AutoButtonColor = false, Parent = module.Card,
 	}, { corner(8), stroke(THEME.Accent, 0.65) })
-	self.Window:_hover(button, THEME.AccentSoft, THEME.SurfaceHover)
+	self.Window:_hover(button, THEME.Surface, THEME.SurfaceHover)
 	self.Window:_connect(button.Activated, function() if button.Active then safeCall(self.Window, onLaunch) end end)
 	local card = { Module = module, Button = button, Cover = cover, Image = image, Title = title, Description = description, Status = status }
 	function card:Layout(horizontal, height)
@@ -2334,6 +2377,7 @@ function Library:CreateWindow(options)
 		BackgroundColor3 = THEME.AccentSoft, TextColor3 = THEME.Accent, Font = Enum.Font.BuilderSansBold,
 		TextSize = 26, BorderSizePixel = 0, Parent = window.Sidebar,
 	}, { corner(13), stroke(THEME.Accent, 0.65) })
+	if not options.Logo then window:_attachIcon(window.Logo, "snowflake") end
 	local function label(parentObject, text, position, size, fontSize, color, bold)
 		return create("TextLabel", { Text = text, Position = position, Size = size, BackgroundTransparency = 1,
 			TextSize = fontSize, TextColor3 = color, Font = bold and Enum.Font.BuilderSansBold or Enum.Font.BuilderSansMedium,
@@ -2417,6 +2461,7 @@ function Library:CreateWindow(options)
 		TextSize = 24, Font = Enum.Font.BuilderSansBold, TextColor3 = THEME.Accent,
 		BackgroundColor3 = THEME.Panel, BorderSizePixel = 0, Visible = false, Parent = window.OverlayGui,
 	}, { corner(16), stroke(THEME.Accent, 0.25) })
+	window:_attachIcon(window.Launcher, "snowflake")
 	window:_connect(window.Launcher.Activated, function() window:SetVisible(true) end)
 	window:_makeDraggable(window.Frame, topbar)
 	window:_resizeWindow(false)

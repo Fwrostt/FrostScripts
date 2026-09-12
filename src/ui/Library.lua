@@ -359,7 +359,7 @@ function Window:AddTab(name, icon, subtitle)
 	local tab = setmetatable({
 		Window = self,
 		Name = name,
-		Icon = ({ H = "🏠", L = "📚", S = "⚙️", M = "🧩", C = "🎛️" })[icon] or icon or "📄",
+		Icon = ({ H = "home", L = "library", S = "settings", M = "modules", C = "controls" })[icon] or icon or "controls",
 		SearchEnabled = name == "Library" or name == "Modules" or name == "Controls",
 		Subtitle = subtitle or "",
 		Modules = {},
@@ -436,6 +436,7 @@ function Window:AddTab(name, icon, subtitle)
 		TextSize = 14,
 		Parent = button,
 	})
+	self:_attachIcon(iconLabel, tab.Icon)
 	tab.Button, tab.Indicator, tab.IconLabel, tab.Label = button, indicator, iconLabel, label
 	label.Visible = not self._compact
 	table.insert(self.Tabs, tab)
@@ -866,7 +867,7 @@ function Module:AddButton(name, callback, options)
 	local button = create("TextButton", {
 		Size = UDim2.fromScale(1, 1),
 		AutoButtonColor = false,
-		BackgroundColor3 = danger and THEME.DangerSurface or THEME.AccentSoft,
+		BackgroundColor3 = danger and THEME.DangerSurface or THEME.Surface,
 		BorderSizePixel = 0,
 		Text = name,
 		TextColor3 = danger and THEME.Danger or THEME.Text,
@@ -876,7 +877,7 @@ function Module:AddButton(name, callback, options)
 	}, { corner(10), stroke(danger and THEME.Danger or THEME.Accent, 0.35) })
 	self.Window:_hover(
 		button,
-		danger and THEME.DangerSurface or THEME.AccentSoft,
+		danger and THEME.DangerSurface or THEME.Surface,
 		danger and THEME.DangerSurface or THEME.SurfaceHover
 	)
 	self.Window:_connect(button.Activated, function() safeCall(self.Window, callback) end)
@@ -1557,6 +1558,8 @@ function Module:AddColorPicker(name, default, callback)
 	end
 	return control
 end
+
+-- @include Icons.lua
 
 -- @include ThemeGallery.lua
 
