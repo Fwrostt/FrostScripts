@@ -15,7 +15,9 @@ The execution environment must support `loadstring` and `game:HttpGet`. Raw GitH
 ## The experience
 
 - Script cards with a name, description, optional image, and launch/retry status.
-- A responsive card grid, animated cover gradients, flowing aurora background, and subtle interface sounds.
+- Compact cards that fit together on desktop and become short rows on smaller screens, animated cover gradients, a soft background, and subtle interface sounds.
+- Black by default, with 10 clickable palette previews including Graphite, Midnight, Amethyst, Forest, and Ember.
+- Roblox avatar thumbnails, emoji navigation, Builder Sans typography, and search only on library/module pages.
 - One **UI Settings** page for themes, text, window size, sound, notifications, and separate animation/background switches.
 - Each feature owns its settings and keybind inside its module. There is no separate keybind page.
 - The back arrow returns to the library and unloads the active game suite. Starting another script unloads the previous one.
@@ -66,7 +68,7 @@ python tools/build.py
 python tools/check.py
 ```
 
-The checks compile the scripts, exercise 25 behavior tests, enforce the single entry point and module keybind layout, and reject filesystem loading or incorrect GitHub script hosts. GitHub Actions runs the same checks. These developer commands do not host a service or run on players' computers.
+The checks compile the scripts, exercise 29 behavior tests, enforce the single entry point and module keybind layout, and reject filesystem loading or incorrect GitHub script hosts. GitHub Actions runs the same checks. These developer commands do not host a service or run on players' computers.
 
 To use another revision, set `getgenv().FrostScriptsConfig.BaseUrl` to this repository's raw branch or commit base URL before running the main loader. Use one revision for every file.
 

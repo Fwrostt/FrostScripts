@@ -47,7 +47,7 @@ function Window:_layoutScriptCards()
 		if tab.CardLayout then
 			local count = math.min(2, math.max(1, #tab.ScriptCards))
 			local height = horizontal and math.clamp(math.floor((availableHeight - 8 - (count - 1) * 12) / count), 112, 174)
-				or math.min(300, availableHeight - 8)
+				or math.min(300 + math.ceil((self.TextScale - 1) * 100), availableHeight - 8)
 			tab.CardLayout.CellSize = UDim2.new(1 / columns, columns == 2 and -10 or -8, 0, height)
 			for _, card in ipairs(tab.ScriptCards) do card:Layout(horizontal, height) end
 		end

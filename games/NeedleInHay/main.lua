@@ -1047,7 +1047,7 @@ function playPickupFeedback(part)
 	local label = Instance.new("TextLabel")
 	label.BackgroundTransparency = 1
 	label.Size = UDim2.fromScale(1, 1)
-	label.Font = Enum.Font.GothamBlack
+	label.Font = Enum.Font.BuilderSansBold
 	label.Text = "+1"
 	label.TextColor3 = Color3.fromRGB(255, 237, 145)
 	label.TextStrokeColor3 = Color3.fromRGB(62, 37, 16)

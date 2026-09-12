@@ -20,6 +20,9 @@ function Tab:AddScriptCard(entry, onLaunch)
 	end
 	local module = self:AddModule({ Name = entry.Name, Description = entry.Description, HeaderHeight = 0, Collapsible = false })
 	module.IsScriptCard = true
+	-- The grid owns card geometry; cancel the module's initial expansion tween.
+	local running = self.Window._tweens[module.Card]
+	if running and running.Size then running.Size:Cancel(); running.Size = nil end
 	for _, object in ipairs(module.Card:GetChildren()) do
 		if object:IsA("GuiObject") then object.Visible = false end
 	end
@@ -60,19 +63,23 @@ function Tab:AddScriptCard(entry, onLaunch)
 	self.Window:_connect(button.Activated, function() if button.Active then safeCall(self.Window, onLaunch) end end)
 	local card = { Module = module, Button = button, Cover = cover, Image = image, Title = title, Description = description, Status = status }
 	function card:Layout(horizontal, height)
+		local textScale = self.Module.Window.TextScale
+		local titleHeight = math.ceil(24 * textScale)
 		if horizontal then
 			local side = math.min(104, height - 24)
 			local left = side + 26
 			cover.Position, cover.Size = UDim2.fromOffset(12, 12), UDim2.fromOffset(side, side)
-			title.Position, title.Size = UDim2.fromOffset(left, 12), UDim2.new(1, -left - 12, 0, 24)
-			description.Position, description.Size = UDim2.fromOffset(left, 42), UDim2.new(1, -left - 12, 0, math.max(18, height - 98))
+			title.Position, title.Size = UDim2.fromOffset(left, 10), UDim2.new(1, -left - 12, 0, titleHeight)
+			local descriptionTop = 14 + titleHeight
+			description.Position, description.Size = UDim2.fromOffset(left, descriptionTop), UDim2.new(1, -left - 12, 0, math.max(16, height - descriptionTop - 54))
 			button.Position, button.Size = UDim2.new(0, left, 1, -48), UDim2.new(1, -left - 12, 0, 36)
 			status.Visible = false
 		else
-			local coverHeight = height - 192
+			local descriptionHeight = math.ceil(52 * textScale)
+			local coverHeight = height - 116 - titleHeight - descriptionHeight
 			cover.Position, cover.Size = UDim2.fromOffset(12, 12), UDim2.new(1, -24, 0, coverHeight)
-			title.Position, title.Size = UDim2.fromOffset(14, coverHeight + 24), UDim2.new(1, -28, 0, 24)
-			description.Position, description.Size = UDim2.fromOffset(14, coverHeight + 55), UDim2.new(1, -28, 0, 52)
+			title.Position, title.Size = UDim2.fromOffset(14, coverHeight + 24), UDim2.new(1, -28, 0, titleHeight)
+			description.Position, description.Size = UDim2.fromOffset(14, coverHeight + 31 + titleHeight), UDim2.new(1, -28, 0, descriptionHeight)
 			button.Position, button.Size = UDim2.new(0, 12, 1, -68), UDim2.new(1, -24, 0, 38)
 			status.Position, status.Size = UDim2.new(0, 14, 1, -23), UDim2.new(1, -28, 0, 16)
 			status.Visible = true

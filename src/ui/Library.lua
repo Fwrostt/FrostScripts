@@ -241,6 +241,7 @@ function Window:SetTextScale(scale)
 	self.TextScale = math.clamp(tonumber(scale) or 1, 1, 1.3)
 	self:_remember("TextScale", self.TextScale)
 	self:_applyTextScale()
+	self:_layoutScriptCards()
 end
 
 function Window:SetDimAmount(percent)
@@ -321,6 +322,7 @@ function Window:SelectTab(tab)
 	if type(tab) == "string" then tab = self._tabsByName[tab] end
 	if not tab or tab.Window ~= self then return end
 	self:CloseDropdown()
+	if self._rebinding then self._rebinding:Refresh(); self._rebinding = nil end
 	if self.ActiveTab then
 		self.ActiveTab.Query, self.ActiveTab.ActiveOnly = self.Search.Text, self.ActiveOnly
 	end

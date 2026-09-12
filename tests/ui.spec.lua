@@ -139,6 +139,8 @@ test("two script cards fit without scrolling across supported viewports", functi
 	window:SelectTab(library)
 	for _, preset in ipairs({ "Comfortable", "Large", "Extra Large" }) do
 		window:SetSizePreset(preset)
+		for _, textScale in ipairs({ 1, 1.3 }) do
+		window:SetTextScale(textScale)
 		for _, size in ipairs({ { 1064, 678 }, { 1280, 720 }, { 1920, 1080 }, { 390, 844 }, { 844, 390 }, { 320, 568 } }) do
 			Mock.Resize(size[1], size[2])
 			local cell = library.CardLayout.CellSize
@@ -148,6 +150,9 @@ test("two script cards fit without scrolling across supported viewports", functi
 			assert(height * math.ceil(2 / columns) + (columns == 1 and 12 or 0) + 8 <= content.Y + 0.01,
 				"both complete cards must fit without scrolling at " .. size[1] .. "x" .. size[2])
 			for _, card in ipairs(library.ScriptCards) do
+				local function top(obj) return height * obj.Position.Y.Scale + obj.Position.Y.Offset end
+				assert(top(card.Title) + card.Title.Size.Y.Offset <= top(card.Description), "title and description must not overlap")
+				assert(top(card.Description) + card.Description.Size.Y.Offset <= top(card.Button), "description must not overlap launch")
 				for _, child in ipairs({ card.Cover, card.Title, card.Description, card.Button, card.Status }) do
 					if child.Visible then
 						local top = height * child.Position.Y.Scale + child.Position.Y.Offset
@@ -158,6 +163,8 @@ test("two script cards fit without scrolling across supported viewports", functi
 			end
 		end
 	end
+	end
+	window:SetTextScale(1)
 	Mock.Resize(1280, 800)
 end)
 test("search belongs to searchable pages and restores each query", function()

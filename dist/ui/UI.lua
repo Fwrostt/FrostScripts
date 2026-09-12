@@ -50,7 +50,7 @@ local THEMES = {
 		Muted = Color3.fromRGB(165, 165, 175),
 		Accent = Color3.fromRGB(215, 218, 230),
 		AccentHover = Color3.fromRGB(255, 255, 255),
-		AccentSoft = Color3.fromRGB(39, 39, 47),
+		AccentSoft = Color3.fromRGB(56, 56, 72),
 		Success = Color3.fromRGB(131, 219, 166),
 		Danger = Color3.fromRGB(255, 173, 179),
 		DangerSurface = Color3.fromRGB(66, 36, 42),
@@ -66,7 +66,7 @@ local THEMES = {
 		Muted = Color3.fromRGB(176, 185, 198),
 		Accent = Color3.fromRGB(191, 207, 227),
 		AccentHover = Color3.fromRGB(218, 230, 247),
-		AccentSoft = Color3.fromRGB(50, 61, 77),
+		AccentSoft = Color3.fromRGB(46, 66, 100),
 		Success = Color3.fromRGB(131, 219, 166),
 		Danger = Color3.fromRGB(255, 173, 179),
 		DangerSurface = Color3.fromRGB(66, 36, 42),
@@ -426,6 +426,7 @@ function Window:SetTextScale(scale)
 	self.TextScale = math.clamp(tonumber(scale) or 1, 1, 1.3)
 	self:_remember("TextScale", self.TextScale)
 	self:_applyTextScale()
+	self:_layoutScriptCards()
 end
 
 function Window:SetDimAmount(percent)
@@ -506,6 +507,7 @@ function Window:SelectTab(tab)
 	if type(tab) == "string" then tab = self._tabsByName[tab] end
 	if not tab or tab.Window ~= self then return end
 	self:CloseDropdown()
+	if self._rebinding then self._rebinding:Refresh(); self._rebinding = nil end
 	if self.ActiveTab then
 		self.ActiveTab.Query, self.ActiveTab.ActiveOnly = self.Search.Text, self.ActiveOnly
 	end
@@ -2008,6 +2010,9 @@ function Tab:AddScriptCard(entry, onLaunch)
 	end
 	local module = self:AddModule({ Name = entry.Name, Description = entry.Description, HeaderHeight = 0, Collapsible = false })
 	module.IsScriptCard = true
+	-- The grid owns card geometry; cancel the module's initial expansion tween.
+	local running = self.Window._tweens[module.Card]
+	if running and running.Size then running.Size:Cancel(); running.Size = nil end
 	for _, object in ipairs(module.Card:GetChildren()) do
 		if object:IsA("GuiObject") then object.Visible = false end
 	end
@@ -2048,19 +2053,23 @@ function Tab:AddScriptCard(entry, onLaunch)
 	self.Window:_connect(button.Activated, function() if button.Active then safeCall(self.Window, onLaunch) end end)
 	local card = { Module = module, Button = button, Cover = cover, Image = image, Title = title, Description = description, Status = status }
 	function card:Layout(horizontal, height)
+		local textScale = self.Module.Window.TextScale
+		local titleHeight = math.ceil(24 * textScale)
 		if horizontal then
 			local side = math.min(104, height - 24)
 			local left = side + 26
 			cover.Position, cover.Size = UDim2.fromOffset(12, 12), UDim2.fromOffset(side, side)
-			title.Position, title.Size = UDim2.fromOffset(left, 12), UDim2.new(1, -left - 12, 0, 24)
-			description.Position, description.Size = UDim2.fromOffset(left, 42), UDim2.new(1, -left - 12, 0, math.max(18, height - 98))
+			title.Position, title.Size = UDim2.fromOffset(left, 10), UDim2.new(1, -left - 12, 0, titleHeight)
+			local descriptionTop = 14 + titleHeight
+			description.Position, description.Size = UDim2.fromOffset(left, descriptionTop), UDim2.new(1, -left - 12, 0, math.max(16, height - descriptionTop - 54))
 			button.Position, button.Size = UDim2.new(0, left, 1, -48), UDim2.new(1, -left - 12, 0, 36)
 			status.Visible = false
 		else
-			local coverHeight = height - 192
+			local descriptionHeight = math.ceil(52 * textScale)
+			local coverHeight = height - 116 - titleHeight - descriptionHeight
 			cover.Position, cover.Size = UDim2.fromOffset(12, 12), UDim2.new(1, -24, 0, coverHeight)
-			title.Position, title.Size = UDim2.fromOffset(14, coverHeight + 24), UDim2.new(1, -28, 0, 24)
-			description.Position, description.Size = UDim2.fromOffset(14, coverHeight + 55), UDim2.new(1, -28, 0, 52)
+			title.Position, title.Size = UDim2.fromOffset(14, coverHeight + 24), UDim2.new(1, -28, 0, titleHeight)
+			description.Position, description.Size = UDim2.fromOffset(14, coverHeight + 31 + titleHeight), UDim2.new(1, -28, 0, descriptionHeight)
 			button.Position, button.Size = UDim2.new(0, 12, 1, -68), UDim2.new(1, -24, 0, 38)
 			status.Position, status.Size = UDim2.new(0, 14, 1, -23), UDim2.new(1, -28, 0, 16)
 			status.Visible = true
@@ -2129,7 +2138,7 @@ function Window:_layoutScriptCards()
 		if tab.CardLayout then
 			local count = math.min(2, math.max(1, #tab.ScriptCards))
 			local height = horizontal and math.clamp(math.floor((availableHeight - 8 - (count - 1) * 12) / count), 112, 174)
-				or math.min(300, availableHeight - 8)
+				or math.min(300 + math.ceil((self.TextScale - 1) * 100), availableHeight - 8)
 			tab.CardLayout.CellSize = UDim2.new(1 / columns, columns == 2 and -10 or -8, 0, height)
 			for _, card in ipairs(tab.ScriptCards) do card:Layout(horizontal, height) end
 		end

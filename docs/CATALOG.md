@@ -22,9 +22,25 @@ Each game uses this format:
 
 ## Image format
 
-Upload your cover image to Roblox and use the resulting image asset ID. For example, replace the empty string with `"rbxassetid://1234567890"` or `"1234567890"` using your actual ID. A landscape image around **16:9** works well; keep important content away from the edges when using Crop. A normal website image URL is not a Roblox image asset.
+1. Open **Roblox Studio** and an experience you own. Open **Asset Manager** from the Window menu or Home tab.
+2. Import your PNG or JPG using **Bulk Import** (or the **Importer** if using Asset Manager V2). A landscape source around **16:9** works well. The cover also crops to a square on compact screens, so keep the subject centered.
+3. In Asset Manager's **Images** section, right-click the uploaded image and use **Copy ID to Clipboard**. Use the **image** ID, not the separate decal/container ID. Wait for Roblox moderation if the upload is pending.
+4. Edit the matching game's `Image` table in [config/Scripts.lua](../config/Scripts.lua):
 
-Leave `AssetId = ""` when you have no image. Invalid values and images that have not loaded retain the monogram underneath. The UI never waits for an image before enabling launch. Roblox asset permissions determine whether a cover can load in a particular experience. See [ImageLabel documentation](https://create.roblox.com/docs/reference/engine/classes/ImageLabel).
+   ```lua
+   Image = {
+       AssetId = "rbxassetid://1234567890", -- Replace with YOUR image ID
+       ScaleType = "Crop", -- Or "Fit" to show the whole image
+   },
+   ```
+
+5. Run `python tools/build.py` and `python tools/check.py`, then commit and push `config/Scripts.lua` and `dist/api/FrostScriptsAPI.lua`. Rerun the main loader after GitHub serves the update. If you send the image ID to the project maintainer, they can do this step for you.
+
+These are authoring steps only; players still run the same single GitHub loader. Uploading an image into the GitHub repository alone does not produce a Roblox image asset.
+
+Leave `AssetId = ""` when you have no image. Invalid values and images that have not loaded retain the monogram underneath. The UI never waits for an image before enabling launch. If a custom image stays blank, check that it is the image ID, has cleared moderation, and its permissions allow the target experience to load it.
+
+Official references: [Roblox Asset Manager and image importing](https://create.roblox.com/docs/projects/assets/manager), [ImageLabel](https://create.roblox.com/docs/reference/engine/classes/ImageLabel).
 
 ## Game implementation
 
