@@ -56,16 +56,16 @@ end)()
 local UI_DEFAULTS = (function()
 -- UI defaults only. Feature settings belong to their game modules.
 return {
-	DesignRevision = 4,
+	DesignRevision = 5,
 	Animations = true,
-	-- Decorative effects are opt-in: the loader stays crisp and inexpensive by default.
-	BackgroundEffects = false,
-	BackgroundAnimations = false,
+	-- Ambient motion is deliberately lightweight (two ribbons at 15 fps).
+	BackgroundEffects = true,
+	BackgroundAnimations = true,
 	Sounds = true,
 	SoundVolume = 0.18,
 	NotificationsEnabled = true,
 	ThemeName = "Black",
-	SizePreset = "Comfortable",
+	SizePreset = "Large",
 	TextScale = 1,
 	DimAmount = 40,
 	MonitorWidth = 380,
@@ -76,10 +76,11 @@ return {
 }
 
 end)()
-local SVG_ICONS = {["controls"]={{"line",6.0,5.0,6.0,19.0,1.35},{"line",12.0,5.0,12.0,19.0,1.35},{"line",18.0,5.0,18.0,19.0,1.35},{"rect",4.5,8.0,3.0,3.0,1.0,1.35},{"rect",10.5,13.0,3.0,3.0,1.0,1.35},{"rect",16.5,6.0,3.0,3.0,1.0,1.35}},["home"]={{"line",4.0,10.0,12.0,4.0,1.35},{"line",12.0,4.0,20.0,10.0,1.35},{"line",6.0,9.0,6.0,20.0,1.35},{"line",6.0,20.0,18.0,20.0,1.35},{"line",18.0,20.0,18.0,9.0,1.35},{"line",10.0,20.0,10.0,14.0,1.35},{"line",14.0,14.0,14.0,20.0,1.35}},["library"]={{"rect",4.0,4.0,5.0,16.0,1.0,1.35},{"rect",10.5,4.0,5.0,16.0,1.0,1.35},{"rect",17.0,4.0,3.0,16.0,1.0,1.35}},["modules"]={{"rect",4.0,4.0,6.0,6.0,1.25,1.35},{"rect",14.0,4.0,6.0,6.0,1.25,1.35},{"rect",4.0,14.0,6.0,6.0,1.25,1.35},{"rect",14.0,14.0,6.0,6.0,1.25,1.35}},["settings"]={{"line",5.0,6.0,19.0,6.0,1.35},{"line",5.0,12.0,19.0,12.0,1.35},{"line",5.0,18.0,19.0,18.0,1.35},{"circle",9.0,6.0,1.5,1.35},{"circle",15.0,12.0,1.5,1.35},{"circle",11.0,18.0,1.5,1.35}},["snowflake"]={{"line",12.0,4.0,12.0,20.0,1.35},{"line",5.1,8.0,18.9,16.0,1.35},{"line",5.1,16.0,18.9,8.0,1.35}}}
+local SVG_ICONS = {["controls"]={{"line",6.0,5.0,6.0,19.0,2.0},{"line",12.0,5.0,12.0,19.0,2.0},{"line",18.0,5.0,18.0,19.0,2.0},{"rect",4.5,8.0,3.0,3.0,1.0,2.0},{"rect",10.5,13.0,3.0,3.0,1.0,2.0},{"rect",16.5,6.0,3.0,3.0,1.0,2.0}},["home"]={{"line",4.0,10.0,12.0,4.0,2.0},{"line",12.0,4.0,20.0,10.0,2.0},{"line",6.0,9.0,6.0,20.0,2.0},{"line",6.0,20.0,18.0,20.0,2.0},{"line",18.0,20.0,18.0,9.0,2.0},{"line",10.0,20.0,10.0,14.0,2.0},{"line",14.0,14.0,14.0,20.0,2.0}},["library"]={{"rect",4.0,4.0,5.0,16.0,1.0,2.0},{"rect",10.5,4.0,5.0,16.0,1.0,2.0},{"rect",17.0,4.0,3.0,16.0,1.0,2.0}},["modules"]={{"rect",4.0,4.0,6.0,6.0,1.25,2.0},{"rect",14.0,4.0,6.0,6.0,1.25,2.0},{"rect",4.0,14.0,6.0,6.0,1.25,2.0},{"rect",14.0,14.0,6.0,6.0,1.25,2.0}},["settings"]={{"line",5.0,6.0,19.0,6.0,2.0},{"line",5.0,12.0,19.0,12.0,2.0},{"line",5.0,18.0,19.0,18.0,2.0},{"circle",9.0,6.0,1.5,2.0},{"circle",15.0,12.0,1.5,2.0},{"circle",11.0,18.0,1.5,2.0}},["snowflake"]={{"line",12.0,4.0,12.0,20.0,2.0},{"line",5.1,8.0,18.9,16.0,2.0},{"line",5.1,16.0,18.9,8.0,2.0}}}
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 
 local Library = {}
 Library.__index = Library
@@ -274,9 +275,9 @@ end
 local THEME = copyTheme(THEMES.Black)
 
 local SIZE_PRESETS = {
-	Comfortable = Vector2.new(880, 540),
-	Large = Vector2.new(960, 590),
-	["Extra Large"] = Vector2.new(1060, 640),
+	Comfortable = Vector2.new(920, 580),
+	Large = Vector2.new(1040, 650),
+	["Extra Large"] = Vector2.new(1160, 720),
 }
 
 local CARD_HORIZONTAL_GUTTER = 8
@@ -436,27 +437,35 @@ function Window:_hover(button, normalColor, hoverColor)
 end
 
 function Window:_makeDraggable(object, handle)
-	local activeInput, dragStart, startCenter
+	local activeInput, dragStart, startCenter, viewport, half, pendingDelta, dragConnection
+	local function stopDragging()
+		activeInput = nil
+		if dragConnection then dragConnection:Disconnect(); dragConnection = nil; self._dragConnection = nil end
+	end
 	handle.Active = true
 	self:_connect(handle.InputBegan, function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-			activeInput, dragStart = input, input.Position
+			stopDragging()
+			activeInput, dragStart, pendingDelta = input, input.Position, Vector2.zero
 			startCenter = object.AbsolutePosition + object.AbsoluteSize / 2
+			viewport, half = self.Gui.AbsoluteSize, object.AbsoluteSize / 2
+			dragConnection = RunService.RenderStepped:Connect(function()
+				if not activeInput or not self.Visible then return end
+				local center = startCenter + pendingDelta
+				object.Position = UDim2.fromOffset(
+					math.clamp(center.X, half.X, math.max(half.X, viewport.X - half.X)),
+					math.clamp(center.Y, half.Y, math.max(half.Y, viewport.Y - half.Y)))
+			end)
+			self._dragConnection = dragConnection
 		end
 	end)
 	self:_connect(UserInputService.InputEnded, function(input)
-		if input == activeInput then activeInput = nil end
+		if input == activeInput then stopDragging() end
 	end)
 	self:_connect(UserInputService.InputChanged, function(input)
 		if not activeInput or not self.Visible then return end
 		if input ~= activeInput and input.UserInputType ~= Enum.UserInputType.MouseMovement then return end
-		local delta = input.Position - dragStart
-		local viewport = self.Gui.AbsoluteSize
-		local half = object.AbsoluteSize / 2
-		local center = startCenter + Vector2.new(delta.X, delta.Y)
-		object.Position = UDim2.fromOffset(
-			math.clamp(center.X, half.X, math.max(half.X, viewport.X - half.X)) + (object.AnchorPoint.X - 0.5) * object.AbsoluteSize.X,
-			math.clamp(center.Y, half.Y, math.max(half.Y, viewport.Y - half.Y)) + (object.AnchorPoint.Y - 0.5) * object.AbsoluteSize.Y)
+		pendingDelta = input.Position - dragStart
 	end)
 end
 
@@ -719,6 +728,22 @@ function Window:AddTab(name, icon, subtitle)
 	self:_connect(button.Activated, function() self:SelectTab(tab) end)
 	if #self.Tabs == 1 then self:SelectTab(tab) end
 	return tab
+end
+
+function Tab:SetDashboardLayout()
+	assert(not self.CardLayout, "Dashboard layout cannot be used for script cards")
+	if self.DashboardGrid then return self end
+	local list = self.Scroll:FindFirstChildWhichIsA("UIListLayout")
+	if list then list:Destroy() end
+	self.DashboardGrid = create("UIGridLayout", {
+		CellSize = UDim2.new(0.5, -10, 0, 174),
+		CellPadding = UDim2.fromOffset(12, 12),
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		HorizontalAlignment = Enum.HorizontalAlignment.Center,
+		Parent = self.Scroll,
+	})
+	self.Window:_layoutDashboardCards()
+	return self
 end
 
 function Module:_refreshHeight()
@@ -1683,6 +1708,7 @@ function Window:Destroy()
 	if self._destroyed then return end
 	self._destroyed = true
 	if self._ambientConnection then self._ambientConnection:Disconnect(); self._ambientConnection = nil end
+	if self._dragConnection then self._dragConnection:Disconnect(); self._dragConnection = nil end
 	self:CloseDropdown()
 	for _, connection in ipairs(self._connections) do connection:Disconnect() end
 	table.clear(self._connections)
@@ -1827,7 +1853,7 @@ function Window:_attachIcon(host, name)
 	local root = create("Frame", { Name = "VectorIcon_" .. name, Size = UDim2.fromOffset(24, 24),
 		AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
 		BackgroundTransparency = 1, Parent = host })
-	create("UIScale", { Scale = 0.68, Parent = root })
+	create("UIScale", { Scale = 0.92, Parent = root })
 	local objects = {}
 	for _, shape in ipairs(SVG_ICONS[name] or SVG_ICONS.controls) do
 		local frame
@@ -1985,7 +2011,7 @@ function Window:_syncAmbient()
 		for index, item in ipairs(self._aurora) do
 			item.Gradient.Offset = Vector2.new(math.sin(t * 0.16 + index) * 0.32, 0)
 			item.Frame.Rotation = -24 + math.sin(t * 0.11 + index) * 9
-			item.Frame.Position = UDim2.fromScale(0.32 + math.sin(t * 0.08 + index) * 0.12, 0.15 + (index - 1) * 0.32)
+			item.Frame.Position = UDim2.fromScale(0.32 + math.sin(t * 0.08 + index) * 0.12, 0.22 + (index - 1) * 0.38)
 		end
 	end)
 end
@@ -2008,9 +2034,9 @@ function Window:_initExperience()
 		Name = "AuroraBackground", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1,
 		ClipsDescendants = true, ZIndex = 0, Parent = self.Frame,
 	})
-	for index = 1, 3 do
+	for index = 1, 2 do
 		local ribbon = create("Frame", {
-			Name = "AuroraRibbon", Position = UDim2.fromScale(0.32, 0.15 + (index - 1) * 0.32),
+		Name = "AuroraRibbon", Position = UDim2.fromScale(0.32, 0.22 + (index - 1) * 0.38),
 			Size = UDim2.new(0.95, 0, 0, 210), Rotation = -24,
 			BackgroundColor3 = THEME.Accent, BackgroundTransparency = 0.94,
 			BorderSizePixel = 0, ZIndex = 0, Parent = self.Ambient,
@@ -2257,12 +2283,24 @@ function Window:_resizeWindow(animate)
 	end
 	self._compact = compact
 	self:_layoutScriptCards()
+	self:_layoutDashboardCards()
 	for _, gallery in ipairs(self.ThemeGalleries or {}) do gallery:Layout() end
 	local size = UDim2.fromOffset(self.TargetSize.X, self.TargetSize.Y)
 	if animate then self:_tween(self.Frame, 0.2, { Size = size }) else self.Frame.Size = size end
 	self.Frame.Position = UDim2.fromScale(0.5, 0.5)
 	self:_layoutMonitors()
 	self:_layoutNotifications()
+end
+
+function Window:_layoutDashboardCards()
+	if not self.TargetSize then return end
+	local availableWidth = self.TargetSize.X - (self._compact and 68 or 192) - 40
+	local columns = availableWidth >= 590 and 2 or 1
+	for _, tab in ipairs(self.Tabs) do
+		if tab.DashboardGrid then
+			tab.DashboardGrid.CellSize = UDim2.new(1 / columns, columns == 2 and -10 or -8, 0, 174)
+		end
+	end
 end
 
 function Window:_layoutScriptCards()
@@ -2456,7 +2494,7 @@ function Library:CreateWindow(options)
 	window.Sidebar = create("Frame", {
 		Name = "Sidebar", Size = UDim2.new(0, 216, 1, 0), BackgroundColor3 = THEME.Panel,
 		BorderSizePixel = 0, Parent = window.Frame,
-	})
+	}, { corner(18) })
 	create("Frame", { Position = UDim2.new(1, -1, 0, 0), Size = UDim2.new(0, 1, 1, 0),
 		BackgroundColor3 = THEME.Border, BackgroundTransparency = 0.45, BorderSizePixel = 0, Parent = window.Sidebar })
 	window.Logo = create("TextLabel", {

@@ -1709,6 +1709,7 @@ if AutoClicker then table.insert(Runtime.Features, AutoClicker) end
 local Home = Interface:AddTab("Home", "H", "FrostScripts NeedleInHay")
 local Modules = Interface:AddTab("Modules", "M", "Game modules")
 local Settings = Interface:AddTab("UI Settings", "S", "Appearance, motion, and sound")
+Home:SetDashboardLayout()
 
 local overview = Home:AddModule({
 	Name = "FrostScripts NeedleInHay",

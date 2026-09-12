@@ -29,12 +29,24 @@ function Window:_resizeWindow(animate)
 	end
 	self._compact = compact
 	self:_layoutScriptCards()
+	self:_layoutDashboardCards()
 	for _, gallery in ipairs(self.ThemeGalleries or {}) do gallery:Layout() end
 	local size = UDim2.fromOffset(self.TargetSize.X, self.TargetSize.Y)
 	if animate then self:_tween(self.Frame, 0.2, { Size = size }) else self.Frame.Size = size end
 	self.Frame.Position = UDim2.fromScale(0.5, 0.5)
 	self:_layoutMonitors()
 	self:_layoutNotifications()
+end
+
+function Window:_layoutDashboardCards()
+	if not self.TargetSize then return end
+	local availableWidth = self.TargetSize.X - (self._compact and 68 or 192) - 40
+	local columns = availableWidth >= 590 and 2 or 1
+	for _, tab in ipairs(self.Tabs) do
+		if tab.DashboardGrid then
+			tab.DashboardGrid.CellSize = UDim2.new(1 / columns, columns == 2 and -10 or -8, 0, 174)
+		end
+	end
 end
 
 function Window:_layoutScriptCards()
@@ -228,7 +240,7 @@ function Library:CreateWindow(options)
 	window.Sidebar = create("Frame", {
 		Name = "Sidebar", Size = UDim2.new(0, 216, 1, 0), BackgroundColor3 = THEME.Panel,
 		BorderSizePixel = 0, Parent = window.Frame,
-	})
+	}, { corner(18) })
 	create("Frame", { Position = UDim2.new(1, -1, 0, 0), Size = UDim2.new(0, 1, 1, 0),
 		BackgroundColor3 = THEME.Border, BackgroundTransparency = 0.45, BorderSizePixel = 0, Parent = window.Sidebar })
 	window.Logo = create("TextLabel", {

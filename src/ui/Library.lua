@@ -1,6 +1,7 @@
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 
 local Library = {}
 Library.__index = Library
@@ -33,9 +34,9 @@ end
 local THEME = copyTheme(THEMES.Black)
 
 local SIZE_PRESETS = {
-	Comfortable = Vector2.new(880, 540),
-	Large = Vector2.new(960, 590),
-	["Extra Large"] = Vector2.new(1060, 640),
+	Comfortable = Vector2.new(920, 580),
+	Large = Vector2.new(1040, 650),
+	["Extra Large"] = Vector2.new(1160, 720),
 }
 
 local CARD_HORIZONTAL_GUTTER = 8
@@ -195,27 +196,35 @@ function Window:_hover(button, normalColor, hoverColor)
 end
 
 function Window:_makeDraggable(object, handle)
-	local activeInput, dragStart, startCenter
+	local activeInput, dragStart, startCenter, viewport, half, pendingDelta, dragConnection
+	local function stopDragging()
+		activeInput = nil
+		if dragConnection then dragConnection:Disconnect(); dragConnection = nil; self._dragConnection = nil end
+	end
 	handle.Active = true
 	self:_connect(handle.InputBegan, function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-			activeInput, dragStart = input, input.Position
+			stopDragging()
+			activeInput, dragStart, pendingDelta = input, input.Position, Vector2.zero
 			startCenter = object.AbsolutePosition + object.AbsoluteSize / 2
+			viewport, half = self.Gui.AbsoluteSize, object.AbsoluteSize / 2
+			dragConnection = RunService.RenderStepped:Connect(function()
+				if not activeInput or not self.Visible then return end
+				local center = startCenter + pendingDelta
+				object.Position = UDim2.fromOffset(
+					math.clamp(center.X, half.X, math.max(half.X, viewport.X - half.X)),
+					math.clamp(center.Y, half.Y, math.max(half.Y, viewport.Y - half.Y)))
+			end)
+			self._dragConnection = dragConnection
 		end
 	end)
 	self:_connect(UserInputService.InputEnded, function(input)
-		if input == activeInput then activeInput = nil end
+		if input == activeInput then stopDragging() end
 	end)
 	self:_connect(UserInputService.InputChanged, function(input)
 		if not activeInput or not self.Visible then return end
 		if input ~= activeInput and input.UserInputType ~= Enum.UserInputType.MouseMovement then return end
-		local delta = input.Position - dragStart
-		local viewport = self.Gui.AbsoluteSize
-		local half = object.AbsoluteSize / 2
-		local center = startCenter + Vector2.new(delta.X, delta.Y)
-		object.Position = UDim2.fromOffset(
-			math.clamp(center.X, half.X, math.max(half.X, viewport.X - half.X)) + (object.AnchorPoint.X - 0.5) * object.AbsoluteSize.X,
-			math.clamp(center.Y, half.Y, math.max(half.Y, viewport.Y - half.Y)) + (object.AnchorPoint.Y - 0.5) * object.AbsoluteSize.Y)
+		pendingDelta = input.Position - dragStart
 	end)
 end
 
@@ -478,6 +487,22 @@ function Window:AddTab(name, icon, subtitle)
 	self:_connect(button.Activated, function() self:SelectTab(tab) end)
 	if #self.Tabs == 1 then self:SelectTab(tab) end
 	return tab
+end
+
+function Tab:SetDashboardLayout()
+	assert(not self.CardLayout, "Dashboard layout cannot be used for script cards")
+	if self.DashboardGrid then return self end
+	local list = self.Scroll:FindFirstChildWhichIsA("UIListLayout")
+	if list then list:Destroy() end
+	self.DashboardGrid = create("UIGridLayout", {
+		CellSize = UDim2.new(0.5, -10, 0, 174),
+		CellPadding = UDim2.fromOffset(12, 12),
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		HorizontalAlignment = Enum.HorizontalAlignment.Center,
+		Parent = self.Scroll,
+	})
+	self.Window:_layoutDashboardCards()
+	return self
 end
 
 function Module:_refreshHeight()
@@ -1442,6 +1467,7 @@ function Window:Destroy()
 	if self._destroyed then return end
 	self._destroyed = true
 	if self._ambientConnection then self._ambientConnection:Disconnect(); self._ambientConnection = nil end
+	if self._dragConnection then self._dragConnection:Disconnect(); self._dragConnection = nil end
 	self:CloseDropdown()
 	for _, connection in ipairs(self._connections) do connection:Disconnect() end
 	table.clear(self._connections)

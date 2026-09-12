@@ -55,7 +55,7 @@ function Window:_syncAmbient()
 		for index, item in ipairs(self._aurora) do
 			item.Gradient.Offset = Vector2.new(math.sin(t * 0.16 + index) * 0.32, 0)
 			item.Frame.Rotation = -24 + math.sin(t * 0.11 + index) * 9
-			item.Frame.Position = UDim2.fromScale(0.32 + math.sin(t * 0.08 + index) * 0.12, 0.15 + (index - 1) * 0.32)
+			item.Frame.Position = UDim2.fromScale(0.32 + math.sin(t * 0.08 + index) * 0.12, 0.22 + (index - 1) * 0.38)
 		end
 	end)
 end
@@ -78,9 +78,9 @@ function Window:_initExperience()
 		Name = "AuroraBackground", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1,
 		ClipsDescendants = true, ZIndex = 0, Parent = self.Frame,
 	})
-	for index = 1, 3 do
+	for index = 1, 2 do
 		local ribbon = create("Frame", {
-			Name = "AuroraRibbon", Position = UDim2.fromScale(0.32, 0.15 + (index - 1) * 0.32),
+		Name = "AuroraRibbon", Position = UDim2.fromScale(0.32, 0.22 + (index - 1) * 0.38),
 			Size = UDim2.new(0.95, 0, 0, 210), Rotation = -24,
 			BackgroundColor3 = THEME.Accent, BackgroundTransparency = 0.94,
 			BorderSizePixel = 0, ZIndex = 0, Parent = self.Ambient,

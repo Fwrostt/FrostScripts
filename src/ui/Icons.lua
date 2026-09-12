@@ -4,7 +4,7 @@ function Window:_attachIcon(host, name)
 	local root = create("Frame", { Name = "VectorIcon_" .. name, Size = UDim2.fromOffset(24, 24),
 		AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
 		BackgroundTransparency = 1, Parent = host })
-	create("UIScale", { Scale = 0.68, Parent = root })
+	create("UIScale", { Scale = 0.92, Parent = root })
 	local objects = {}
 	for _, shape in ipairs(SVG_ICONS[name] or SVG_ICONS.controls) do
 		local frame

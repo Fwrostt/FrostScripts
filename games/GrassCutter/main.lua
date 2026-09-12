@@ -1509,6 +1509,7 @@ Runtime.MainGui = Interface:GetRoot()
 local Home = Interface:AddTab("Home", "H", "Overview and quick access")
 local Modules = Interface:AddTab("Modules", "M", "Configure automation and utility modules")
 local Settings = Interface:AddTab("UI Settings", "S", "Appearance, motion, and sound")
+Home:SetDashboardLayout()
 
 local welcome = Home:AddModule({
 	Name = "Welcome back",
