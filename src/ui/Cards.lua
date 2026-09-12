@@ -46,6 +46,15 @@ function Tab:AddScriptCard(entry, onLaunch)
 	local function imageReady() fallback.Visible = not (image.Visible and image.IsLoaded) end
 	self.Window:_connect(image:GetPropertyChangedSignal("IsLoaded"), imageReady)
 	imageReady()
+	if self.Window.ResolveCover then
+		task.spawn(function()
+			local ok, content = pcall(self.Window.ResolveCover, entry)
+			if ok and content and not self.Window._destroyed then
+				image.Image, image.Visible = content, true
+				imageReady()
+			end
+		end)
+	end
 	local function label(name, text, size, color, font)
 		return create("TextLabel", { Name = name, Text = text, TextSize = size, Font = font,
 			TextColor3 = color, TextXAlignment = Enum.TextXAlignment.Left,

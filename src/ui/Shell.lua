@@ -181,7 +181,7 @@ function Library:CreateWindow(options)
 		if existing then existing:Destroy() end
 	end
 	local window = setmetatable({
-		UIState = state, InputEnabled = true,
+		UIState = state, InputEnabled = true, ResolveCover = options.ResolveCover,
 		Animations = options.Animations ~= false, Visible = true,
 		BackgroundEffects = options.BackgroundEffects ~= false,
 		BackgroundAnimations = options.BackgroundAnimations ~= false,

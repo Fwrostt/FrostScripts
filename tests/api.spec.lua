@@ -140,4 +140,21 @@ test("GitHub UI and game selection load exactly one game", function()
 	assert(API.GetConfig().BaseUrl == "https://raw.githubusercontent.com/Fwrostt/FrostScripts/test-ref")
 	assert(#API.GetGames() == 2)
 end)
+test("GitHub covers discover extensions and cache validated images", function()
+	local base = API.GetConfig().BaseUrl .. "/games/GrassCutter/icon."
+	local written = {}
+	sandbox.writefile = function(path, bytes) written[path] = bytes end
+	sandbox.getcustomasset = function(path) assert(written[path]); return "rbxasset://" .. path end
+	sources[base .. "png"] = "404: Not Found"
+	sources[base .. "jpg"] = string.char(255, 216, 255, 224) .. "fixture"
+	local entry = { EntryPoint = "games/GrassCutter/main.lua" }
+	local image = API.ResolveCover(entry)
+	assert(image and image:find(".jpg", 1, true))
+	assert(requests[base .. "png"] == 1 and requests[base .. "jpg"] == 1)
+	assert(API.ResolveCover(entry) == image and requests[base .. "jpg"] == 1)
+	assert(API.ResolveCover({ EntryPoint = "../bad.lua" }) == nil)
+	assert(API.ResolveCover({ EntryPoint = entry.EntryPoint, Image = { Enabled = false } }) == nil)
+	sandbox.writefile = nil
+	assert(API.ResolveCover({ EntryPoint = "games/NeedleInHay/main.lua" }) == nil)
+end)
 print(string.format("%d API tests passed", passed))

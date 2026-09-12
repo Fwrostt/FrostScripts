@@ -25,16 +25,9 @@ The execution environment must support `loadstring` and `game:HttpGet`. Raw GitH
 
 ## Add scripts and images
 
-Edit [config/Scripts.lua](config/Scripts.lua). Every entry has the same fields, including:
+Upload `icon.png` beside each game's `main.lua`: [GrassCutter](games/GrassCutter/) or [NeedleInHay](games/NeedleInHay/). Lowercase `icon.jpg` / `icon.jpeg` also work. The loader discovers covers from raw GitHub automatically; image-only uploads need no rebuild. Missing images retain the monogram.
 
-```lua
-Image = {
-    AssetId = "", -- Paste a Roblox image asset ID, e.g. "rbxassetid://1234567890"
-    ScaleType = "Crop", -- "Crop" or "Fit"
-},
-```
-
-An empty or invalid image uses the built-in monogram cover. Add the game implementation under `games/`, add its catalog entry, then build and publish. See [the complete catalog format](docs/CATALOG.md).
+Names, descriptions, and script entries live in [config/Scripts.lua](config/Scripts.lua). Use `Image = { Enabled = true, ScaleType = "Crop" }` (or `"Fit"`). The image bridge needs `writefile` and `getcustomasset`; executable downloads remain GitHub-only. See [the complete catalog format](docs/CATALOG.md).
 
 UI defaults and the sound asset are in [config/UI.lua](config/UI.lua). Gameplay defaults stay in each game's modules.
 
@@ -68,7 +61,7 @@ python tools/build.py
 python tools/check.py
 ```
 
-The checks compile the scripts, exercise 29 behavior tests, enforce the single entry point and module keybind layout, and reject filesystem loading or incorrect GitHub script hosts. GitHub Actions runs the same checks. These developer commands do not host a service or run on players' computers.
+The checks compile the scripts, exercise 30 behavior tests, enforce the single entry point and module keybind layout, and reject filesystem loading or incorrect GitHub script hosts. GitHub Actions runs the same checks. These developer commands do not host a service or run on players' computers.
 
 To use another revision, set `getgenv().FrostScriptsConfig.BaseUrl` to this repository's raw branch or commit base URL before running the main loader. Use one revision for every file.
 

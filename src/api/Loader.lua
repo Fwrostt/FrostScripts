@@ -68,6 +68,7 @@ function API.LoadUI()
 		library.CreateWindow = function(self, options)
 			options = table.clone(options or {})
 			options.UIState = API.UIState
+			options.ResolveCover = API.ResolveCover
 			if not options.IsLauncher then options.OnReturnToLibrary = API.ReturnToLauncher end
 			return createWindow(self, options)
 		end

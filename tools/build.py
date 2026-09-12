@@ -12,7 +12,7 @@ def outputs():
     for name, field in (("Scripts", "Catalog"), ("UI", "UIState")):
         source = (ROOT / f"config/{name}.lua").read_text(encoding="utf-8")
         api.append(f"API.{field} = (function()\n{source.rstrip()}\nend)()\n")
-    for name in ("Loader", "Utilities", "Feature", "Universal"):
+    for name in ("Loader", "Assets", "Utilities", "Feature", "Universal"):
         source = (ROOT / f"src/api/{name}.lua").read_text(encoding="utf-8")
         api.append(f"\n-- {name}\ndo\n{source.rstrip()}\nend\n")
     api.append("\nreturn API\n")

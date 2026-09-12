@@ -11,7 +11,7 @@ Each game uses this format:
     Description = "What this script does and why you would open it.",
     EntryPoint = "games/MyGame/main.lua",
     Image = {
-        AssetId = "",                  -- Numeric string or rbxassetid:// image ID
+        Enabled = true,               -- Auto-discover icon.png / icon.jpg / icon.jpeg
         ScaleType = "Crop",            -- Crop fills the cover; Fit shows the whole image
     },
     Monogram = "MG",                   -- Cover fallback
@@ -20,27 +20,22 @@ Each game uses this format:
 },
 ```
 
-## Image format
+## GitHub cover images
 
-1. Open **Roblox Studio** and an experience you own. Open **Asset Manager** from the Window menu or Home tab.
-2. Import your PNG or JPG using **Bulk Import** (or the **Importer** if using Asset Manager V2). A landscape source around **16:9** works well. The cover also crops to a square on compact screens, so keep the subject centered.
-3. In Asset Manager's **Images** section, right-click the uploaded image and use **Copy ID to Clipboard**. Use the **image** ID, not the separate decal/container ID. Wait for Roblox moderation if the upload is pending.
-4. Edit the matching game's `Image` table in [config/Scripts.lua](../config/Scripts.lua):
+Upload your cover next to the matching game's `main.lua`:
 
-   ```lua
-   Image = {
-       AssetId = "rbxassetid://1234567890", -- Replace with YOUR image ID
-       ScaleType = "Crop", -- Or "Fit" to show the whole image
-   },
-   ```
+```text
+games/GrassCutter/icon.png
+games/NeedleInHay/icon.png
+```
 
-5. Run `python tools/build.py` and `python tools/check.py`, then commit and push `config/Scripts.lua` and `dist/api/FrostScriptsAPI.lua`. Rerun the main loader after GitHub serves the update. If you send the image ID to the project maintainer, they can do this step for you.
+**PNG is preferred.** `icon.jpg` and `icon.jpeg` also work. Names are lowercase and case-sensitive. The loader tries PNG, JPG, then JPEG, from the same raw GitHub revision as the scripts. Keep just one cover in each game folder. Use an image under 4 MB; a centered subject works best because compact layouts crop to a square. Set `Image.ScaleType = "Fit"` to show the whole image, or `"Crop"` to fill the cover.
 
-These are authoring steps only; players still run the same single GitHub loader. Uploading an image into the GitHub repository alone does not produce a Roblox image asset.
+On GitHub, open the game's folder, choose **Add file → Upload files**, upload `icon.png`, and commit to `main`. Rerun the loader after GitHub serves the upload. **Image-only uploads do not need a code rebuild.** No Roblox upload or asset ID is needed.
 
-Leave `AssetId = ""` when you have no image. Invalid values and images that have not loaded retain the monogram underneath. The UI never waits for an image before enabling launch. If a custom image stays blank, check that it is the image ID, has cleared moderation, and its permissions allow the target experience to load it.
+If no supported image exists, the monogram remains and the script can still launch. Set `Image.Enabled = false` to skip cover downloads. Legacy `Image.AssetId` remains an optional fallback.
 
-Official references: [Roblox Asset Manager and image importing](https://create.roblox.com/docs/projects/assets/manager), [ImageLabel](https://create.roblox.com/docs/reference/engine/classes/ImageLabel).
+Roblox ImageLabels cannot display arbitrary HTTPS image URLs directly. The API downloads the bytes from GitHub, validates PNG/JPEG signatures, and uses the executor's `writefile` plus `getcustomasset` (or `getsynasset`) image bridge. This creates a small image cache, not a local hosting service. No executable source is read from disk. Environments without these image functions use the fallback cover.
 
 ## Game implementation
 
