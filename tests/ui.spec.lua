@@ -70,13 +70,20 @@ test("custom cursor follows the pointer and restores the native cursor", functio
 	local input = Mock.Env.game:GetService("UserInputService")
 	assert(window.Cursor.Image == "rbxasset://FrostScripts_cursor" and window.Cursor.Visible)
 	assert(not input.MouseIconEnabled and window.Cursor.Size.X.Offset == 24 and window.Cursor.Size.Y.Offset == 32)
-	input.InputChanged:Fire({ UserInputType = Mock.Env.Enum.UserInputType.MouseMovement,
-		Position = Mock.Env.Vector3.new(418, 271, 0) })
-	assert(window.Cursor.Position.X.Offset == 418 and window.Cursor.Position.Y.Offset == 271)
+	assert(not window.Cursor.Active and not window.Cursor.Interactable
+		and window.Cursor.InputSink == Mock.Env.Enum.InputSink.None, "cursor must never consume clicks")
+	input.MouseLocation = Mock.Env.Vector2.new(418, 271)
+	Mock.Env.game:GetService("RunService").RenderStepped:Fire(1 / 60)
+	assert(window.Cursor.Position.X.Offset == 418 and window.Cursor.Position.Y.Offset == 270)
 	window:SetCustomCursor(false)
-	assert(not window.Cursor.Visible and input.MouseIconEnabled)
+	assert(not window.Cursor.Visible and input.MouseIconEnabled and window._cursorConnection == nil)
+	input.MouseIconEnabled = false
 	window:SetCustomCursor(true)
-	assert(window.Cursor.Visible and not input.MouseIconEnabled)
+	assert(window.Cursor.Visible and not input.MouseIconEnabled and window._cursorConnection.Connected)
+	window:SetCustomCursor(false)
+	assert(not input.MouseIconEnabled, "cursor must restore a previously hidden native cursor")
+	input.MouseIconEnabled = true
+	window:SetCustomCursor(true)
 end)
 test("window and monitor dragging follow Vector3 input without jumping", function()
 	local header = window.Main:FindFirstChild("Header")

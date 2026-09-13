@@ -58,9 +58,27 @@ function Window:_syncCursor()
 	if not self.Cursor then return end
 	local active = self.CustomCursorEnabled and self.Visible and self.Cursor.Image ~= ""
 	self.Cursor.Visible = active
-	pcall(function()
-		if UserInputService.MouseEnabled ~= false then UserInputService.MouseIconEnabled = not active end
-	end)
+	if self._cursorConnection then self._cursorConnection:Disconnect(); self._cursorConnection = nil end
+	if active then
+		if not self._ownsMouseIcon then
+			pcall(function() self._savedMouseIconEnabled = UserInputService.MouseIconEnabled end)
+			self._ownsMouseIcon = true
+		end
+		local function update()
+			if self._destroyed or not self.Cursor.Visible then return end
+			pcall(function()
+				UserInputService.MouseIconEnabled = false
+				local position = UserInputService:GetMouseLocation()
+				self.Cursor.Position = UDim2.fromOffset(
+					math.floor(position.X + 0.5), math.floor(position.Y - 0.5))
+			end)
+		end
+		update()
+		self._cursorConnection = RunService.RenderStepped:Connect(update)
+	elseif self._ownsMouseIcon then
+		pcall(function() UserInputService.MouseIconEnabled = self._savedMouseIconEnabled ~= false end)
+		self._ownsMouseIcon = false
+	end
 end
 
 function Window:SetCustomCursor(enabled)
@@ -73,17 +91,10 @@ function Window:_initCursor()
 	self.Cursor = create("ImageLabel", {
 		Name = "FrostCursor", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(0, 0),
 		Size = UDim2.fromOffset(24, 32), BackgroundTransparency = 1, Image = "",
-		ScaleType = Enum.ScaleType.Fit, Visible = false, Active = false, ZIndex = 1000,
+		ScaleType = Enum.ScaleType.Fit, Visible = false, Active = false, Selectable = false,
+		Interactable = false, InputSink = Enum.InputSink.None, ZIndex = 1000,
 		Parent = self.NotificationGui,
 	})
-	local function move(position)
-		if not position then return end
-		self.Cursor.Position = UDim2.fromOffset(math.floor(position.X + 0.5), math.floor(position.Y + 0.5))
-	end
-	self:_connect(UserInputService.InputChanged, function(input)
-		if input.UserInputType == Enum.UserInputType.MouseMovement then move(input.Position) end
-	end)
-	pcall(function() move(UserInputService:GetMouseLocation()) end)
 	self:_syncCursor()
 	if type(self.ResolveAsset) == "function" then
 		task.spawn(function()

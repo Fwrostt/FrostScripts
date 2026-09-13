@@ -1547,9 +1547,10 @@ end
 
 function Window:Destroy()
 	if self._destroyed then return end
-	pcall(function()
-		if self.Cursor and self.Cursor.Visible then UserInputService.MouseIconEnabled = true end
-	end)
+	if self.Cursor then
+		self.CustomCursorEnabled = false
+		self:_syncCursor()
+	end
 	self._destroyed = true
 	if self._ambientConnection then self._ambientConnection:Disconnect(); self._ambientConnection = nil end
 	self:CloseDropdown()
