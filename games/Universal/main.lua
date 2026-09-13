@@ -369,7 +369,7 @@ end)
 addFeatureModule(AntiAFK, "Responds to Roblox idle events to prevent automatic idle kicks")
 addFeatureModule(Performance, "Disables local particles, trails, beams, smoke, fire, and sparkles")
 
-local server = Modules:AddModule({
+local server = Home:AddModule({
 	Name = "Server Tools",
 	Description = "Reconnect to the current place or unload the Universal suite",
 	Collapsible = false,
