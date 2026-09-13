@@ -42,10 +42,10 @@ local function makeMark(root)
 end
 
 local function makeFavorite(root)
-	for _, rotation in ipairs({ 0, 45, 90, 135 }) do
-		badgePiece(root, "FavoriteRay", UDim2.fromOffset(3, 9), UDim2.fromOffset(14, 3), 0.14, rotation)
-	end
-	badgePiece(root, "FavoriteCore", UDim2.fromOffset(7, 7), UDim2.fromOffset(6, 6), 0.02, 45)
+	-- Native geometry keeps the heart crisp in executors that replace unsupported font glyphs with squares.
+	badgePiece(root, "HeartLeft", UDim2.fromOffset(2, 2), UDim2.fromOffset(10, 10), 0.06)
+	badgePiece(root, "HeartRight", UDim2.fromOffset(8, 2), UDim2.fromOffset(10, 10), 0.06)
+	badgePiece(root, "HeartPoint", UDim2.fromOffset(4, 6), UDim2.fromOffset(12, 12), 0.06, 45)
 end
 
 local ICON_BUILDERS = {

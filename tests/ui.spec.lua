@@ -329,6 +329,11 @@ test("controls use border strokes, drawn disclosures, native navigation badges a
 	assert(homeIcon and homeIcon:IsA("ImageLabel") and homeIcon.Image == "rbxassetid://7733960981", "home should use a recognizable image")
 	local modulesIcon = window._tabsByName.Modules.IconLabel:FindFirstChild("NavigationBadge_modules")
 	assert(modulesIcon and modulesIcon:FindFirstChild("ModuleBar"), "modules should use the requested three-bar badge")
+	assert(window.HeaderWash.BackgroundColor3 == UI.Theme.AccentSoft and window.Content.BackgroundColor3 == UI.Theme.Panel,
+		"page chrome should use theme-derived color")
+	assert(alpha.HeaderTint and alpha.HeaderTint.BackgroundColor3 == UI.Theme.AccentSoft
+		and alpha.CardStroke.Color == UI.Theme.AccentSoft and alpha.StatusDot.BackgroundColor3 == UI.Theme.Accent,
+		"module cards should carry theme-derived accents")
 	local logo = window.Logo:FindFirstChild("NavigationBadge_snowflake")
 	assert(logo and logo:FindFirstChild("CrystalArm"), "branding should use the crystal mark")
 	for _, object in ipairs(window.Gui:GetDescendants()) do
@@ -396,9 +401,16 @@ test("favorites create synchronized shortcuts and persist in UI state", function
 	local calls = 0
 	local source = modules:AddModule({ Name = "Noclip", Description = "Collision", Toggleable = true,
 		Favoritable = true, FavoriteId = "Universal:Noclip", Callback = function() calls += 1 end })
-	assert(source.FavoriteButton and not source:IsFavorite() and #favorites.Modules == 0)
+	local heart = source.FavoriteButton and source.FavoriteButton:FindFirstChild("NavigationBadge_favorites")
+	local navigationHeart = favorites.IconLabel:FindFirstChild("NavigationBadge_favorites")
+	assert(heart and heart:FindFirstChild("HeartPoint") and navigationHeart and navigationHeart:FindFirstChild("HeartPoint"),
+		"favorite controls and navigation should use native heart geometry")
+	assert(source.FavoriteButton.BackgroundTransparency == 1
+		and not source.FavoriteButton:FindFirstChildWhichIsA("UIStroke"), "favorite button should have no square border")
+	assert(not source:IsFavorite() and #favorites.Modules == 0)
 	source.FavoriteButton.Activated:Fire()
 	assert(source:IsFavorite() and window.UIState.Favorites["Universal:Noclip"] and #favorites.Modules == 1)
+	assert(source.FavoriteButton.TextColor3 == UI.Theme.Accent, "selected heart should use the active theme accent")
 	window:SelectTab(favorites)
 	assert(favorites.Modules[1].Card.Visible)
 	favorites.Modules[1].Toggle:SetValue(true)

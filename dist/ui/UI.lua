@@ -645,8 +645,10 @@ end
 function Window:_refreshFavoriteModule(module)
 	if module.FavoriteButton then
 		local favorite = self:IsFavorite(module.FavoriteId)
-		module.FavoriteButton.Text = favorite and "★" or "☆"
-		module.FavoriteButton.TextColor3 = favorite and THEME.Accent or THEME.Muted
+		local colorKey = favorite and "Accent" or "Muted"
+		module.FavoriteButton.Text = ""
+		module.FavoriteButton:SetAttribute("FrostTheme_TextColor3", colorKey)
+		module.FavoriteButton.TextColor3 = THEME[colorKey]
 	end
 	for _, proxy in ipairs(module.FavoriteProxies or {}) do
 		proxy.Card.Visible = self:IsFavorite(module.FavoriteId)
@@ -755,7 +757,7 @@ function Window:AddTab(name, icon, subtitle)
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		CanvasSize = UDim2.new(),
-		ScrollBarImageColor3 = THEME.Muted,
+		ScrollBarImageColor3 = THEME.Accent,
 		ScrollBarImageTransparency = 0.35,
 		ScrollBarThickness = 3,
 		ScrollingDirection = Enum.ScrollingDirection.Y,
@@ -780,7 +782,7 @@ function Window:AddTab(name, icon, subtitle)
 		BorderSizePixel = 0,
 		Text = "",
 		Parent = self.Navigation,
-	}, { corner(10) })
+	}, { corner(10), stroke(THEME.Accent, 0.84) })
 	local indicator = create("Frame", {
 		Position = UDim2.fromOffset(4, 10),
 		Size = UDim2.fromOffset(3, 30),
@@ -880,8 +882,14 @@ function Module:SetEnabled(enabled, silent)
 	if changed then self.Window:_refreshSearch() end
 	self.Window:_tween(self.Status, 0.12, { TextColor3 = enabled and THEME.Success or THEME.Muted })
 	self.Window:_tween(self.Accent, 0.14, {
-		BackgroundColor3 = enabled and THEME.Accent or THEME.Border,
+		BackgroundColor3 = THEME.Accent,
+		BackgroundTransparency = enabled and 0 or 0.3,
 	})
+	if self.HeaderTint then self.Window:_tween(self.HeaderTint, 0.14, { BackgroundTransparency = enabled and 0.22 or 0.52 }) end
+	if self.CardStroke then self.Window:_tween(self.CardStroke, 0.14, {
+		Color = enabled and THEME.Accent or THEME.AccentSoft,
+		Transparency = enabled and 0.25 or 0.62,
+	}) end
 	for _, proxy in ipairs(self.FavoriteProxies or {}) do
 		if proxy.Toggle and proxy.Toggle.Value ~= enabled then proxy.Toggle:SetValue(enabled, true) end
 		proxy.Status.Text = self.Status.Text
@@ -915,7 +923,7 @@ function Module:_row(height)
 		BackgroundColor3 = THEME.Surface,
 		BorderSizePixel = 0,
 		Parent = self.Body,
-	}, { corner(10) })
+	}, { corner(10), stroke(THEME.Accent, 0.84) })
 	task.defer(function() self:_refreshHeight() end)
 	return row
 end
@@ -1420,6 +1428,7 @@ function Tab:AddModule(options)
 		FavoriteActionText = options.FavoriteActionText,
 		Enabled = false,
 	}, Module)
+	local cardStroke = stroke(THEME.Accent, 0.62)
 	module.Card = create("Frame", {
 		Name = module.Name,
 		Size = UDim2.new(1, -CARD_HORIZONTAL_GUTTER, 0, module.HeaderHeight),
@@ -1429,11 +1438,21 @@ function Tab:AddModule(options)
 		Active = true,
 		LayoutOrder = #self.Modules + 1,
 		Parent = self.Scroll,
-	}, { corner(13), stroke(THEME.Border, 0.25) })
+	}, { corner(13), cardStroke })
+	module.CardStroke = cardStroke
+	module.HeaderTint = create("Frame", {
+		Name = "ThemeTint",
+		Size = UDim2.new(1, 0, 0, module.HeaderHeight),
+		BackgroundColor3 = THEME.AccentSoft,
+		BackgroundTransparency = options.Accent and 0.2 or 0.52,
+		BorderSizePixel = 0,
+		Parent = module.Card,
+	})
 	module.Accent = create("Frame", {
 		Position = UDim2.fromOffset(4, 10),
 		Size = UDim2.fromOffset(3, math.max(20, module.HeaderHeight - 20)),
-		BackgroundColor3 = options.Accent and THEME.Accent or THEME.Border,
+		BackgroundColor3 = THEME.Accent,
+		BackgroundTransparency = options.Accent and 0 or 0.3,
 		BorderSizePixel = 0,
 		ZIndex = 3,
 		Parent = module.Card,
@@ -1450,8 +1469,8 @@ function Tab:AddModule(options)
 		Parent = module.Card,
 	})
 	module.Status = create("TextLabel", {
-		Position = UDim2.fromOffset(22, 30),
-		Size = UDim2.new(1, -(options.RightInset or (options.Toggleable and 148 or 64)), 0, 20),
+		Position = UDim2.fromOffset(34, 30),
+		Size = UDim2.new(1, -(options.RightInset or (options.Toggleable and 160 or 76)), 0, 20),
 		BackgroundTransparency = 1,
 		Text = options.Description or options.Status or "Ready",
 		TextColor3 = THEME.Muted,
@@ -1461,6 +1480,11 @@ function Tab:AddModule(options)
 		TextSize = 12,
 		Parent = module.Card,
 	})
+	module.StatusDot = create("Frame", {
+		Name = "StatusDot", Position = UDim2.fromOffset(22, 37), Size = UDim2.fromOffset(6, 6),
+		BackgroundColor3 = THEME.Accent, BackgroundTransparency = 0.2, BorderSizePixel = 0,
+		Parent = module.Card,
+	}, { corner(3) })
 	module.Chevron = chevron(module.Card, UDim2.new(1, options.Toggleable and -100 or -36, 0, 25))
 	module.Chevron.Visible = module.Collapsible
 	local headerButton = create("TextButton", {
@@ -1553,17 +1577,23 @@ function Tab:AddModule(options)
 			Name = "FavoriteButton",
 			Position = UDim2.new(1, options.Toggleable and -142 or -76, 0, 12),
 			Size = UDim2.fromOffset(36, 34),
-			BackgroundColor3 = THEME.Surface,
+			BackgroundTransparency = 1,
 			BorderSizePixel = 0,
-			Text = "☆",
+			Text = "",
 			TextColor3 = THEME.Muted,
 			TextSize = 20,
 			Font = Enum.Font.BuilderSansBold,
 			AutoButtonColor = false,
 			ZIndex = 8,
 			Parent = module.Card,
-		}, { corner(9), stroke(THEME.Border, 0.45) })
-		self.Window:_hover(module.FavoriteButton, THEME.Surface, THEME.SurfaceHover)
+		})
+		self.Window:_attachIcon(module.FavoriteButton, "favorites")
+		self.Window:_connect(module.FavoriteButton.MouseEnter, function()
+			self.Window:_tween(module.FavoriteButton, 0.12, { TextColor3 = THEME.AccentHover })
+		end)
+		self.Window:_connect(module.FavoriteButton.MouseLeave, function()
+			self.Window:_refreshFavoriteModule(module)
+		end)
 		self.Window:_connect(module.FavoriteButton.Activated, function() module:SetFavorite(not module:IsFavorite()) end)
 		table.insert(self.Window._favoriteModules, module)
 		if module:IsFavorite() then
@@ -2297,10 +2327,10 @@ local function makeMark(root)
 end
 
 local function makeFavorite(root)
-	for _, rotation in ipairs({ 0, 45, 90, 135 }) do
-		badgePiece(root, "FavoriteRay", UDim2.fromOffset(3, 9), UDim2.fromOffset(14, 3), 0.14, rotation)
-	end
-	badgePiece(root, "FavoriteCore", UDim2.fromOffset(7, 7), UDim2.fromOffset(6, 6), 0.02, 45)
+	-- Native geometry keeps the heart crisp in executors that replace unsupported font glyphs with squares.
+	badgePiece(root, "HeartLeft", UDim2.fromOffset(2, 2), UDim2.fromOffset(10, 10), 0.06)
+	badgePiece(root, "HeartRight", UDim2.fromOffset(8, 2), UDim2.fromOffset(10, 10), 0.06)
+	badgePiece(root, "HeartPoint", UDim2.fromOffset(4, 6), UDim2.fromOffset(12, 12), 0.06, 45)
 end
 
 local ICON_BUILDERS = {
@@ -2920,7 +2950,7 @@ function Window:_refreshSearch()
 		if module.Enabled then active += 1 end
 	end
 	self.Empty.Visible = shown == 0
-	self.Empty.Text = tab.FavoritesView and "No favorites yet\nUse the star on any module to pin it here."
+	self.Empty.Text = tab.FavoritesView and "No favorites yet\nUse the heart on any module to pin it here."
 		or #tab.Modules == 0 and "Your workspace is ready.\nAdd a module to get started."
 		or "No matching modules\nTry a different search or turn off Active."
 	self.Footer.Text = tab.StatusText or (tab.ItemNoun == "scripts" and string.format("%d scripts in your collection", shown)
@@ -3189,6 +3219,15 @@ function Library:CreateWindow(options)
 	window.BrandName:SetAttribute("FrostTheme_TextColor3", "Text")
 	window.Main = create("Frame", { Name = "Main", BackgroundTransparency = 1, Parent = window.Frame })
 	local topbar = create("Frame", { Name = "Header", Size = UDim2.new(1, 0, 0, 92), BackgroundTransparency = 1, Parent = window.Main })
+	window.HeaderWash = create("Frame", {
+		Name = "ThemeWash", Position = UDim2.fromOffset(10, 7), Size = UDim2.new(1, -20, 0, 76),
+		BackgroundColor3 = THEME.AccentSoft, BackgroundTransparency = 0.24,
+		BorderSizePixel = 0, Parent = topbar,
+	}, { corner(14), stroke(THEME.Accent, 0.7) })
+	window.HeaderAccent = create("Frame", {
+		Name = "ThemeAccent", Position = UDim2.fromOffset(20, 79), Size = UDim2.fromOffset(110, 3),
+		BackgroundColor3 = THEME.Accent, BorderSizePixel = 0, Parent = topbar,
+	}, { corner(2) })
 	label(topbar, string.upper(window:Text(options.Game or "FrostScripts")), UDim2.fromOffset(20, 12), UDim2.new(1, -88, 0, 16), 9, THEME.Accent, true)
 	window.PageTitle = label(topbar, "Workspace", UDim2.fromOffset(20, 30), UDim2.new(1, -88, 0, 28), 24, THEME.Text, true)
 	window.PageSubtitle = label(topbar, "", UDim2.fromOffset(20, 61), UDim2.new(1, -40, 0, 17), 11, THEME.Muted, false)
@@ -3210,7 +3249,8 @@ function Library:CreateWindow(options)
 	end
 	local toolbar = create("Frame", { Position = UDim2.fromOffset(20, 94), Size = UDim2.new(1, -40, 0, 40), BackgroundTransparency = 1, Parent = window.Main })
 	window.Toolbar = toolbar
-	local searchFrame = create("Frame", { Size = UDim2.new(1, -92, 1, 0), BackgroundColor3 = THEME.PanelRaised, BorderSizePixel = 0, Parent = toolbar }, { corner(10), stroke(THEME.Border, 0.4) })
+	local searchFrame = create("Frame", { Size = UDim2.new(1, -92, 1, 0), BackgroundColor3 = THEME.AccentSoft,
+		BackgroundTransparency = 0.18, BorderSizePixel = 0, Parent = toolbar }, { corner(10), stroke(THEME.Accent, 0.68) })
 	window.Search = create("TextBox", {
 		Position = UDim2.fromOffset(14, 0), Size = UDim2.new(1, -56, 1, 0), Text = "",
 		PlaceholderText = "Search this tab…", ClearTextOnFocus = false,
@@ -3224,16 +3264,16 @@ function Library:CreateWindow(options)
 	window:_connect(window.Search:GetPropertyChangedSignal("Text"), function() window:_refreshSearch() end)
 	window.ActiveFilter = create("TextButton", { Position = UDim2.new(1, -78, 0, 0), Size = UDim2.fromOffset(78, 40),
 		Text = "Active", TextSize = 12, Font = Enum.Font.BuilderSansBold, TextColor3 = THEME.Muted,
-		BackgroundColor3 = THEME.PanelRaised, AutoButtonColor = false, BorderSizePixel = 0, Parent = toolbar,
-	}, { corner(10), stroke(THEME.Border, 0.4) })
+		BackgroundColor3 = THEME.AccentSoft, AutoButtonColor = false, BorderSizePixel = 0, Parent = toolbar,
+	}, { corner(10), stroke(THEME.Accent, 0.68) })
 	window:_connect(window.ActiveFilter.Activated, function() window:SetActiveOnly(not window.ActiveOnly) end)
 	window.CategoryFilter = create("TextButton", {
 		Name = "CategoryFilter", Position = UDim2.new(1, -216, 0, 0), Size = UDim2.fromOffset(128, 40),
 		Text = "", TextSize = 12, Font = Enum.Font.BuilderSansBold, TextColor3 = THEME.Text,
-		BackgroundColor3 = THEME.PanelRaised, AutoButtonColor = false, BorderSizePixel = 0,
+		BackgroundColor3 = THEME.AccentSoft, AutoButtonColor = false, BorderSizePixel = 0,
 		Visible = false, Parent = toolbar,
-	}, { corner(10), stroke(THEME.Border, 0.4) })
-	window:_hover(window.CategoryFilter, THEME.PanelRaised, THEME.SurfaceHover)
+	}, { corner(10), stroke(THEME.Accent, 0.68) })
+	window:_hover(window.CategoryFilter, THEME.AccentSoft, THEME.SurfaceHover)
 	window:_connect(window.CategoryFilter.Activated, function()
 		local tab = window.ActiveTab
 		if not tab or not tab.Categories then return end
@@ -3242,11 +3282,13 @@ function Library:CreateWindow(options)
 		window:_openDropdown(control, "Category", tab.Categories, window.CategoryFilter)
 	end)
 	window.Content = create("Frame", { Position = UDim2.fromOffset(20, 142), Size = UDim2.new(1, -40, 1, -186),
-		BackgroundTransparency = 1, ClipsDescendants = true, Parent = window.Main })
+		BackgroundColor3 = THEME.Panel, BackgroundTransparency = 0.22,
+		BorderSizePixel = 0, ClipsDescendants = true, Parent = window.Main,
+	}, { corner(14), stroke(THEME.Accent, 0.78) })
 	window.Empty = label(window.Main, "", UDim2.new(0, 32, 0.5, 0), UDim2.new(1, -64, 0, 90), 14, THEME.Muted, false)
 	window.Empty.TextXAlignment = Enum.TextXAlignment.Center
 	window.Empty.Visible = false
-	window.Footer = label(window.Main, "Ready", UDim2.new(0, 24, 1, -32), UDim2.new(1, -180, 0, 20), 11, THEME.Muted, false)
+	window.Footer = label(window.Main, "Ready", UDim2.new(0, 24, 1, -32), UDim2.new(1, -180, 0, 20), 11, THEME.Accent, false)
 	window.SearchHint = label(window.Main, "CTRL K  /  SEARCH", UDim2.new(1, -152, 1, -32), UDim2.fromOffset(132, 20), 9, THEME.Muted, true)
 	window.Launcher = create("TextButton", { Name = "ReopenFrostScripts", AnchorPoint = Vector2.new(0, 1),
 		Position = UDim2.new(0, 20, 1, -20), Size = UDim2.fromOffset(52, 52), Text = "F",

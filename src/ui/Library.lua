@@ -401,8 +401,10 @@ end
 function Window:_refreshFavoriteModule(module)
 	if module.FavoriteButton then
 		local favorite = self:IsFavorite(module.FavoriteId)
-		module.FavoriteButton.Text = favorite and "★" or "☆"
-		module.FavoriteButton.TextColor3 = favorite and THEME.Accent or THEME.Muted
+		local colorKey = favorite and "Accent" or "Muted"
+		module.FavoriteButton.Text = ""
+		module.FavoriteButton:SetAttribute("FrostTheme_TextColor3", colorKey)
+		module.FavoriteButton.TextColor3 = THEME[colorKey]
 	end
 	for _, proxy in ipairs(module.FavoriteProxies or {}) do
 		proxy.Card.Visible = self:IsFavorite(module.FavoriteId)
@@ -511,7 +513,7 @@ function Window:AddTab(name, icon, subtitle)
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		CanvasSize = UDim2.new(),
-		ScrollBarImageColor3 = THEME.Muted,
+		ScrollBarImageColor3 = THEME.Accent,
 		ScrollBarImageTransparency = 0.35,
 		ScrollBarThickness = 3,
 		ScrollingDirection = Enum.ScrollingDirection.Y,
@@ -536,7 +538,7 @@ function Window:AddTab(name, icon, subtitle)
 		BorderSizePixel = 0,
 		Text = "",
 		Parent = self.Navigation,
-	}, { corner(10) })
+	}, { corner(10), stroke(THEME.Accent, 0.84) })
 	local indicator = create("Frame", {
 		Position = UDim2.fromOffset(4, 10),
 		Size = UDim2.fromOffset(3, 30),
@@ -636,8 +638,14 @@ function Module:SetEnabled(enabled, silent)
 	if changed then self.Window:_refreshSearch() end
 	self.Window:_tween(self.Status, 0.12, { TextColor3 = enabled and THEME.Success or THEME.Muted })
 	self.Window:_tween(self.Accent, 0.14, {
-		BackgroundColor3 = enabled and THEME.Accent or THEME.Border,
+		BackgroundColor3 = THEME.Accent,
+		BackgroundTransparency = enabled and 0 or 0.3,
 	})
+	if self.HeaderTint then self.Window:_tween(self.HeaderTint, 0.14, { BackgroundTransparency = enabled and 0.22 or 0.52 }) end
+	if self.CardStroke then self.Window:_tween(self.CardStroke, 0.14, {
+		Color = enabled and THEME.Accent or THEME.AccentSoft,
+		Transparency = enabled and 0.25 or 0.62,
+	}) end
 	for _, proxy in ipairs(self.FavoriteProxies or {}) do
 		if proxy.Toggle and proxy.Toggle.Value ~= enabled then proxy.Toggle:SetValue(enabled, true) end
 		proxy.Status.Text = self.Status.Text
@@ -671,7 +679,7 @@ function Module:_row(height)
 		BackgroundColor3 = THEME.Surface,
 		BorderSizePixel = 0,
 		Parent = self.Body,
-	}, { corner(10) })
+	}, { corner(10), stroke(THEME.Accent, 0.84) })
 	task.defer(function() self:_refreshHeight() end)
 	return row
 end
@@ -1176,6 +1184,7 @@ function Tab:AddModule(options)
 		FavoriteActionText = options.FavoriteActionText,
 		Enabled = false,
 	}, Module)
+	local cardStroke = stroke(THEME.Accent, 0.62)
 	module.Card = create("Frame", {
 		Name = module.Name,
 		Size = UDim2.new(1, -CARD_HORIZONTAL_GUTTER, 0, module.HeaderHeight),
@@ -1185,11 +1194,21 @@ function Tab:AddModule(options)
 		Active = true,
 		LayoutOrder = #self.Modules + 1,
 		Parent = self.Scroll,
-	}, { corner(13), stroke(THEME.Border, 0.25) })
+	}, { corner(13), cardStroke })
+	module.CardStroke = cardStroke
+	module.HeaderTint = create("Frame", {
+		Name = "ThemeTint",
+		Size = UDim2.new(1, 0, 0, module.HeaderHeight),
+		BackgroundColor3 = THEME.AccentSoft,
+		BackgroundTransparency = options.Accent and 0.2 or 0.52,
+		BorderSizePixel = 0,
+		Parent = module.Card,
+	})
 	module.Accent = create("Frame", {
 		Position = UDim2.fromOffset(4, 10),
 		Size = UDim2.fromOffset(3, math.max(20, module.HeaderHeight - 20)),
-		BackgroundColor3 = options.Accent and THEME.Accent or THEME.Border,
+		BackgroundColor3 = THEME.Accent,
+		BackgroundTransparency = options.Accent and 0 or 0.3,
 		BorderSizePixel = 0,
 		ZIndex = 3,
 		Parent = module.Card,
@@ -1206,8 +1225,8 @@ function Tab:AddModule(options)
 		Parent = module.Card,
 	})
 	module.Status = create("TextLabel", {
-		Position = UDim2.fromOffset(22, 30),
-		Size = UDim2.new(1, -(options.RightInset or (options.Toggleable and 148 or 64)), 0, 20),
+		Position = UDim2.fromOffset(34, 30),
+		Size = UDim2.new(1, -(options.RightInset or (options.Toggleable and 160 or 76)), 0, 20),
 		BackgroundTransparency = 1,
 		Text = options.Description or options.Status or "Ready",
 		TextColor3 = THEME.Muted,
@@ -1217,6 +1236,11 @@ function Tab:AddModule(options)
 		TextSize = 12,
 		Parent = module.Card,
 	})
+	module.StatusDot = create("Frame", {
+		Name = "StatusDot", Position = UDim2.fromOffset(22, 37), Size = UDim2.fromOffset(6, 6),
+		BackgroundColor3 = THEME.Accent, BackgroundTransparency = 0.2, BorderSizePixel = 0,
+		Parent = module.Card,
+	}, { corner(3) })
 	module.Chevron = chevron(module.Card, UDim2.new(1, options.Toggleable and -100 or -36, 0, 25))
 	module.Chevron.Visible = module.Collapsible
 	local headerButton = create("TextButton", {
@@ -1309,17 +1333,23 @@ function Tab:AddModule(options)
 			Name = "FavoriteButton",
 			Position = UDim2.new(1, options.Toggleable and -142 or -76, 0, 12),
 			Size = UDim2.fromOffset(36, 34),
-			BackgroundColor3 = THEME.Surface,
+			BackgroundTransparency = 1,
 			BorderSizePixel = 0,
-			Text = "☆",
+			Text = "",
 			TextColor3 = THEME.Muted,
 			TextSize = 20,
 			Font = Enum.Font.BuilderSansBold,
 			AutoButtonColor = false,
 			ZIndex = 8,
 			Parent = module.Card,
-		}, { corner(9), stroke(THEME.Border, 0.45) })
-		self.Window:_hover(module.FavoriteButton, THEME.Surface, THEME.SurfaceHover)
+		})
+		self.Window:_attachIcon(module.FavoriteButton, "favorites")
+		self.Window:_connect(module.FavoriteButton.MouseEnter, function()
+			self.Window:_tween(module.FavoriteButton, 0.12, { TextColor3 = THEME.AccentHover })
+		end)
+		self.Window:_connect(module.FavoriteButton.MouseLeave, function()
+			self.Window:_refreshFavoriteModule(module)
+		end)
 		self.Window:_connect(module.FavoriteButton.Activated, function() module:SetFavorite(not module:IsFavorite()) end)
 		table.insert(self.Window._favoriteModules, module)
 		if module:IsFavorite() then

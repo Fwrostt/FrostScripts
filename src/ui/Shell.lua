@@ -89,7 +89,7 @@ function Window:_refreshSearch()
 		if module.Enabled then active += 1 end
 	end
 	self.Empty.Visible = shown == 0
-	self.Empty.Text = tab.FavoritesView and "No favorites yet\nUse the star on any module to pin it here."
+	self.Empty.Text = tab.FavoritesView and "No favorites yet\nUse the heart on any module to pin it here."
 		or #tab.Modules == 0 and "Your workspace is ready.\nAdd a module to get started."
 		or "No matching modules\nTry a different search or turn off Active."
 	self.Footer.Text = tab.StatusText or (tab.ItemNoun == "scripts" and string.format("%d scripts in your collection", shown)
@@ -358,6 +358,15 @@ function Library:CreateWindow(options)
 	window.BrandName:SetAttribute("FrostTheme_TextColor3", "Text")
 	window.Main = create("Frame", { Name = "Main", BackgroundTransparency = 1, Parent = window.Frame })
 	local topbar = create("Frame", { Name = "Header", Size = UDim2.new(1, 0, 0, 92), BackgroundTransparency = 1, Parent = window.Main })
+	window.HeaderWash = create("Frame", {
+		Name = "ThemeWash", Position = UDim2.fromOffset(10, 7), Size = UDim2.new(1, -20, 0, 76),
+		BackgroundColor3 = THEME.AccentSoft, BackgroundTransparency = 0.24,
+		BorderSizePixel = 0, Parent = topbar,
+	}, { corner(14), stroke(THEME.Accent, 0.7) })
+	window.HeaderAccent = create("Frame", {
+		Name = "ThemeAccent", Position = UDim2.fromOffset(20, 79), Size = UDim2.fromOffset(110, 3),
+		BackgroundColor3 = THEME.Accent, BorderSizePixel = 0, Parent = topbar,
+	}, { corner(2) })
 	label(topbar, string.upper(window:Text(options.Game or "FrostScripts")), UDim2.fromOffset(20, 12), UDim2.new(1, -88, 0, 16), 9, THEME.Accent, true)
 	window.PageTitle = label(topbar, "Workspace", UDim2.fromOffset(20, 30), UDim2.new(1, -88, 0, 28), 24, THEME.Text, true)
 	window.PageSubtitle = label(topbar, "", UDim2.fromOffset(20, 61), UDim2.new(1, -40, 0, 17), 11, THEME.Muted, false)
@@ -379,7 +388,8 @@ function Library:CreateWindow(options)
 	end
 	local toolbar = create("Frame", { Position = UDim2.fromOffset(20, 94), Size = UDim2.new(1, -40, 0, 40), BackgroundTransparency = 1, Parent = window.Main })
 	window.Toolbar = toolbar
-	local searchFrame = create("Frame", { Size = UDim2.new(1, -92, 1, 0), BackgroundColor3 = THEME.PanelRaised, BorderSizePixel = 0, Parent = toolbar }, { corner(10), stroke(THEME.Border, 0.4) })
+	local searchFrame = create("Frame", { Size = UDim2.new(1, -92, 1, 0), BackgroundColor3 = THEME.AccentSoft,
+		BackgroundTransparency = 0.18, BorderSizePixel = 0, Parent = toolbar }, { corner(10), stroke(THEME.Accent, 0.68) })
 	window.Search = create("TextBox", {
 		Position = UDim2.fromOffset(14, 0), Size = UDim2.new(1, -56, 1, 0), Text = "",
 		PlaceholderText = "Search this tab…", ClearTextOnFocus = false,
@@ -393,16 +403,16 @@ function Library:CreateWindow(options)
 	window:_connect(window.Search:GetPropertyChangedSignal("Text"), function() window:_refreshSearch() end)
 	window.ActiveFilter = create("TextButton", { Position = UDim2.new(1, -78, 0, 0), Size = UDim2.fromOffset(78, 40),
 		Text = "Active", TextSize = 12, Font = Enum.Font.BuilderSansBold, TextColor3 = THEME.Muted,
-		BackgroundColor3 = THEME.PanelRaised, AutoButtonColor = false, BorderSizePixel = 0, Parent = toolbar,
-	}, { corner(10), stroke(THEME.Border, 0.4) })
+		BackgroundColor3 = THEME.AccentSoft, AutoButtonColor = false, BorderSizePixel = 0, Parent = toolbar,
+	}, { corner(10), stroke(THEME.Accent, 0.68) })
 	window:_connect(window.ActiveFilter.Activated, function() window:SetActiveOnly(not window.ActiveOnly) end)
 	window.CategoryFilter = create("TextButton", {
 		Name = "CategoryFilter", Position = UDim2.new(1, -216, 0, 0), Size = UDim2.fromOffset(128, 40),
 		Text = "", TextSize = 12, Font = Enum.Font.BuilderSansBold, TextColor3 = THEME.Text,
-		BackgroundColor3 = THEME.PanelRaised, AutoButtonColor = false, BorderSizePixel = 0,
+		BackgroundColor3 = THEME.AccentSoft, AutoButtonColor = false, BorderSizePixel = 0,
 		Visible = false, Parent = toolbar,
-	}, { corner(10), stroke(THEME.Border, 0.4) })
-	window:_hover(window.CategoryFilter, THEME.PanelRaised, THEME.SurfaceHover)
+	}, { corner(10), stroke(THEME.Accent, 0.68) })
+	window:_hover(window.CategoryFilter, THEME.AccentSoft, THEME.SurfaceHover)
 	window:_connect(window.CategoryFilter.Activated, function()
 		local tab = window.ActiveTab
 		if not tab or not tab.Categories then return end
@@ -411,11 +421,13 @@ function Library:CreateWindow(options)
 		window:_openDropdown(control, "Category", tab.Categories, window.CategoryFilter)
 	end)
 	window.Content = create("Frame", { Position = UDim2.fromOffset(20, 142), Size = UDim2.new(1, -40, 1, -186),
-		BackgroundTransparency = 1, ClipsDescendants = true, Parent = window.Main })
+		BackgroundColor3 = THEME.Panel, BackgroundTransparency = 0.22,
+		BorderSizePixel = 0, ClipsDescendants = true, Parent = window.Main,
+	}, { corner(14), stroke(THEME.Accent, 0.78) })
 	window.Empty = label(window.Main, "", UDim2.new(0, 32, 0.5, 0), UDim2.new(1, -64, 0, 90), 14, THEME.Muted, false)
 	window.Empty.TextXAlignment = Enum.TextXAlignment.Center
 	window.Empty.Visible = false
-	window.Footer = label(window.Main, "Ready", UDim2.new(0, 24, 1, -32), UDim2.new(1, -180, 0, 20), 11, THEME.Muted, false)
+	window.Footer = label(window.Main, "Ready", UDim2.new(0, 24, 1, -32), UDim2.new(1, -180, 0, 20), 11, THEME.Accent, false)
 	window.SearchHint = label(window.Main, "CTRL K  /  SEARCH", UDim2.new(1, -152, 1, -32), UDim2.fromOffset(132, 20), 9, THEME.Muted, true)
 	window.Launcher = create("TextButton", { Name = "ReopenFrostScripts", AnchorPoint = Vector2.new(0, 1),
 		Position = UDim2.new(0, 20, 1, -20), Size = UDim2.fromOffset(52, 52), Text = "F",
