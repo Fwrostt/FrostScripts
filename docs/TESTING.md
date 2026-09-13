@@ -6,7 +6,7 @@ Project checks enforce one player launcher, generated-file consistency, no root 
 
 ## In-game checks
 
-1. Execute only `dist/launchers/Loader.lua` through its raw GitHub URL. Confirm Library displays both cards without starting a game.
+1. Execute only `dist/launchers/Loader.lua` through its raw GitHub URL with the documented `?frost=` cache token. Confirm Library displays both cards without starting a game.
 2. Verify both complete cards fit without scrolling at 1064×678, 1280×720, 390×844, and 844×390. Verify card names, descriptions, fallback covers, an uploaded image, search, and one/two-column layouts across phone, tablet, and desktop viewports.
 3. Launch the matching game. Verify its script is fetched only after selection. Use the back arrow to unload it and return; launch the other card only in its corresponding game.
 4. Open module settings and rebind that feature's shortcut there. Check reserved keys, conflicts, clearing, cancellation, and visibility shortcuts.

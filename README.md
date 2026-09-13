@@ -5,7 +5,7 @@ One script library. Your games, your settings, your style.
 ## Run this one script
 
 ```lua
-loadstring(game:HttpGet("https://raw.githubusercontent.com/Fwrostt/FrostScripts/main/dist/launchers/Loader.lua"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Fwrostt/FrostScripts/main/dist/launchers/Loader.lua?frost=" .. tostring(os.time())))()
 ```
 
 Choose a script card in the library. The launcher automatically downloads and executes the shared API, UI, library screen, and selected game through `loadstring`. All executable downloads come from [Fwrostt/FrostScripts](https://github.com/Fwrostt/FrostScripts). Players do not need to host anything, install project files, or run a separate game launcher.
