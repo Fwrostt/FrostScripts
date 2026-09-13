@@ -122,7 +122,10 @@ function Window:_openDropdown(control, name, options, anchor)
 	connect(scrim.Activated, function() self:CloseDropdown() end)
 	local viewport = self.Gui.AbsoluteSize
 	local width = math.min(360, math.max(180, viewport.X - 32))
-	local height = math.min(360, math.max(140, viewport.Y - 32))
+	local searchable = #options > 6
+	local listY = searchable and 94 or 52
+	local desiredHeight = listY + math.min(math.max(#options, 1), 6) * 48 + 12
+	local height = math.min(desiredHeight, math.max(140, viewport.Y - 32))
 	local x = math.clamp(anchor.AbsolutePosition.X, 16, math.max(16, viewport.X - width - 16))
 	local y = math.clamp(anchor.AbsolutePosition.Y, 16, math.max(16, viewport.Y - height - 16))
 	local panel = create("Frame", {
@@ -135,10 +138,26 @@ function Window:_openDropdown(control, name, options, anchor)
 		TextSize = 14, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 22, Parent = panel,
 	})
 	local close = create("TextButton", {
-		Position = UDim2.new(1, -48, 0, 0), Size = UDim2.fromOffset(44, 44), Text = "×",
-		BackgroundTransparency = 1, TextColor3 = THEME.Muted, TextSize = 22, Font = Enum.Font.BuilderSans,
+		Name = "DropdownClose", Position = UDim2.new(1, -42, 0, 8), Size = UDim2.fromOffset(32, 32), Text = "",
+		AutoButtonColor = false, BackgroundColor3 = THEME.PanelRaised, BorderSizePixel = 0,
 		ZIndex = 22, Parent = panel,
-	})
+	}, { corner(8), stroke(THEME.Border, 0.5) })
+	local closeLines = {}
+	for _, rotation in ipairs({ 45, -45 }) do
+		table.insert(closeLines, create("Frame", {
+			AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
+			Size = UDim2.fromOffset(12, 2), Rotation = rotation,
+			BackgroundColor3 = THEME.Muted, BorderSizePixel = 0, ZIndex = 23, Parent = close,
+		}, { corner(2) }))
+	end
+	connect(close.MouseEnter, function()
+		self:_tween(close, 0.12, { BackgroundColor3 = THEME.SurfaceHover })
+		for _, line in ipairs(closeLines) do self:_tween(line, 0.12, { BackgroundColor3 = THEME.Text }) end
+	end)
+	connect(close.MouseLeave, function()
+		self:_tween(close, 0.12, { BackgroundColor3 = THEME.PanelRaised })
+		for _, line in ipairs(closeLines) do self:_tween(line, 0.12, { BackgroundColor3 = THEME.Muted }) end
+	end)
 	connect(close.Activated, function() self:CloseDropdown() end)
 	local filter = create("TextBox", {
 		Position = UDim2.fromOffset(12, 46), Size = UDim2.new(1, -24, 0, 40), Text = "",
@@ -146,9 +165,10 @@ function Window:_openDropdown(control, name, options, anchor)
 		BackgroundColor3 = THEME.Surface, BorderSizePixel = 0, TextColor3 = THEME.Text,
 		PlaceholderColor3 = THEME.Muted, TextSize = 13, Font = Enum.Font.BuilderSans,
 		ZIndex = 22, Parent = panel,
-	}, { corner(8) })
+		Visible = searchable,
+	}, { corner(8), stroke(THEME.Border, 0.55) })
 	local list = create("ScrollingFrame", {
-		Position = UDim2.fromOffset(12, 94), Size = UDim2.new(1, -24, 1, -106),
+		Position = UDim2.fromOffset(12, listY), Size = UDim2.new(1, -24, 1, -(listY + 12)),
 		AutomaticCanvasSize = Enum.AutomaticSize.Y, CanvasSize = UDim2.new(),
 		BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 3,
 		ScrollBarImageColor3 = THEME.Accent, ZIndex = 22, Parent = panel,
@@ -159,13 +179,39 @@ function Window:_openDropdown(control, name, options, anchor)
 		label = self:Text(label)
 		local selected = value == control.Value
 		local button = create("TextButton", {
+			Name = "Option_" .. index,
 			Size = UDim2.new(1, -5, 0, 44), LayoutOrder = index,
-			Text = (selected and "✓  " or "    ") .. label,
-			TextColor3 = selected and THEME.Accent or THEME.Text, Font = Enum.Font.BuilderSansMedium,
-			TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left,
+			Text = "",
 			BackgroundColor3 = selected and THEME.AccentSoft or THEME.PanelRaised,
-			BorderSizePixel = 0, AutoButtonColor = true, ZIndex = 23, Parent = list,
-		}, { corner(8) })
+			BorderSizePixel = 0, AutoButtonColor = false, ZIndex = 23, Parent = list,
+		}, { corner(9), stroke(THEME.Border, selected and 0.18 or 0.62) })
+		local indicator = create("Frame", {
+			Name = "SelectionIndicator", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 12, 0.5, 0),
+			Size = UDim2.fromOffset(20, 20), BackgroundColor3 = selected and THEME.Accent or THEME.Surface,
+			BorderSizePixel = 0, ZIndex = 24, Parent = button,
+		}, { corner(10), stroke(THEME.Border, selected and 1 or 0.25) })
+		for _, part in ipairs({
+			{ UDim2.fromOffset(3, 10), UDim2.fromOffset(7, 2), 45 },
+			{ UDim2.fromOffset(7, 8), UDim2.fromOffset(10, 2), -45 },
+		}) do
+			create("Frame", {
+				Name = "CheckPart", Position = part[1], Size = part[2], Rotation = part[3],
+				BackgroundColor3 = THEME.Background, BorderSizePixel = 0, Visible = selected,
+				ZIndex = 25, Parent = indicator,
+			}, { corner(2) })
+		end
+		create("TextLabel", {
+			Name = "OptionLabel", Position = UDim2.fromOffset(44, 0), Size = UDim2.new(1, -56, 1, 0),
+			BackgroundTransparency = 1, Text = label, Localize = false,
+			TextColor3 = selected and THEME.Accent or THEME.Text, Font = Enum.Font.BuilderSansMedium,
+			TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 24, Parent = button,
+		})
+		connect(button.MouseEnter, function()
+			self:_tween(button, 0.12, { BackgroundColor3 = THEME.SurfaceHover })
+		end)
+		connect(button.MouseLeave, function()
+			self:_tween(button, 0.12, { BackgroundColor3 = selected and THEME.AccentSoft or THEME.PanelRaised })
+		end)
 		table.insert(entries, { Label = label:lower(), Button = button })
 		connect(button.Activated, function() self:CloseDropdown(); control:SetValue(value) end)
 	end

@@ -84,8 +84,16 @@ end)
 test("dropdown chooses arbitrary options and disconnects popup events", function()
 	window:_openDropdown(dropdown, "Priority", { "Nearest", "Farthest", "Largest" }, beta.Card)
 	local popup = window._dropdown
+	local selectedOption, close
 	for _, object in ipairs(popup.Root:GetDescendants()) do
-		if object:IsA("TextButton") and object.Text:find("Largest", 1, true) then object.Activated:Fire(); break end
+		if object.Name == "Option_1" then selectedOption = object end
+		if object.Name == "DropdownClose" then close = object end
+	end
+	assert(selectedOption:FindFirstChild("SelectionIndicator"), "selected options need a native indicator")
+	close.MouseEnter:Fire(); assert(close.BackgroundColor3 == UI.Theme.SurfaceHover)
+	close.MouseLeave:Fire(); assert(close.BackgroundColor3 == UI.Theme.PanelRaised)
+	for _, object in ipairs(popup.Root:GetDescendants()) do
+		if object.Name == "Option_3" then object.Activated:Fire(); break end
 	end
 	assert(dropdown.Value == "Largest" and window._dropdown == nil)
 	for _, connection in ipairs(popup.Connections) do assert(not connection.Connected) end
@@ -129,6 +137,7 @@ test("background motion, decoration, sound and notifications can be disabled", f
 	assert(window._ambientConnection and window._ambientConnection.Connected)
 	window:SetBackgroundAnimations(false)
 	assert(not window._ambientConnection and window.Ambient.Visible)
+	assert(window.Ambient:FindFirstChildWhichIsA("UICorner") and window.Ambient.Position.X.Offset == 1)
 	window:SetBackgroundAnimations(true)
 	window:SetAnimations(false)
 	assert(not window._ambientConnection)
@@ -227,10 +236,12 @@ test("controls use border strokes, drawn disclosures, native navigation badges a
 	assert(icon and icon:IsA("Frame") and icon:FindFirstChild("ScriptPage"))
 	local settingsIcon = window._tabsByName.Settings.IconLabel:FindFirstChild("NavigationBadge_settings")
 	assert(settingsIcon and settingsIcon:FindFirstChild("Knob"), "settings should use solid slider controls")
-	local homeIcon = window._tabsByName.Home.IconLabel:FindFirstChild("NavigationBadge_home")
-	assert(homeIcon and homeIcon:FindFirstChild("HouseBody"), "home should use a filled house badge")
+	local homeIcon = window._tabsByName.Home.IconLabel:FindFirstChild("NavigationHome")
+	assert(homeIcon and homeIcon:IsA("ImageLabel") and homeIcon.Image == "rbxassetid://7733960981", "home should use a recognizable image")
 	local modulesIcon = window._tabsByName.Modules.IconLabel:FindFirstChild("NavigationBadge_modules")
-	assert(modulesIcon and modulesIcon:FindFirstChild("CommandPanel"), "modules should use a command panel badge")
+	assert(modulesIcon and modulesIcon:FindFirstChild("ModuleBar"), "modules should use the requested three-bar badge")
+	local logo = window.Logo:FindFirstChild("NavigationBadge_snowflake")
+	assert(logo and logo:FindFirstChild("CrystalArm"), "branding should use the crystal mark")
 	for _, object in ipairs(window.Gui:GetDescendants()) do
 		assert(object.Name ~= "AmbientDot", "dots were removed")
 		if object:IsA("UIStroke") then assert(object.ApplyStrokeMode == Mock.Env.Enum.ApplyStrokeMode.Border) end

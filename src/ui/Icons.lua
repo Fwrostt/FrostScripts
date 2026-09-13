@@ -12,12 +12,6 @@ local function badgePiece(parent, name, position, size, transparency, rotation)
 	}, { corner(math.max(2, math.floor(math.min(size.X.Offset, size.Y.Offset) / 3))) })
 end
 
-local function makeHome(root)
-	badgePiece(root, "Roof", UDim2.fromOffset(6, 2), UDim2.fromOffset(9, 9), 0.2, 45)
-	badgePiece(root, "HouseBody", UDim2.fromOffset(4, 8), UDim2.fromOffset(13, 10), 0.36)
-	badgePiece(root, "Door", UDim2.fromOffset(10, 12), UDim2.fromOffset(4, 6), 0.02)
-end
-
 local function makeLibrary(root)
 	badgePiece(root, "ScriptPage", UDim2.fromOffset(3, 1), UDim2.fromOffset(14, 18), 0.5)
 	badgePiece(root, "ScriptBinding", UDim2.fromOffset(3, 1), UDim2.fromOffset(4, 18), 0.04)
@@ -35,22 +29,19 @@ local function makeSliders(root)
 end
 
 local function makeModules(root)
-	badgePiece(root, "CommandPanel", UDim2.fromOffset(1, 2), UDim2.fromOffset(18, 16), 0.52)
-	badgePiece(root, "CommandHeader", UDim2.fromOffset(1, 2), UDim2.fromOffset(18, 4), 0.14)
-	badgePiece(root, "CommandPrompt", UDim2.fromOffset(5, 9), UDim2.fromOffset(6, 2), 0.05, 42)
-	badgePiece(root, "CommandPrompt", UDim2.fromOffset(5, 12), UDim2.fromOffset(6, 2), 0.05, -42)
-	badgePiece(root, "CommandLine", UDim2.fromOffset(11, 12), UDim2.fromOffset(6, 2), 0.22)
-end
-
-local function makeMark(root)
-	badgePiece(root, "MarkCenter", UDim2.fromOffset(7, 7), UDim2.fromOffset(6, 6), 0.02)
-	for _, point in ipairs({ Vector2.new(8, 0), Vector2.new(8, 16), Vector2.new(0, 8), Vector2.new(16, 8) }) do
-		badgePiece(root, "MarkPoint", UDim2.fromOffset(point.X, point.Y), UDim2.fromOffset(4, 4), 0.34)
+	for index = 0, 2 do
+		badgePiece(root, "ModuleBar", UDim2.fromOffset(2, 2 + index * 7), UDim2.fromOffset(16, 3), index == 1 and 0.08 or 0.3)
 	end
 end
 
+local function makeMark(root)
+	for _, rotation in ipairs({ 0, 60, -60 }) do
+		badgePiece(root, "CrystalArm", UDim2.fromOffset(2, 9), UDim2.fromOffset(16, 2), 0.1, rotation)
+	end
+	badgePiece(root, "CrystalCenter", UDim2.fromOffset(7, 7), UDim2.fromOffset(6, 6), 0.02, 45)
+end
+
 local ICON_BUILDERS = {
-	home = makeHome,
 	library = makeLibrary,
 	modules = makeModules,
 	settings = makeSliders,
@@ -60,6 +51,23 @@ local ICON_BUILDERS = {
 
 function Window:_attachIcon(host, name)
 	host.Text = ""
+	if name == "home" then
+		local image = create("ImageLabel", {
+			Name = "NavigationHome",
+			Size = UDim2.fromOffset(20, 20),
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(0.5, 0.5),
+			BackgroundTransparency = 1,
+			Image = "rbxassetid://7733960981",
+			ImageColor3 = host.TextColor3,
+			ScaleType = Enum.ScaleType.Fit,
+			Parent = host,
+		})
+		self:_connect(host:GetPropertyChangedSignal("TextColor3"), function()
+			image.ImageColor3 = host.TextColor3
+		end)
+		return image
+	end
 	local root = create("Frame", {
 		Name = "NavigationBadge_" .. name,
 		Size = UDim2.fromOffset(20, 20),

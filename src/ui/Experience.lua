@@ -75,9 +75,9 @@ end
 function Window:_initExperience()
 	self._aurora, self._coverGradients = {}, {}
 	self.Ambient = create("Frame", {
-		Name = "AuroraBackground", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1,
+		Name = "AuroraBackground", Position = UDim2.fromOffset(1, 1), Size = UDim2.new(1, -2, 1, -2), BackgroundTransparency = 1,
 		ClipsDescendants = true, ZIndex = 0, Parent = self.Frame,
-	})
+	}, { corner(17) })
 	for index = 1, 2 do
 		local ribbon = create("Frame", {
 		Name = "AuroraRibbon", Position = UDim2.fromScale(0.32, 0.22 + (index - 1) * 0.38),
