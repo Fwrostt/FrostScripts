@@ -70,6 +70,8 @@ test("custom cursor follows the pointer and restores the native cursor", functio
 	local input = Mock.Env.game:GetService("UserInputService")
 	assert(window.Cursor.Image == "rbxasset://FrostScripts_cursor" and window.Cursor.Visible)
 	assert(not input.MouseIconEnabled and window.Cursor.Size.X.Offset == 24 and window.Cursor.Size.Y.Offset == 32)
+	assert(input.OverrideMouseIconBehavior == Mock.Env.Enum.OverrideMouseIconBehavior.ForceHide,
+		"Roblox button hover cursors must stay hidden")
 	assert(not window.Cursor.Active and not window.Cursor.Interactable
 		and window.Cursor.InputSink == Mock.Env.Enum.InputSink.None, "cursor must never consume clicks")
 	input.MouseLocation = Mock.Env.Vector2.new(418, 271)
@@ -77,6 +79,7 @@ test("custom cursor follows the pointer and restores the native cursor", functio
 	assert(window.Cursor.Position.X.Offset == 418 and window.Cursor.Position.Y.Offset == 270)
 	window:SetCustomCursor(false)
 	assert(not window.Cursor.Visible and input.MouseIconEnabled and window._cursorConnection == nil)
+	assert(input.OverrideMouseIconBehavior == Mock.Env.Enum.OverrideMouseIconBehavior.None)
 	input.MouseIconEnabled = false
 	window:SetCustomCursor(true)
 	assert(window.Cursor.Visible and not input.MouseIconEnabled and window._cursorConnection.Connected)
@@ -84,6 +87,17 @@ test("custom cursor follows the pointer and restores the native cursor", functio
 	assert(not input.MouseIconEnabled, "cursor must restore a previously hidden native cursor")
 	input.MouseIconEnabled = true
 	window:SetCustomCursor(true)
+end)
+test("custom cursor retries the launcher's first asset request", function()
+	local attempts = 0
+	local retryWindow = UI.new({ GuiName = "CursorRetry", Animations = false, ResolveAsset = function()
+		attempts += 1
+		if attempts < 3 then error("asset not ready") end
+		return "rbxasset://retried_cursor"
+	end })
+	assert(attempts == 3 and retryWindow.Cursor.Image == "rbxasset://retried_cursor")
+	assert(retryWindow.Cursor.Visible, "the launcher cursor must activate after a successful retry")
+	retryWindow:Destroy()
 end)
 test("window and monitor dragging follow Vector3 input without jumping", function()
 	local header = window.Main:FindFirstChild("Header")

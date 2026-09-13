@@ -62,6 +62,18 @@ function Window:_syncCursor()
 	if active then
 		if not self._ownsMouseIcon then
 			pcall(function() self._savedMouseIconEnabled = UserInputService.MouseIconEnabled end)
+			local read, override = pcall(function() return UserInputService.OverrideMouseIconBehavior end)
+			if not read and type(gethiddenproperty) == "function" then
+				read, override = pcall(gethiddenproperty, UserInputService, "OverrideMouseIconBehavior")
+			end
+			self._savedMouseIconOverride = read and override or Enum.OverrideMouseIconBehavior.None
+			self._mouseOverrideChanged = pcall(function()
+				UserInputService.OverrideMouseIconBehavior = Enum.OverrideMouseIconBehavior.ForceHide
+			end)
+			if not self._mouseOverrideChanged and type(sethiddenproperty) == "function" then
+				self._mouseOverrideChanged = pcall(sethiddenproperty, UserInputService,
+					"OverrideMouseIconBehavior", Enum.OverrideMouseIconBehavior.ForceHide)
+			end
 			self._ownsMouseIcon = true
 		end
 		local function update()
@@ -77,6 +89,15 @@ function Window:_syncCursor()
 		self._cursorConnection = RunService.RenderStepped:Connect(update)
 	elseif self._ownsMouseIcon then
 		pcall(function() UserInputService.MouseIconEnabled = self._savedMouseIconEnabled ~= false end)
+		if self._mouseOverrideChanged then
+			local restored = pcall(function()
+				UserInputService.OverrideMouseIconBehavior = self._savedMouseIconOverride
+			end)
+			if not restored and type(sethiddenproperty) == "function" then
+				pcall(sethiddenproperty, UserInputService, "OverrideMouseIconBehavior", self._savedMouseIconOverride)
+			end
+		end
+		self._mouseOverrideChanged = false
 		self._ownsMouseIcon = false
 	end
 end
@@ -98,10 +119,13 @@ function Window:_initCursor()
 	self:_syncCursor()
 	if type(self.ResolveAsset) == "function" then
 		task.spawn(function()
-			local ok, content = pcall(self.ResolveAsset, self.CustomCursorAsset)
-			if ok and type(content) == "string" and content ~= "" and not self._destroyed then
-				self.Cursor.Image = content
-				self:_syncCursor()
+			for attempt = 1, 3 do
+				local ok, content = pcall(self.ResolveAsset, self.CustomCursorAsset)
+				if ok and type(content) == "string" and content ~= "" then
+					if not self._destroyed then self.Cursor.Image = content; self:_syncCursor() end
+					return
+				end
+				if attempt < 3 then task.wait(attempt * 0.35) end
 			end
 		end)
 	end

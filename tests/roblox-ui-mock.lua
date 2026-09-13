@@ -133,7 +133,8 @@ local playerGui = instance("PlayerGui"); playerGui.Parent = player
 local camera = instance("Camera"); camera.ViewportSize = vector(1280, 800)
 local workspaceMock = instance("Workspace"); workspaceMock.CurrentCamera = camera
 local input = { InputBegan = signal(), InputChanged = signal(), InputEnded = signal(),
-	MouseEnabled = true, MouseIconEnabled = true, MouseLocation = vector(320, 240) }
+	MouseEnabled = true, MouseIconEnabled = true, MouseLocation = vector(320, 240),
+	OverrideMouseIconBehavior = Enum.OverrideMouseIconBehavior.None }
 function input:GetFocusedTextBox() return Mock.Focused end
 function input:IsKeyDown() return false end
 function input:GetMouseLocation() return self.MouseLocation end
