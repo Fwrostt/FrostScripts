@@ -215,9 +215,13 @@ test("controls use border strokes, drawn disclosures, native navigation badges a
 	assert(alpha.Chevron:IsA("Frame"))
 	assert(window._tabsByName.Library.IconLabel.Text == "")
 	local icon = window._tabsByName.Library.IconLabel:FindFirstChild("NavigationBadge_library")
-	assert(icon and icon:IsA("Frame") and icon:FindFirstChild("VolumeFront"))
+	assert(icon and icon:IsA("Frame") and icon:FindFirstChild("ScriptPage"))
 	local settingsIcon = window._tabsByName.Settings.IconLabel:FindFirstChild("NavigationBadge_settings")
 	assert(settingsIcon and settingsIcon:FindFirstChild("Knob"), "settings should use solid slider controls")
+	local homeIcon = window._tabsByName.Home.IconLabel:FindFirstChild("NavigationBadge_home")
+	assert(homeIcon and homeIcon:FindFirstChild("HouseBody"), "home should use a filled house badge")
+	local modulesIcon = window._tabsByName.Modules.IconLabel:FindFirstChild("NavigationBadge_modules")
+	assert(modulesIcon and modulesIcon:FindFirstChild("CommandPanel"), "modules should use a command panel badge")
 	for _, object in ipairs(window.Gui:GetDescendants()) do
 		assert(object.Name ~= "AmbientDot", "dots were removed")
 		if object:IsA("UIStroke") then assert(object.ApplyStrokeMode == Mock.Env.Enum.ApplyStrokeMode.Border) end

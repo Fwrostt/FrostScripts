@@ -1836,29 +1836,30 @@ end
 
 -- Purpose-built solid navigation badges. They are drawn with native Roblox Frames,
 -- so no SVG paths, font glyphs, or third-party image assets are involved.
-local function badgePiece(parent, name, position, size, transparency)
+local function badgePiece(parent, name, position, size, transparency, rotation)
 	return create("Frame", {
 		Name = name,
 		Position = position,
 		Size = size,
+		Rotation = rotation or 0,
 		BackgroundTransparency = transparency or 0,
 		BorderSizePixel = 0,
 		Parent = parent,
 	}, { corner(math.max(2, math.floor(math.min(size.X.Offset, size.Y.Offset) / 3))) })
 end
 
-local function makeGrid(root)
-	for row = 0, 1 do
-		for column = 0, 1 do
-			badgePiece(root, "Tile", UDim2.fromOffset(2 + column * 9, 2 + row * 9), UDim2.fromOffset(7, 7), row == 0 and 0.12 or 0.35)
-		end
-	end
+local function makeHome(root)
+	badgePiece(root, "Roof", UDim2.fromOffset(6, 2), UDim2.fromOffset(9, 9), 0.2, 45)
+	badgePiece(root, "HouseBody", UDim2.fromOffset(4, 8), UDim2.fromOffset(13, 10), 0.36)
+	badgePiece(root, "Door", UDim2.fromOffset(10, 12), UDim2.fromOffset(4, 6), 0.02)
 end
 
 local function makeLibrary(root)
-	badgePiece(root, "VolumeBack", UDim2.fromOffset(1, 4), UDim2.fromOffset(7, 13), 0.58)
-	badgePiece(root, "VolumeMiddle", UDim2.fromOffset(6, 2), UDim2.fromOffset(7, 15), 0.3)
-	badgePiece(root, "VolumeFront", UDim2.fromOffset(11, 4), UDim2.fromOffset(7, 13), 0.04)
+	badgePiece(root, "ScriptPage", UDim2.fromOffset(3, 1), UDim2.fromOffset(14, 18), 0.5)
+	badgePiece(root, "ScriptBinding", UDim2.fromOffset(3, 1), UDim2.fromOffset(4, 18), 0.04)
+	badgePiece(root, "ScriptLine", UDim2.fromOffset(9, 5), UDim2.fromOffset(6, 2), 0.08)
+	badgePiece(root, "ScriptLine", UDim2.fromOffset(9, 9), UDim2.fromOffset(5, 2), 0.22)
+	badgePiece(root, "ScriptLine", UDim2.fromOffset(9, 13), UDim2.fromOffset(7, 2), 0.38)
 end
 
 local function makeSliders(root)
@@ -1870,9 +1871,11 @@ local function makeSliders(root)
 end
 
 local function makeModules(root)
-	for index = 0, 2 do
-		badgePiece(root, "Module", UDim2.fromOffset(2, 2 + index * 6), UDim2.fromOffset(16, 4), index == 1 and 0.12 or 0.42)
-	end
+	badgePiece(root, "CommandPanel", UDim2.fromOffset(1, 2), UDim2.fromOffset(18, 16), 0.52)
+	badgePiece(root, "CommandHeader", UDim2.fromOffset(1, 2), UDim2.fromOffset(18, 4), 0.14)
+	badgePiece(root, "CommandPrompt", UDim2.fromOffset(5, 9), UDim2.fromOffset(6, 2), 0.05, 42)
+	badgePiece(root, "CommandPrompt", UDim2.fromOffset(5, 12), UDim2.fromOffset(6, 2), 0.05, -42)
+	badgePiece(root, "CommandLine", UDim2.fromOffset(11, 12), UDim2.fromOffset(6, 2), 0.22)
 end
 
 local function makeMark(root)
@@ -1883,7 +1886,7 @@ local function makeMark(root)
 end
 
 local ICON_BUILDERS = {
-	home = makeGrid,
+	home = makeHome,
 	library = makeLibrary,
 	modules = makeModules,
 	settings = makeSliders,
