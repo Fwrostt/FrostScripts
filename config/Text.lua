@@ -16,6 +16,8 @@ local Editable = {
 	NotificationPositionTitle = "Notification position",
 	ModuleEnabledToast = "Module enabled",
 	ModuleDisabledToast = "Module disabled",
+	CustomCursorTitle = "Middle finger cursor",
+	CustomCursorDescription = "Use the custom pointer while FrostScripts is open",
 
 	SearchPlaceholder = "Find a script...",
 	ScriptCount = "%d scripts in your collection",
@@ -103,6 +105,8 @@ return {
 		["Enabled"] = "Enabled",
 		["Module enabled"] = Editable.ModuleEnabledToast,
 		["Module disabled"] = Editable.ModuleDisabledToast,
+		["Middle finger cursor"] = Editable.CustomCursorTitle,
+		["Use the custom pointer while FrostScripts is open"] = Editable.CustomCursorDescription,
 		["Extra Large"] = "Extra Large",
 		["F"] = "F",
 		["FARMING & EXPLORATION"] = "FARMING & EXPLORATION",

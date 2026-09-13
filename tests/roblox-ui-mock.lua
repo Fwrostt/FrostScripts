@@ -132,9 +132,11 @@ player.Name, player.DisplayName = "Frost", "Frost"
 local playerGui = instance("PlayerGui"); playerGui.Parent = player
 local camera = instance("Camera"); camera.ViewportSize = vector(1280, 800)
 local workspaceMock = instance("Workspace"); workspaceMock.CurrentCamera = camera
-local input = { InputBegan = signal(), InputChanged = signal(), InputEnded = signal() }
+local input = { InputBegan = signal(), InputChanged = signal(), InputEnded = signal(),
+	MouseEnabled = true, MouseIconEnabled = true }
 function input:GetFocusedTextBox() return Mock.Focused end
 function input:IsKeyDown() return false end
+function input:GetMouseLocation() return vector(320, 240) end
 local services = { Players = { LocalPlayer = player }, UserInputService = input,
 	RunService = { RenderStepped = signal() }, TweenService = { Create = function(_, object, _, properties)
 		return { Play = function() for key, value in pairs(properties) do object[key] = value end end, Cancel = function() end }

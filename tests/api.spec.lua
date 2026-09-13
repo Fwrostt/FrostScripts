@@ -160,6 +160,17 @@ test("GitHub covers discover extensions and cache validated images", function()
 	sandbox.writefile = nil
 	assert(API.ResolveCover({ EntryPoint = "games/NeedleInHay/main.lua" }) == nil)
 end)
+test("GitHub UI assets use the validated image bridge", function()
+	local url = API.GetConfig().BaseUrl .. "/assets/cursors/middle-finger.png"
+	local written = {}
+	sandbox.writefile = function(path, bytes) written[path] = bytes end
+	sandbox.getcustomasset = function(path) assert(written[path]); return "rbxasset://" .. path end
+	sources[url] = "\137PNG\r\n\26\n" .. string.rep("x", 32)
+	local image = API.ResolveAsset("assets/cursors/middle-finger.png")
+	assert(image and image:find("middle-finger_png", 1, true))
+	assert(API.ResolveAsset("../outside.png") == nil and API.ResolveAsset("assets/cursor.svg") == nil)
+	sandbox.writefile, sandbox.getcustomasset = nil, nil
+end)
 test("text files reload from GitHub and malformed catalogs preserve working copy", function()
 	local url = API.GetConfig().BaseUrl .. "/config/Text.lua"
 	sources[url] = 'return { Shared = { ["Ready"] = "All set", ["Count %d / %d"] = "%d of %d total" }, GrassCutter = { Ready = "Grass ready" } }'

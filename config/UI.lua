@@ -10,6 +10,8 @@ return {
 	NotificationsEnabled = true,
 	ModuleNotificationsEnabled = true,
 	NotificationPosition = "Bottom Right",
+	CustomCursorEnabled = true,
+	CustomCursorAsset = "assets/cursors/middle-finger.png",
 	ThemeName = "Black",
 	SizePreset = "Large",
 	TextScale = 1,

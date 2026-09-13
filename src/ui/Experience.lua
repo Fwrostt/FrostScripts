@@ -54,6 +54,48 @@ function Window:SetNotificationPosition(position)
 	return true
 end
 
+function Window:_syncCursor()
+	if not self.Cursor then return end
+	local active = self.CustomCursorEnabled and self.Visible and self.Cursor.Image ~= ""
+	self.Cursor.Visible = active
+	pcall(function()
+		if UserInputService.MouseEnabled ~= false then UserInputService.MouseIconEnabled = not active end
+	end)
+end
+
+function Window:SetCustomCursor(enabled)
+	self.CustomCursorEnabled = enabled == true
+	self:_remember("CustomCursorEnabled", self.CustomCursorEnabled)
+	self:_syncCursor()
+end
+
+function Window:_initCursor()
+	self.Cursor = create("ImageLabel", {
+		Name = "FrostCursor", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(0, 0),
+		Size = UDim2.fromOffset(24, 32), BackgroundTransparency = 1, Image = "",
+		ScaleType = Enum.ScaleType.Fit, Visible = false, Active = false, ZIndex = 1000,
+		Parent = self.NotificationGui,
+	})
+	local function move(position)
+		if not position then return end
+		self.Cursor.Position = UDim2.fromOffset(math.floor(position.X + 0.5), math.floor(position.Y + 0.5))
+	end
+	self:_connect(UserInputService.InputChanged, function(input)
+		if input.UserInputType == Enum.UserInputType.MouseMovement then move(input.Position) end
+	end)
+	pcall(function() move(UserInputService:GetMouseLocation()) end)
+	self:_syncCursor()
+	if type(self.ResolveAsset) == "function" then
+		task.spawn(function()
+			local ok, content = pcall(self.ResolveAsset, self.CustomCursorAsset)
+			if ok and type(content) == "string" and content ~= "" and not self._destroyed then
+				self.Cursor.Image = content
+				self:_syncCursor()
+			end
+		end)
+	end
+end
+
 function Window:_syncAmbient()
 	if self._ambientConnection then self._ambientConnection:Disconnect(); self._ambientConnection = nil end
 	if not self.Ambient then return end
@@ -124,6 +166,7 @@ function Window:ApplyPreferences()
 	self:SetNotifications(state.NotificationsEnabled ~= false)
 	self:SetModuleNotifications(state.ModuleNotificationsEnabled ~= false)
 	self:SetNotificationPosition(state.NotificationPosition or "Bottom Right")
+	self:SetCustomCursor(state.CustomCursorEnabled ~= false)
 	self:SetTextScale(state.TextScale or 1)
 	self:SetDimAmount(state.DimAmount or 40)
 	self:SetSizePreset(state.SizePreset or "Large")
@@ -173,6 +216,9 @@ function Window:AddClientSettings(tab)
 	bind(appearance:AddSlider("Background dim", 0, 75, self.DimAmount, function(value) self:SetDimAmount(value) end,
 		{ Step = 5, Formatter = function(value) return value .. "%" end }), "DimAmount")
 	local interface = tab:AddModule({ Name = "Window & overlays", Description = "Visibility and monitor placement" })
+	bind(interface:AddToggle("Middle finger cursor", self.CustomCursorEnabled,
+		function(value) self:SetCustomCursor(value) end,
+		"Use the custom pointer while FrostScripts is open"), "CustomCursorEnabled")
 	interface:AddKeybind({ Name = "Show / hide interface", AllowClear = false, IsVisibility = true,
 		Get = function() return Enum.KeyCode[self.UIState.VisibilityKey or "RightShift"] or Enum.KeyCode.RightShift end,
 		Set = function(key) self:_remember("VisibilityKey", key.Name) end,

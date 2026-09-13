@@ -334,6 +334,7 @@ function Window:SetVisible(show)
 	local token = self._visibilityToken
 	self.Visible = show
 	self:_syncAmbient()
+	self:_syncCursor()
 	self.Launcher.Visible = not show
 	if show then
 		self:PlaySound("Open")
@@ -1546,6 +1547,9 @@ end
 
 function Window:Destroy()
 	if self._destroyed then return end
+	pcall(function()
+		if self.Cursor and self.Cursor.Visible then UserInputService.MouseIconEnabled = true end
+	end)
 	self._destroyed = true
 	if self._ambientConnection then self._ambientConnection:Disconnect(); self._ambientConnection = nil end
 	self:CloseDropdown()

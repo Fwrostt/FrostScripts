@@ -241,7 +241,8 @@ function Library:CreateWindow(options)
 		if existing then existing:Destroy() end
 	end
 	local window = setmetatable({
-		UIState = state, InputEnabled = true, ResolveCover = options.ResolveCover, Translate = translate,
+		UIState = state, InputEnabled = true, ResolveCover = options.ResolveCover,
+		ResolveAsset = options.ResolveAsset, Translate = translate,
 		Animations = options.Animations ~= false, Visible = true,
 		BackgroundEffects = options.BackgroundEffects ~= false,
 		BackgroundAnimations = options.BackgroundAnimations ~= false,
@@ -249,6 +250,8 @@ function Library:CreateWindow(options)
 		NotificationsEnabled = options.NotificationsEnabled ~= false,
 		ModuleNotificationsEnabled = options.ModuleNotificationsEnabled ~= false,
 		NotificationPosition = options.NotificationPosition or "Bottom Right",
+		CustomCursorEnabled = options.CustomCursorEnabled ~= false,
+		CustomCursorAsset = options.CustomCursorAsset or "assets/cursors/middle-finger.png",
 		SizePreset = options.SizePreset or "Large", ThemeName = options.Theme or "Black",
 		TextScale = math.clamp(tonumber(options.TextScale) or 1, 1, 1.3),
 		DimAmount = math.clamp(tonumber(options.DimAmount) or 40, 0, 75),
@@ -398,6 +401,7 @@ function Library:CreateWindow(options)
 	watchCamera()
 	window:_connect(UserInputService.InputBegan, function(input, processed) window:_handleKeyboard(input, processed) end)
 	window:_initExperience()
+	window:_initCursor()
 	window:ApplyPreferences()
 	window.Frame.Position = UDim2.new(0.5, 0, 0.5, window.Animations and 14 or 0)
 	window:_tween(window.Frame, 0.22, { Position = UDim2.fromScale(0.5, 0.5) }, Enum.EasingStyle.Quint)

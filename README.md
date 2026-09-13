@@ -20,6 +20,7 @@ The execution environment must support `loadstring` and `game:HttpGet`. Raw GitH
 - Roblox avatar thumbnails, native solid navigation badges, Builder Sans typography, and search only on library/module pages.
 - One **UI Settings** page for themes, text, window size, sound, notification controls and corner placement, and separate animation/background switches.
 - Theme-aware toasts for module enable/disable events, with separate global and module-event switches.
+- Optional system-style middle-finger pointer loaded from raw GitHub, with automatic native-cursor restoration.
 - Each feature owns its settings and keybind inside its module. There is no separate keybind page.
 - The back arrow returns to the library and unloads the active game suite. Starting another script unloads the previous one.
 - UI preferences carry across the launcher and game windows for the current client session.

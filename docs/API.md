@@ -13,6 +13,7 @@ The API returns a table from `loadstring(source)()`. Game methods and remotes st
 | `RunGame(name)` | Unloads the previous suite, loads the chosen catalog entry, and returns its suite with `Unload()`. |
 | `GetGames()` | Copy of supported game IDs. |
 | `GetCatalog()` | Deep copy of card metadata from `config/Scripts.lua`. |
+| `ResolveAsset(path)` | Downloads a repository PNG/JPEG from raw GitHub, validates it, and registers it for Roblox UI use through the executor image bridge. |
 | `OpenLauncher()` | Opens the script library without running a game. |
 | `UnloadGame()` | Unloads the active suite. |
 
@@ -69,6 +70,6 @@ Window methods include `SelectTab`, `Toggle`, `SetVisible`, `SetAnimations`, `Se
 
 `API.UIState` contains UI preferences only. API-created windows share this table; the library stores it in the client session so it survives reopening and switching games. `window:ApplyPreferences()` reapplies values and updates preference controls. No player filesystem is used.
 
-Additional UI methods: `SetBackgroundEffects(enabled)`, `SetBackgroundAnimations(enabled)`, `SetSounds(enabled)`, `SetSoundVolume(0..1)`, `SetNotifications(enabled)`, `SetModuleNotifications(enabled)`, `SetNotificationPosition(position)`, and `PlaySound(kind)`. Notification positions are `Top Left`, `Top Right`, `Bottom Left`, and `Bottom Right`. `SetAnimations(false)` also stops ambient motion. Ambient effects disconnect while hidden or destroyed. `window:AddClientSettings(tab)` creates interface controls for notification behavior and the window visibility shortcut.
+Additional UI methods: `SetBackgroundEffects(enabled)`, `SetBackgroundAnimations(enabled)`, `SetSounds(enabled)`, `SetSoundVolume(0..1)`, `SetNotifications(enabled)`, `SetModuleNotifications(enabled)`, `SetNotificationPosition(position)`, `SetCustomCursor(enabled)`, and `PlaySound(kind)`. Notification positions are `Top Left`, `Top Right`, `Bottom Left`, and `Bottom Right`. `SetAnimations(false)` also stops ambient motion. Ambient effects disconnect while hidden or destroyed. `window:AddClientSettings(tab)` creates interface controls for notification behavior, the custom pointer, and the window visibility shortcut.
 
 The launcher passes a return-to-library callback to game windows. Module keybinds are configured with `module:AddKeybind({ Name, Get, Set, OnPressed, AllowClear })`. Escape cancels rebinding; Backspace clears an optional binding. Game-specific marker settings and shortcuts remain in game modules.

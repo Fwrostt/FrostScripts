@@ -66,6 +66,8 @@ return {
 	NotificationsEnabled = true,
 	ModuleNotificationsEnabled = true,
 	NotificationPosition = "Bottom Right",
+	CustomCursorEnabled = true,
+	CustomCursorAsset = "assets/cursors/middle-finger.png",
 	ThemeName = "Black",
 	SizePreset = "Large",
 	TextScale = 1,
@@ -576,6 +578,7 @@ function Window:SetVisible(show)
 	local token = self._visibilityToken
 	self.Visible = show
 	self:_syncAmbient()
+	self:_syncCursor()
 	self.Launcher.Visible = not show
 	if show then
 		self:PlaySound("Open")
@@ -1788,6 +1791,9 @@ end
 
 function Window:Destroy()
 	if self._destroyed then return end
+	pcall(function()
+		if self.Cursor and self.Cursor.Visible then UserInputService.MouseIconEnabled = true end
+	end)
 	self._destroyed = true
 	if self._ambientConnection then self._ambientConnection:Disconnect(); self._ambientConnection = nil end
 	self:CloseDropdown()
@@ -2142,6 +2148,48 @@ function Window:SetNotificationPosition(position)
 	return true
 end
 
+function Window:_syncCursor()
+	if not self.Cursor then return end
+	local active = self.CustomCursorEnabled and self.Visible and self.Cursor.Image ~= ""
+	self.Cursor.Visible = active
+	pcall(function()
+		if UserInputService.MouseEnabled ~= false then UserInputService.MouseIconEnabled = not active end
+	end)
+end
+
+function Window:SetCustomCursor(enabled)
+	self.CustomCursorEnabled = enabled == true
+	self:_remember("CustomCursorEnabled", self.CustomCursorEnabled)
+	self:_syncCursor()
+end
+
+function Window:_initCursor()
+	self.Cursor = create("ImageLabel", {
+		Name = "FrostCursor", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(0, 0),
+		Size = UDim2.fromOffset(24, 32), BackgroundTransparency = 1, Image = "",
+		ScaleType = Enum.ScaleType.Fit, Visible = false, Active = false, ZIndex = 1000,
+		Parent = self.NotificationGui,
+	})
+	local function move(position)
+		if not position then return end
+		self.Cursor.Position = UDim2.fromOffset(math.floor(position.X + 0.5), math.floor(position.Y + 0.5))
+	end
+	self:_connect(UserInputService.InputChanged, function(input)
+		if input.UserInputType == Enum.UserInputType.MouseMovement then move(input.Position) end
+	end)
+	pcall(function() move(UserInputService:GetMouseLocation()) end)
+	self:_syncCursor()
+	if type(self.ResolveAsset) == "function" then
+		task.spawn(function()
+			local ok, content = pcall(self.ResolveAsset, self.CustomCursorAsset)
+			if ok and type(content) == "string" and content ~= "" and not self._destroyed then
+				self.Cursor.Image = content
+				self:_syncCursor()
+			end
+		end)
+	end
+end
+
 function Window:_syncAmbient()
 	if self._ambientConnection then self._ambientConnection:Disconnect(); self._ambientConnection = nil end
 	if not self.Ambient then return end
@@ -2212,6 +2260,7 @@ function Window:ApplyPreferences()
 	self:SetNotifications(state.NotificationsEnabled ~= false)
 	self:SetModuleNotifications(state.ModuleNotificationsEnabled ~= false)
 	self:SetNotificationPosition(state.NotificationPosition or "Bottom Right")
+	self:SetCustomCursor(state.CustomCursorEnabled ~= false)
 	self:SetTextScale(state.TextScale or 1)
 	self:SetDimAmount(state.DimAmount or 40)
 	self:SetSizePreset(state.SizePreset or "Large")
@@ -2261,6 +2310,9 @@ function Window:AddClientSettings(tab)
 	bind(appearance:AddSlider("Background dim", 0, 75, self.DimAmount, function(value) self:SetDimAmount(value) end,
 		{ Step = 5, Formatter = function(value) return value .. "%" end }), "DimAmount")
 	local interface = tab:AddModule({ Name = "Window & overlays", Description = "Visibility and monitor placement" })
+	bind(interface:AddToggle("Middle finger cursor", self.CustomCursorEnabled,
+		function(value) self:SetCustomCursor(value) end,
+		"Use the custom pointer while FrostScripts is open"), "CustomCursorEnabled")
 	interface:AddKeybind({ Name = "Show / hide interface", AllowClear = false, IsVisibility = true,
 		Get = function() return Enum.KeyCode[self.UIState.VisibilityKey or "RightShift"] or Enum.KeyCode.RightShift end,
 		Set = function(key) self:_remember("VisibilityKey", key.Name) end,
@@ -2653,7 +2705,8 @@ function Library:CreateWindow(options)
 		if existing then existing:Destroy() end
 	end
 	local window = setmetatable({
-		UIState = state, InputEnabled = true, ResolveCover = options.ResolveCover, Translate = translate,
+		UIState = state, InputEnabled = true, ResolveCover = options.ResolveCover,
+		ResolveAsset = options.ResolveAsset, Translate = translate,
 		Animations = options.Animations ~= false, Visible = true,
 		BackgroundEffects = options.BackgroundEffects ~= false,
 		BackgroundAnimations = options.BackgroundAnimations ~= false,
@@ -2661,6 +2714,8 @@ function Library:CreateWindow(options)
 		NotificationsEnabled = options.NotificationsEnabled ~= false,
 		ModuleNotificationsEnabled = options.ModuleNotificationsEnabled ~= false,
 		NotificationPosition = options.NotificationPosition or "Bottom Right",
+		CustomCursorEnabled = options.CustomCursorEnabled ~= false,
+		CustomCursorAsset = options.CustomCursorAsset or "assets/cursors/middle-finger.png",
 		SizePreset = options.SizePreset or "Large", ThemeName = options.Theme or "Black",
 		TextScale = math.clamp(tonumber(options.TextScale) or 1, 1, 1.3),
 		DimAmount = math.clamp(tonumber(options.DimAmount) or 40, 0, 75),
@@ -2810,6 +2865,7 @@ function Library:CreateWindow(options)
 	watchCamera()
 	window:_connect(UserInputService.InputBegan, function(input, processed) window:_handleKeyboard(input, processed) end)
 	window:_initExperience()
+	window:_initCursor()
 	window:ApplyPreferences()
 	window.Frame.Position = UDim2.new(0.5, 0, 0.5, window.Animations and 14 or 0)
 	window:_tween(window.Frame, 0.22, { Position = UDim2.fromScale(0.5, 0.5) }, Enum.EasingStyle.Quint)

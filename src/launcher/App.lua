@@ -4,7 +4,8 @@ local env = (type(getgenv) == "function" and getgenv()) or _G
 if env.FrostScriptsLauncher then env.FrostScriptsLauncher:Unload() end
 if type(env.FrostScriptsUIPreferences) == "table" then
 	local persistent = { Sounds = true, SoundVolume = true, NotificationsEnabled = true,
-		ModuleNotificationsEnabled = true, NotificationPosition = true, VisibilityKey = true }
+		ModuleNotificationsEnabled = true, NotificationPosition = true,
+		CustomCursorEnabled = true, VisibilityKey = true }
 	for key in pairs(API.UIState) do
 		local old = env.FrostScriptsUIPreferences
 		local currentDesign = old.DesignRevision == API.UIState.DesignRevision
