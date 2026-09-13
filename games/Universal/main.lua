@@ -15,6 +15,8 @@ local UserInputService = game:GetService("UserInputService")
 
 local VirtualUser
 pcall(function() VirtualUser = game:GetService("VirtualUser") end)
+local VirtualInputManager
+pcall(function() VirtualInputManager = game:GetService("VirtualInputManager") end)
 
 local player = Players.LocalPlayer
 local env = (type(getgenv) == "function" and getgenv()) or _G
@@ -30,6 +32,7 @@ scope:Track(Updates)
 scope:Track(Character)
 
 local features = {}
+local visibleFeatures = {}
 local entries = {}
 local modulesByName = {}
 local recent = {}
@@ -48,6 +51,15 @@ end
 
 local function notify(title, text, kind)
 	if Interface then Interface:Notify({ Title = title, Text = text, Type = kind or "Info" }) end
+end
+
+local function isFrostOwned(object)
+	local current = object
+	while current do
+		if current.Name:find("FrostScripts", 1, true) == 1 then return true end
+		current = current.Parent
+	end
+	return false
 end
 
 local function addRecent(name)
@@ -252,10 +264,27 @@ local BunnyHop = registerLoopFeature("Bunny Hop", "Movement", "Automatically jum
 	if humanoid and humanoid.Health > 0 and humanoid.MoveDirection.Magnitude > 0 and humanoid.FloorMaterial ~= Enum.Material.Air then humanoid:ChangeState(Enum.HumanoidStateType.Jumping) end
 end)
 
-local AutoWalk = registerLoopFeature("Auto Walk", "Movement", "Continuously walks in the camera-facing direction", { ToggleKey = Enum.KeyCode.Unknown }, "Heartbeat", function()
-	local _, humanoid = getCharacter(); local camera = workspace.CurrentCamera
-	if humanoid and camera then humanoid:Move(Vector3.new(camera.CFrame.LookVector.X, 0, camera.CFrame.LookVector.Z), false) end
-end, function() local _, humanoid = getCharacter(); if humanoid then humanoid:Move(Vector3.zero, false) end end)
+local AutoWalk = registerLoopFeature("Auto Walk", "Movement", "Continuously walks forward after Roblox's default controls update", {
+	Direction = "Camera Forward", ToggleKey = Enum.KeyCode.Unknown,
+}, "Render", function(self)
+	local _, humanoid, root = getCharacter(); local camera = workspace.CurrentCamera
+	if not humanoid or not root then self:SetStatus("Waiting for character"); return end
+	local look = self.Settings.Direction == "Character Forward" and root.CFrame.LookVector
+		or (camera and camera.CFrame.LookVector or root.CFrame.LookVector)
+	local direction = Vector3.new(look.X, 0, look.Z)
+	if direction.Magnitude < 0.001 then return end
+	direction = direction.Unit
+	humanoid:Move(direction, false)
+	humanoid.WalkToPoint = root.Position + direction * 1000
+	self:SetStatus("Walking " .. self.Settings.Direction:lower())
+end, function()
+	local _, humanoid, root = getCharacter()
+	if humanoid then humanoid:Move(Vector3.zero, false); if root then humanoid:MoveTo(root.Position) end end
+end)
+entries[#entries].Configure = function(module, feature)
+	module:AddDropdown("Direction", { "Camera Forward", "Character Forward" }, feature.Settings.Direction,
+		function(value) feature:SetSetting("Direction", value) end)
+end
 
 local SlowFall = registerLoopFeature("Slow Fall", "Movement", "Caps downward velocity for controllable descents", { FallSpeed = 18, ToggleKey = Enum.KeyCode.Unknown }, "Heartbeat", function(self)
 	local _, _, root = getCharacter()
@@ -421,12 +450,16 @@ end
 local CharacterTrail = trailFeature("Character Trail", Color3.fromRGB(135, 225, 255), Color3.fromRGB(65, 120, 255), "Character", "Attaches a respawn-safe cyan trail")
 local FrostTrail = trailFeature("Frost Trail", Color3.fromRGB(240, 255, 255), Color3.fromRGB(110, 190, 255), "Fun", "Adds a bright snow-colored motion trail")
 
+local PARTICLE_TEXTURE = "rbxasset://textures/particles/sparkles_main.dds"
 local FrostAura = API.CreateFeature("Frost Aura", { Rate = 18, ToggleKey = Enum.KeyCode.Unknown })
 function FrostAura:_attach(_, _, root)
 	if self._emitter then self._emitter:Destroy() end; if not root then return end
-	local emitter = Instance.new("ParticleEmitter"); emitter.Name = "FrostScriptsAura"; emitter.Texture = "rbxassetid://241594419"
+	local emitter = Instance.new("ParticleEmitter"); emitter.Name = "FrostScriptsAura"; emitter.Texture = PARTICLE_TEXTURE
 	emitter.Rate = self.Settings.Rate; emitter.Lifetime = NumberRange.new(0.7, 1.3); emitter.Speed = NumberRange.new(0.4, 1.8)
 	emitter.SpreadAngle = Vector2.new(180, 180); emitter.Color = ColorSequence.new(Color3.fromRGB(205, 245, 255), Color3.fromRGB(80, 160, 255))
+	emitter.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.32), NumberSequenceKeypoint.new(1, 0) })
+	emitter.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.05), NumberSequenceKeypoint.new(1, 1) })
+	emitter.LightEmission = 0.7
 	emitter.Parent = root; self._emitter = emitter
 end
 function FrostAura:OnEnable()
@@ -517,23 +550,43 @@ end)
 
 local AntiAFK = API.CreateFeature("Anti-AFK", { ToggleKey = Enum.KeyCode.Unknown })
 function AntiAFK:OnEnable()
-	if not VirtualUser then self:SetStatus("VirtualUser unavailable"); return false end
-	self._prevented = 0
-	self:Track(player.Idled:Connect(function()
-		self._prevented += 1
-		pcall(function()
-			VirtualUser:CaptureController(); VirtualUser:Button2Down(Vector2.zero, workspace.CurrentCamera and workspace.CurrentCamera.CFrame or CFrame.new())
-			task.wait(0.05); VirtualUser:Button2Up(Vector2.zero, workspace.CurrentCamera and workspace.CurrentCamera.CFrame or CFrame.new())
-		end)
-		self:SetStatus(string.format("Prevented %d idle kick%s", self._prevented, self._prevented == 1 and "" or "s"))
-	end)); self:SetStatus("Waiting for idle events"); return true
+	if not VirtualUser and not VirtualInputManager then self:SetStatus("No virtual input service available"); return false end
+	self._pulses, self._elapsed = 0, 0
+	local function pulse(reason)
+		local worked = false
+		if VirtualUser then
+			worked = pcall(function()
+				VirtualUser:CaptureController()
+				local position = Vector2.new(0, 0)
+				local cameraCFrame = workspace.CurrentCamera and workspace.CurrentCamera.CFrame or CFrame.new()
+				VirtualUser:Button2Down(position, cameraCFrame)
+				VirtualUser:Button2Up(position, cameraCFrame)
+			end)
+			if not worked then worked = pcall(function() VirtualUser:ClickButton2(Vector2.new(0, 0)) end) end
+		end
+		if not worked and VirtualInputManager then
+			worked = pcall(function() VirtualInputManager:SendMouseMoveEvent(1, 1, game) end)
+		end
+		if worked then
+			self._pulses += 1
+			self:SetStatus(string.format("Keepalive %d  •  %s", self._pulses, reason))
+		else self:SetStatus("Virtual input blocked by this executor") end
+		return worked
+	end
+	self:Track(player.Idled:Connect(function() pulse("idle event") end))
+	self:Track(Updates:Register("Universal:AntiAFK", "Stats", function(dt)
+		self._elapsed += dt
+		if self._elapsed >= 45 then self._elapsed = 0; pulse("periodic") end
+	end))
+	pulse("enabled"); return true
 end
 function AntiAFK:OnDisable() self:SetStatus("Idle protection disabled") end
-registerFeature(AntiAFK, "Utility", "Responds only when Roblox raises the local idle event")
+registerFeature(AntiAFK, "Utility", "Sends an immediate and periodic virtual-input keepalive, with Roblox's idle event as backup")
 
 local EFFECT_CLASSES = { ParticleEmitter = true, Trail = true, Beam = true, Smoke = true, Fire = true, Sparkles = true }
 local FPSBoost = API.CreateFeature("FPS Boost", { ToggleKey = Enum.KeyCode.Unknown })
 function FPSBoost:_reduce(object)
+	if isFrostOwned(object) then return end
 	if (EFFECT_CLASSES[object.ClassName] or object:IsA("PostEffect")) and object.Enabled then
 		if self._effects[object] == nil then self._effects[object] = object.Enabled end; object.Enabled = false
 	end
@@ -651,7 +704,7 @@ local DisableParticles = API.CreateFeature("Disable Particles", { ToggleKey = En
 function DisableParticles:OnEnable()
 	self._old = setmetatable({}, { __mode = "k" })
 	local function apply(object)
-		if object:IsA("ParticleEmitter") and object.Enabled then self._old[object] = true; object.Enabled = false end
+		if not isFrostOwned(object) and object:IsA("ParticleEmitter") and object.Enabled then self._old[object] = true; object.Enabled = false end
 	end
 	for _, object in ipairs(workspace:GetDescendants()) do apply(object) end
 	self:Track(workspace.DescendantAdded:Connect(apply)); self:SetStatus("Particles disabled"); return true
@@ -679,6 +732,7 @@ local LowGraphics = API.CreateFeature("Low Graphics", { ToggleKey = Enum.KeyCode
 function LowGraphics:OnEnable()
 	self._parts, self._effects = setmetatable({}, { __mode = "k" }), setmetatable({}, { __mode = "k" })
 	local function apply(object)
+		if isFrostOwned(object) then return end
 		if object:IsA("BasePart") then
 			if not self._parts[object] then self._parts[object] = { object.Material, object.Reflectance, object.CastShadow } end
 			object.Material, object.Reflectance, object.CastShadow = Enum.Material.Plastic, 0, false
@@ -865,22 +919,163 @@ end
 function HighlightSelected:OnDisable() if self._highlight then self._highlight:Destroy(); self._highlight = nil end; self:SetStatus("Highlight removed") end
 registerFeature(HighlightSelected, "Players", "Highlights the selected player's current character locally")
 
-local PlayerESP = API.CreateFeature("Player ESP", { ToggleKey = Enum.KeyCode.Unknown })
-function PlayerESP:OnEnable()
-	self._highlights = {}
-	local function add(target)
-		if target == player or not target.Character or self._highlights[target] then return end
-		local highlight = Instance.new("Highlight"); highlight.Name = "FrostScriptsPlayerESP"; highlight.FillTransparency = 0.75
-		highlight.OutlineColor = target.TeamColor and target.TeamColor.Color or Color3.fromRGB(135, 215, 255)
-		highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop; highlight.Parent = target.Character; self._highlights[target] = highlight
+local PlayerESP = API.CreateFeature("Player ESP & Nametags", {
+	ShowNametag = true, ShowHighlight = true, ShowHealth = true, ShowDistance = true,
+	ShowUsername = true, ShowTeam = true, TeamCheck = false,
+	MaxDistance = 1500, TextSize = 14, RefreshRate = 0.2,
+	FillColor = Color3.fromRGB(90, 195, 255), OutlineColor = Color3.fromRGB(225, 248, 255),
+	FillTransparency = 0.78, OutlineTransparency = 0.05,
+	ToggleKey = Enum.KeyCode.Unknown,
+})
+function PlayerESP:_destroyRecord(target)
+	local record = self._records and self._records[target]
+	if not record then return end
+	for _, key in ipairs({ "Highlight", "Billboard" }) do
+		local object = record[key]
+		if object then object:Destroy() end
 	end
-	for _, target in ipairs(Players:GetPlayers()) do add(target) end
-	self:Track(Players.PlayerAdded:Connect(function(target) self:Track(target.CharacterAdded:Connect(function() task.defer(add, target) end)) end))
-	for _, target in ipairs(Players:GetPlayers()) do if target ~= player then self:Track(target.CharacterAdded:Connect(function() task.defer(add, target) end)) end end
-	self:SetStatus("Player outlines active"); return true
+	self._records[target] = nil
 end
-function PlayerESP:OnDisable() for _, highlight in pairs(self._highlights or {}) do highlight:Destroy() end; self._highlights = {}; self:SetStatus("ESP removed") end
-registerFeature(PlayerESP, "Players", "Adds local Highlight outlines and refreshes them after player respawns")
+function PlayerESP:_createRecord(target, character)
+	self:_destroyRecord(target)
+	local head = character and character:FindFirstChild("Head")
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if not head or not humanoid or not root or not Interface then return nil end
+
+	local highlight = Instance.new("Highlight")
+	highlight.Name = "FrostScriptsPlayerESP"
+	highlight.Adornee = character
+	highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+	highlight.Parent = Interface.OverlayGui
+
+	local billboard = Instance.new("BillboardGui")
+	billboard.Name = "FrostScriptsNametag"
+	billboard.Adornee = head
+	billboard.AlwaysOnTop = true
+	billboard.MaxDistance = self.Settings.MaxDistance
+	billboard.Size = UDim2.fromOffset(230, 58)
+	billboard.StudsOffsetWorldSpace = Vector3.new(0, 3.2, 0)
+	billboard.Parent = Interface.OverlayGui
+
+	local nameLabel = Instance.new("TextLabel")
+	nameLabel.Name = "PlayerName"
+	nameLabel.Size = UDim2.new(1, 0, 0, 24)
+	nameLabel.BackgroundTransparency = 1
+	nameLabel.Font = Enum.Font.BuilderSansBold
+	nameLabel.TextColor3 = Color3.new(1, 1, 1)
+	nameLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+	nameLabel.TextStrokeTransparency = 0.25
+	nameLabel.Parent = billboard
+
+	local details = Instance.new("TextLabel")
+	details.Name = "Details"
+	details.Position = UDim2.fromOffset(0, 23)
+	details.Size = UDim2.new(1, 0, 0, 18)
+	details.BackgroundTransparency = 1
+	details.Font = Enum.Font.BuilderSansMedium
+	details.TextColor3 = Color3.fromRGB(220, 235, 245)
+	details.TextStrokeColor3 = Color3.new(0, 0, 0)
+	details.TextStrokeTransparency = 0.35
+	details.Parent = billboard
+
+	local healthBack = Instance.new("Frame")
+	healthBack.Name = "HealthBack"
+	healthBack.Position = UDim2.new(0.1, 0, 1, -10)
+	healthBack.Size = UDim2.new(0.8, 0, 0, 5)
+	healthBack.BackgroundColor3 = Color3.fromRGB(35, 38, 46)
+	healthBack.BorderSizePixel = 0
+	healthBack.Parent = billboard
+	local backCorner = Instance.new("UICorner"); backCorner.CornerRadius = UDim.new(1, 0); backCorner.Parent = healthBack
+
+	local healthFill = Instance.new("Frame")
+	healthFill.Name = "HealthFill"
+	healthFill.Size = UDim2.fromScale(1, 1)
+	healthFill.BackgroundColor3 = Color3.fromRGB(80, 225, 135)
+	healthFill.BorderSizePixel = 0
+	healthFill.Parent = healthBack
+	local fillCorner = Instance.new("UICorner"); fillCorner.CornerRadius = UDim.new(1, 0); fillCorner.Parent = healthFill
+
+	local record = { Character = character, Humanoid = humanoid, Root = root, Highlight = highlight,
+		Billboard = billboard, NameLabel = nameLabel, Details = details, HealthBack = healthBack, HealthFill = healthFill }
+	self._records[target] = record
+	return record
+end
+function PlayerESP:_updateTarget(target, localRoot)
+	local character = target.Character
+	local record = self._records[target]
+	if not character then self:_destroyRecord(target); return end
+	if not record or record.Character ~= character or not record.Root or not record.Root.Parent
+		or not record.Humanoid or not record.Humanoid.Parent or not record.Billboard or not record.Billboard.Parent
+		or not record.Highlight or not record.Highlight.Parent then
+		record = self:_createRecord(target, character)
+	end
+	if not record or not record.Root.Parent or not record.Humanoid.Parent then return end
+
+	local distance = localRoot and (localRoot.Position - record.Root.Position).Magnitude or math.huge
+	local sameTeam = player.Team ~= nil and target.Team == player.Team
+	local visible = distance <= self.Settings.MaxDistance and (not self.Settings.TeamCheck or not sameTeam)
+	local color = self.Settings.FillColor
+	if self.Settings.ShowTeam and target.Team then color = target.TeamColor.Color end
+	record.Highlight.Enabled = visible and self.Settings.ShowHighlight
+	record.Highlight.FillColor = color
+	record.Highlight.OutlineColor = self.Settings.OutlineColor
+	record.Highlight.FillTransparency = self.Settings.FillTransparency
+	record.Highlight.OutlineTransparency = self.Settings.OutlineTransparency
+	record.Billboard.Enabled = visible and self.Settings.ShowNametag
+	record.Billboard.MaxDistance = self.Settings.MaxDistance
+	record.NameLabel.TextSize = self.Settings.TextSize
+	record.Details.TextSize = math.max(10, self.Settings.TextSize - 2)
+	record.NameLabel.TextColor3 = color
+	record.NameLabel.Text = self.Settings.ShowUsername and string.format("%s  (@%s)", target.DisplayName, target.Name) or target.DisplayName
+	local parts = {}
+	if self.Settings.ShowHealth then table.insert(parts, string.format("%.0f / %.0f HP", record.Humanoid.Health, record.Humanoid.MaxHealth)) end
+	if self.Settings.ShowDistance and distance < math.huge then table.insert(parts, API.FormatDistance(distance)) end
+	if self.Settings.ShowTeam then table.insert(parts, target.Team and target.Team.Name or "Neutral") end
+	record.Details.Text = table.concat(parts, "  •  ")
+	record.Details.Visible = #parts > 0
+	local ratio = math.clamp(record.Humanoid.Health / math.max(1, record.Humanoid.MaxHealth), 0, 1)
+	record.HealthBack.Visible = self.Settings.ShowHealth
+	record.HealthFill.Size = UDim2.fromScale(ratio, 1)
+	record.HealthFill.BackgroundColor3 = Color3.fromRGB(math.floor(235 - ratio * 155), math.floor(75 + ratio * 150), 95)
+end
+function PlayerESP:OnEnable()
+	self._records, self._elapsed = {}, 0
+	self:Track(Updates:Register("Universal:PlayerESP", "Slow", function(dt)
+		self._elapsed += dt
+		if self._elapsed < self.Settings.RefreshRate then return end
+		self._elapsed = 0
+		local _, _, localRoot = getCharacter()
+		local present = {}
+		for _, target in ipairs(Players:GetPlayers()) do
+			if target ~= player then present[target] = true; self:_updateTarget(target, localRoot) end
+		end
+		for target in pairs(self._records) do if not present[target] then self:_destroyRecord(target) end end
+		local count = 0; for _ in pairs(self._records) do count += 1 end
+		self:SetStatus(string.format("Tracking %d player%s", count, count == 1 and "" or "s"))
+	end)); return true
+end
+function PlayerESP:OnDisable()
+	local targets = {}; for target in pairs(self._records or {}) do table.insert(targets, target) end
+	for _, target in ipairs(targets) do self:_destroyRecord(target) end
+	self._records = nil; self:SetStatus("ESP removed")
+end
+registerFeature(PlayerESP, "Players", "Configurable nametags, health bars, distance, teams, and highlights in one optimized ESP", function(module, feature)
+	module:AddToggle("Nametags", feature.Settings.ShowNametag, function(value) feature:SetSetting("ShowNametag", value) end)
+	module:AddToggle("Character highlight", feature.Settings.ShowHighlight, function(value) feature:SetSetting("ShowHighlight", value) end)
+	module:AddToggle("Health and health bar", feature.Settings.ShowHealth, function(value) feature:SetSetting("ShowHealth", value) end)
+	module:AddToggle("Distance", feature.Settings.ShowDistance, function(value) feature:SetSetting("ShowDistance", value) end)
+	module:AddToggle("Username", feature.Settings.ShowUsername, function(value) feature:SetSetting("ShowUsername", value) end)
+	module:AddToggle("Team name and color", feature.Settings.ShowTeam, function(value) feature:SetSetting("ShowTeam", value) end)
+	module:AddToggle("Hide teammates", feature.Settings.TeamCheck, function(value) feature:SetSetting("TeamCheck", value) end)
+	module:AddSlider("Maximum distance", 100, 5000, feature.Settings.MaxDistance, function(value) feature:SetSetting("MaxDistance", value) end, { Step = 100 })
+	module:AddSlider("Text size", 10, 24, feature.Settings.TextSize, function(value) feature:SetSetting("TextSize", value) end, { Step = 1 })
+	module:AddSlider("Refresh rate", 0.1, 1, feature.Settings.RefreshRate, function(value) feature:SetSetting("RefreshRate", value) end, { Step = 0.1 })
+	module:AddSlider("Fill transparency", 0, 1, feature.Settings.FillTransparency, function(value) feature:SetSetting("FillTransparency", value) end, { Step = 0.05 })
+	module:AddSlider("Outline transparency", 0, 1, feature.Settings.OutlineTransparency, function(value) feature:SetSetting("OutlineTransparency", value) end, { Step = 0.05 })
+	module:AddColorPicker("ESP fill color", feature.Settings.FillColor, function(value) feature:SetSetting("FillColor", value) end)
+	module:AddColorPicker("ESP outline color", feature.Settings.OutlineColor, function(value) feature:SetSetting("OutlineColor", value) end)
+end)
 
 local JoinNotifications = API.CreateFeature("Join Notifications", { ToggleKey = Enum.KeyCode.Unknown })
 function JoinNotifications:OnEnable()
@@ -944,7 +1139,7 @@ local HideEffects = API.CreateFeature("Hide Effects", { ToggleKey = Enum.KeyCode
 function HideEffects:OnEnable()
 	self._old = setmetatable({}, { __mode = "k" })
 	local function apply(object)
-		if (object:IsA("Beam") or object:IsA("Trail") or object:IsA("Smoke") or object:IsA("Fire") or object:IsA("Sparkles")) and object.Enabled then
+		if not isFrostOwned(object) and (object:IsA("Beam") or object:IsA("Trail") or object:IsA("Smoke") or object:IsA("Fire") or object:IsA("Sparkles")) and object.Enabled then
 			self._old[object] = true; object.Enabled = false
 		end
 	end
@@ -959,6 +1154,7 @@ function FrozenSteps:OnEnable()
 	self:Track(Updates:Register("Universal:FrozenSteps", "Slow", function()
 		local _, _, root = getCharacter(); if not root or root.AssemblyLinearVelocity.Magnitude < 2 then return end
 		local step = Instance.new("Part"); step.Name = "FrostScriptsFrozenStep"; step.Anchored = true; step.CanCollide = false
+		step.CanQuery = false; step.CanTouch = false; step.CastShadow = false
 		step.Material = Enum.Material.Neon; step.Color = Color3.fromRGB(160, 225, 255); step.Transparency = 0.35
 		step.Size = Vector3.new(2.4, 0.08, 1.4); step.CFrame = root.CFrame * CFrame.new(0, -3, 0); step.Parent = workspace
 		Debris:AddItem(step, self.Settings.Lifetime)
@@ -975,6 +1171,7 @@ function OrbitingSnowflakes:OnEnable()
 	for index = 1, 6 do
 		local part = Instance.new("Part"); part.Name = "FrostScriptsSnowflake"; part.Shape = Enum.PartType.Ball
 		part.Size = Vector3.new(0.35, 0.35, 0.35); part.Anchored = true; part.CanCollide = false
+		part.CanQuery = false; part.CanTouch = false; part.CastShadow = false
 		part.Material = Enum.Material.Neon; part.Color = Color3.fromRGB(220, 250, 255); part.Parent = workspace; table.insert(self._parts, part)
 	end
 	self:Track(Updates:Register("Universal:OrbitingSnowflakes", "Render", function(dt)
@@ -999,21 +1196,36 @@ registerFeature(MoonGravity, "Fun", "Applies a 32.4-stud moon-gravity preset loc
 local Blizzard = API.CreateFeature("Blizzard", { ToggleKey = Enum.KeyCode.Unknown })
 function Blizzard:OnEnable()
 	local camera = workspace.CurrentCamera; if not camera then return false end
-	local attachment = Instance.new("Attachment"); attachment.Name = "FrostScriptsBlizzard"; attachment.Parent = camera
-	local emitter = Instance.new("ParticleEmitter"); emitter.Texture = "rbxassetid://241594419"; emitter.Rate = 90
-	emitter.Lifetime = NumberRange.new(1, 2); emitter.Speed = NumberRange.new(18, 28); emitter.Acceleration = Vector3.new(-12, -8, 0)
-	emitter.SpreadAngle = Vector2.new(45, 45); emitter.Parent = attachment; self._attachment = attachment; self:SetStatus("Local blizzard active"); return true
+	local anchor = Instance.new("Part"); anchor.Name = "FrostScriptsBlizzardAnchor"; anchor.Size = Vector3.one
+	anchor.Anchored = true; anchor.CanCollide = false; anchor.CanQuery = false; anchor.CanTouch = false
+	anchor.CastShadow = false; anchor.Transparency = 1; anchor.Parent = workspace
+	local attachment = Instance.new("Attachment"); attachment.Name = "FrostScriptsBlizzard"; attachment.Parent = anchor
+	local emitter = Instance.new("ParticleEmitter"); emitter.Name = "FrostScriptsBlizzardEmitter"; emitter.Texture = PARTICLE_TEXTURE; emitter.Rate = 110
+	emitter.Lifetime = NumberRange.new(1.2, 2.2); emitter.Speed = NumberRange.new(16, 26); emitter.Acceleration = Vector3.new(-8, -12, 0)
+	emitter.SpreadAngle = Vector2.new(75, 75); emitter.EmissionDirection = Enum.NormalId.Front; emitter.LightEmission = 0.65
+	emitter.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.32), NumberSequenceKeypoint.new(0.75, 0.18), NumberSequenceKeypoint.new(1, 0) })
+	emitter.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.05), NumberSequenceKeypoint.new(1, 1) })
+	emitter.Rotation = NumberRange.new(0, 360); emitter.RotSpeed = NumberRange.new(-120, 120); emitter.Parent = attachment
+	self._anchor = anchor
+	self:Track(Updates:Register("Universal:Blizzard", "Render", function()
+		local current = workspace.CurrentCamera
+		if current and anchor.Parent then anchor.CFrame = current.CFrame * CFrame.new(0, 4, -12) end
+	end))
+	self:SetStatus("Local blizzard active"); return true
 end
-function Blizzard:OnDisable() if self._attachment then self._attachment:Destroy(); self._attachment = nil end; self:SetStatus("Blizzard cleared") end
-registerFeature(Blizzard, "Fun", "Attaches a local snow emitter to the current camera")
+function Blizzard:OnDisable() if self._anchor then self._anchor:Destroy(); self._anchor = nil end; self:SetStatus("Blizzard cleared") end
+registerFeature(Blizzard, "Fun", "Renders camera-relative local snow from one lightweight emitter")
 
 local Snowfall = API.CreateFeature("Snowfall", { ToggleKey = Enum.KeyCode.Unknown })
 function Snowfall:_attach(_, _, root)
 	if self._attachment then self._attachment:Destroy() end; if not root then return end
-	local attachment = Instance.new("Attachment"); attachment.Position = Vector3.new(0, 12, 0); attachment.Parent = root
-	local emitter = Instance.new("ParticleEmitter"); emitter.Texture = "rbxassetid://241594419"; emitter.Rate = 35
+	local attachment = Instance.new("Attachment"); attachment.Name = "FrostScriptsSnowfall"; attachment.Position = Vector3.new(0, 12, 0); attachment.Parent = root
+	local emitter = Instance.new("ParticleEmitter"); emitter.Name = "FrostScriptsSnowfallEmitter"; emitter.Texture = PARTICLE_TEXTURE; emitter.Rate = 35
 	emitter.Lifetime = NumberRange.new(2.5, 4); emitter.Speed = NumberRange.new(2, 5); emitter.Acceleration = Vector3.new(0, -4, 0)
-	emitter.SpreadAngle = Vector2.new(35, 35); emitter.Parent = attachment; self._attachment = attachment
+	emitter.SpreadAngle = Vector2.new(50, 50); emitter.LightEmission = 0.55
+	emitter.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.28), NumberSequenceKeypoint.new(1, 0.08) })
+	emitter.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.1), NumberSequenceKeypoint.new(1, 0.8) })
+	emitter.Rotation = NumberRange.new(0, 360); emitter.RotSpeed = NumberRange.new(-50, 50); emitter.Parent = attachment; self._attachment = attachment
 end
 function Snowfall:OnEnable()
 	self:Track(Character:OnAdded(function(...) if self.Enabled then self:_attach(...) end end, false)); self:_attach(Character:Get())
@@ -1044,7 +1256,7 @@ function FrostWings:_attach(character)
 		for segment = 1, 3 do
 			local wing = Instance.new("WedgePart"); wing.Name = "FrostWing"; wing.Size = Vector3.new(0.2, 2.8 - segment * 0.35, 1.8)
 			wing.Material = Enum.Material.Neon; wing.Color = Color3.fromRGB(180, 235, 255); wing.Transparency = 0.18
-			wing.CanCollide = false; wing.Massless = true
+			wing.CanCollide = false; wing.CanQuery = false; wing.CanTouch = false; wing.CastShadow = false; wing.Massless = true
 			wing.CFrame = torso.CFrame * CFrame.new(side * (1 + segment * 0.45), 0.4 - segment * 0.35, 0.55)
 				* CFrame.Angles(0, math.rad(side * (18 + segment * 10)), math.rad(side * (18 + segment * 8)))
 			wing.Parent = folder
@@ -1179,6 +1391,7 @@ function BreadcrumbTrail:OnEnable()
 	self:Track(Updates:Register("Universal:BreadcrumbTrail", "Stats", function()
 		local _, _, root = getCharacter(); if not root then return end
 		local part = Instance.new("Part"); part.Name = "FrostScriptsBreadcrumb"; part.Anchored = true; part.CanCollide = false
+		part.CanQuery = false; part.CanTouch = false; part.CastShadow = false
 		part.Shape = Enum.PartType.Ball; part.Material = Enum.Material.Neon; part.Color = Color3.fromRGB(100, 205, 255)
 		part.Size = Vector3.new(0.35, 0.35, 0.35); part.Position = root.Position - Vector3.new(0, 2.8, 0); part.Parent = workspace
 		table.insert(self._parts, part); while #self._parts > self.Settings.Limit do table.remove(self._parts, 1):Destroy() end
@@ -1291,12 +1504,12 @@ addAction("Copy Session Summary", "Utility", "Copies FPS, ping, player count, an
 	copyText(string.format("FPS %d | Ping %dms | %d Modules Active | %d/%d Players", currentFPS, readPing(), activeCount(), #Players:GetPlayers(), Players.MaxPlayers))
 end)
 addAction("Save Session Config", "Utility", "Stores feature settings and enabled states for this executor session", function()
-	local config = {}; for _, feature in ipairs(features) do config[feature.Name] = { Enabled = feature.Enabled, Settings = table.clone(feature.Settings) } end
+	local config = {}; for _, feature in ipairs(visibleFeatures) do config[feature.Name] = { Enabled = feature.Enabled, Settings = table.clone(feature.Settings) } end
 	env.FrostScriptsUniversalConfig = config; notify("Config saved", "Session configuration stored", "Success")
 end)
 addAction("Load Session Config", "Utility", "Restores the last in-memory Universal configuration", function()
 	local config = env.FrostScriptsUniversalConfig; if type(config) ~= "table" then notify("Config", "No saved session configuration", "Error"); return end
-	for _, feature in ipairs(features) do local saved = config[feature.Name]; if saved then
+	for _, feature in ipairs(visibleFeatures) do local saved = config[feature.Name]; if saved then
 		for key, value in pairs(saved.Settings or {}) do if feature.Settings[key] ~= nil then feature:SetSetting(key, value) end end
 		feature:SetEnabled(saved.Enabled)
 	end end; notify("Config loaded", "Session configuration restored", "Success")
@@ -1407,36 +1620,52 @@ local function addFeatureModule(entry)
 		FavoriteId = "Universal:" .. feature.Name, Default = feature.Enabled,
 		Callback = function(enabled) feature:SetEnabled(enabled) end })
 	modulesByName[feature.Name] = module
+	table.insert(visibleFeatures, feature)
 	module:AddKeybind({ Name = "Toggle " .. feature.Name, Get = function() return feature.Settings.ToggleKey end,
 		Set = function(key) feature:SetSetting("ToggleKey", key) end, OnPressed = function() feature:SetEnabled(not feature.Enabled) end })
 	if entry.Configure then entry.Configure(module, feature) end
 	return module
 end
-for _, entry in ipairs(entries) do addFeatureModule(entry) end
+
+-- Keep implementations available for compatibility, but do not inflate the main catalog with
+-- overlapping one-purpose cards. Consolidated modules cover each hidden module's common use case.
+local HIDDEN_FEATURES = {
+	["Character Trail"] = true, ["Vehicle Fly"] = true, ["Brightness"] = true, ["Remove Shadows"] = true,
+	["Disable Particles"] = true, ["Low Graphics"] = true, ["Hide Effects"] = true,
+	["Third Person"] = true, ["Shoulder Cam"] = true, ["Highlight Selected Player"] = true,
+	["Moon Gravity"] = true,
+	["FPS HUD"] = true, ["Ping HUD"] = true, ["Player Count HUD"] = true,
+	["Session Time HUD"] = true, ["Active Modules HUD"] = true, ["Flight Status HUD"] = true,
+	["Selected Player Health HUD"] = true, ["Player Distance HUD"] = true, ["Team HUD"] = true,
+	["Camera FOV HUD"] = true, ["Gravity HUD"] = true,
+}
+local HIDDEN_ACTIONS = {
+	["Respawn"] = true, ["Copy Username"] = true, ["Copy UserId"] = true, ["Player List"] = true,
+	["Small Server"] = true, ["Large Server"] = true, ["Copy PlaceId"] = true,
+	["Day Preset"] = true, ["Night Preset"] = true, ["Sunset Preset"] = true,
+	["Clear Local Weather"] = true, ["Face North"] = true, ["Clear Breadcrumbs"] = true,
+	["FPS 30 Preset"] = true, ["FPS 60 Preset"] = true, ["FPS 144 Preset"] = true,
+	["Open Favorites"] = true, ["Open Module Search"] = true,
+	["Hide Interface"] = true, ["Show Interface"] = true,
+}
+
+local catalogSize = 0
+for _, entry in ipairs(entries) do
+	if not HIDDEN_FEATURES[entry.Feature.Name] then addFeatureModule(entry); catalogSize += 1 end
+end
 
 for _, entry in ipairs(actionEntries) do
-	local module = Modules:AddModule({ Name = entry.Name, Description = entry.Description, Category = entry.Category,
-		Favoritable = true, FavoriteId = "Universal:" .. entry.Name, Collapsible = true,
-		FavoriteAction = entry.Callback, FavoriteActionText = entry.ButtonText })
-	modulesByName[entry.Name] = module
-	if entry.Configure then entry.Configure(module) else module:AddButton(entry.ButtonText, function() entry.Callback(); addRecent(entry.Name) end) end
+	if not HIDDEN_ACTIONS[entry.Name] then
+		local module = Modules:AddModule({ Name = entry.Name, Description = entry.Description, Category = entry.Category,
+			Favoritable = true, FavoriteId = "Universal:" .. entry.Name, Collapsible = true,
+			FavoriteAction = entry.Callback, FavoriteActionText = entry.ButtonText })
+		modulesByName[entry.Name] = module
+		if entry.Configure then entry.Configure(module) else module:AddButton(entry.ButtonText, function() entry.Callback(); addRecent(entry.Name) end) end
+		catalogSize += 1
+	end
 end
 
-local utilityCards = {
-	{ "Favorites Guide", "Utility", "Star any module to pin a synchronized shortcut in Favorites.", function() Interface:SelectTab(Favorites) end, "Open Favorites" },
-	{ "Recent Modules", "Utility", "Shows the five latest activations on Home.", function() Interface:SelectTab(Home) end, "Open Recent" },
-	{ "Module Search", "Utility", "Searches names, descriptions, settings, and commands.", function() Interface:SelectTab(Modules); Interface.Search:CaptureFocus() end, "Search" },
-	{ "Keybind Manager", "Utility", "Every toggleable module owns its conflict-checked keybind.", function() Interface:SelectTab(Modules); Interface:SetSearch("Toggle") end, "Find Keybinds" },
-	{ "Quick Toggle Menu", "Utility", "The Home grid and mobile overlay expose the same eight core features.", function() Interface:SelectTab(Home) end, "Open Quick Actions" },
-	{ "Compatibility Guide", "Utility", "Universal modules are local; vehicle, animation, and executor tools show compatibility notes.", function() Interface:SelectTab(Modules) end, "Browse Compatibility" },
-}
-local catalogSize = #entries + #actionEntries + #utilityCards
-assert(catalogSize >= 100 and catalogSize <= 200, "Universal catalog must stay focused between 100 and 200 modules")
-for _, item in ipairs(utilityCards) do
-	local module = Modules:AddModule({ Name = item[1], Description = item[3], Category = item[2], Favoritable = true,
-		FavoriteId = "Universal:" .. item[1], FavoriteAction = item[4], FavoriteActionText = item[5] })
-	module:AddButton(item[5], item[4]); modulesByName[item[1]] = module
-end
+assert(catalogSize == 100, "Universal catalog must expose exactly 100 curated modules")
 
 Interface:AddClientSettings(Settings)
 local mobileSettings = Settings:AddModule({ Name = "Mobile Mode", Description = "Large touch controls that stay usable when the main window is hidden", Collapsible = false })

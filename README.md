@@ -15,8 +15,9 @@ The execution environment must support `loadstring` and `game:HttpGet`. Raw GitH
 ## The experience
 
 - Script cards with a name, description, optional image, and launch/retry status.
-- A focused Universal catalog of 100–200 working local modules across movement, character, camera, world, players, server, navigation, performance, fun, utility, and HUD categories.
+- A curated Universal catalog of 100 working local modules across movement, character, camera, world, players, server, navigation, performance, fun, utility, and HUD categories; overlapping effect toggles, duplicate actions, and status-only cards are omitted from the UI.
 - Home quick actions for Flight, Noclip, Speed, Infinite Jump, Freecam, Fullbright, Anti-AFK, and FPS Boost, plus Favorites, Recently Used, commands, and a live FPS/ping/active-module status bar.
+- One configurable Player ESP & Nametags module combines highlights, display names, usernames, health bars, distance, team colors/filtering, range, opacity, text size, and refresh rate.
 - Optional Mobile Mode with touch movement, rise/drop, drag-to-look, and synchronized quick-toggle controls; controller shortcuts are available as a separate module.
 - Compact cards that fit together on desktop and become short rows on smaller screens, animated cover gradients, a soft background, and subtle interface sounds.
 - Black by default, with 10 clickable palette previews including Graphite, Midnight, Amethyst, Forest, and Ember.

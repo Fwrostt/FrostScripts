@@ -49,6 +49,33 @@ def main():
         for path in (ROOT / directory).rglob("*.lua"):
             if re.search(r'AddTab\("(?:Keybinds|Shortcuts)"', path.read_text(encoding="utf-8")):
                 parser.error(f"Keybinds belong inside modules: {path}")
+    universal = (ROOT / "games/Universal/main.lua").read_text(encoding="utf-8")
+    for marker in (
+        '"Player ESP & Nametags"', "ShowNametag", "ShowHealth", "ShowDistance",
+        "TeamCheck", "MaxDistance", 'Updates:Register("Universal:AntiAFK"',
+        "humanoid.WalkToPoint", "HIDDEN_FEATURES", "HIDDEN_ACTIONS", "catalogSize == 100",
+    ):
+        if marker not in universal:
+            parser.error(f"Universal regression: missing {marker}")
+    if "rbxassetid://241594419" in universal:
+        parser.error("Universal visual effects must use the bundled Roblox particle texture")
+    if re.search(r"RunService\.(?:RenderStepped|Heartbeat)\s*:\s*Connect", universal):
+        parser.error("Universal frame work must run through the shared update manager")
+    constructors = (
+        r"API\.CreateFeature", r"registerLoopFeature", r"characterPropertyFeature", r"trailFeature",
+        r"cameraPropertyFeature", r"simplePropertyFeature", r"colorCorrectionFeature",
+        r"cameraModeFeature", r"hudFeature",
+    )
+    feature_count = sum(len(re.findall(rf"^local \w+ = {constructor}\(", universal, re.MULTILINE)) for constructor in constructors)
+    feature_count += len(re.findall(r"^local \w+ = registerFeature\(API\.UniversalModules\.\w+\(", universal, re.MULTILINE))
+    action_count = len(re.findall(r'^addAction\("', universal, re.MULTILINE))
+    hidden_features = re.search(r"local HIDDEN_FEATURES = \{(.*?)\n\}", universal, re.DOTALL)
+    hidden_actions = re.search(r"local HIDDEN_ACTIONS = \{(.*?)\n\}", universal, re.DOTALL)
+    if not hidden_features or not hidden_actions:
+        parser.error("Universal curated catalog tables are malformed")
+    visible_count = feature_count - hidden_features.group(1).count('["') + action_count - hidden_actions.group(1).count('["')
+    if visible_count != 100:
+        parser.error(f"Universal must expose exactly 100 curated modules, found {visible_count}")
     files = list((ROOT / "dist").rglob("*.lua")) + list((ROOT / "games").rglob("*.lua")) + list((ROOT / "examples").rglob("*.lua")) + list((ROOT / "config").rglob("*.lua"))
     # API fragments are compiled through their generated bundle.
     run(binary("luau-compile"), "--null", *files)
