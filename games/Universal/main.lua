@@ -41,7 +41,7 @@ local Flight = addFeature(API.UniversalModules.CreateFlight({
 
 local WalkSpeed = addFeature(API.CreateFeature("Walk Speed", {
 	Speed = 32,
-	ToggleKey = Enum.KeyCode.G,
+	ToggleKey = Enum.KeyCode.Unknown,
 }))
 
 function WalkSpeed:OnEnable()
@@ -71,7 +71,7 @@ end
 
 local JumpPower = addFeature(API.CreateFeature("Jump Power", {
 	Power = 75,
-	ToggleKey = Enum.KeyCode.J,
+	ToggleKey = Enum.KeyCode.Unknown,
 }))
 
 function JumpPower:OnEnable()
@@ -111,7 +111,7 @@ function JumpPower:OnDisable()
 end
 
 local InfiniteJump = addFeature(API.CreateFeature("Infinite Jump", {
-	ToggleKey = Enum.KeyCode.I,
+	ToggleKey = Enum.KeyCode.Unknown,
 }))
 
 function InfiniteJump:OnEnable()
@@ -130,7 +130,7 @@ function InfiniteJump:OnDisable()
 end
 
 local Noclip = addFeature(API.CreateFeature("Noclip", {
-	ToggleKey = Enum.KeyCode.N,
+	ToggleKey = Enum.KeyCode.Unknown,
 }))
 
 function Noclip:OnEnable()
@@ -160,7 +160,7 @@ end
 local AutoClicker = addFeature(API.UniversalModules.CreateAutoClicker({
 	Name = "Auto Clicker",
 	ClicksPerSecond = 8,
-	ToggleKey = Enum.KeyCode.V,
+	ToggleKey = Enum.KeyCode.Unknown,
 	IsInputCaptured = function() return Interface and Interface:IsCapturingInput() end,
 }))
 
@@ -168,7 +168,7 @@ local Fullbright = addFeature(API.CreateFeature("Fullbright", {
 	Brightness = 3,
 	ClockTime = 14,
 	RemoveFog = true,
-	ToggleKey = Enum.KeyCode.B,
+	ToggleKey = Enum.KeyCode.Unknown,
 }))
 
 local LIGHTING_PROPERTIES = { "Ambient", "OutdoorAmbient", "Brightness", "ClockTime", "FogEnd", "GlobalShadows" }
@@ -209,7 +209,7 @@ function Fullbright:OnDisable()
 end
 
 local AntiAFK = addFeature(API.CreateFeature("Anti-AFK", {
-	ToggleKey = Enum.KeyCode.K,
+	ToggleKey = Enum.KeyCode.Unknown,
 }))
 
 function AntiAFK:OnEnable()
@@ -237,7 +237,7 @@ function AntiAFK:OnDisable()
 end
 
 local Performance = addFeature(API.CreateFeature("Performance Mode", {
-	ToggleKey = Enum.KeyCode.P,
+	ToggleKey = Enum.KeyCode.Unknown,
 }))
 
 local EFFECT_CLASSES = {
