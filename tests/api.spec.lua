@@ -141,7 +141,9 @@ test("GitHub UI and game selection load exactly one game", function()
 	sources["https://raw.githubusercontent.com/Fwrostt/FrostScripts/test-ref/games/GrassCutter/main.lua"] = "local api = ...; return { Version = api.Version, Unload = function() end }"
 	assert(API.RunGame("GrassCutter").Version == API.Version)
 	assert(API.GetConfig().BaseUrl == "https://raw.githubusercontent.com/Fwrostt/FrostScripts/test-ref")
-	assert(#API.GetGames() == 2)
+	sources["https://raw.githubusercontent.com/Fwrostt/FrostScripts/test-ref/games/Universal/main.lua"] = "local api = ...; return { Version = api.Version, Unload = function() end }"
+	assert(API.RunGame("Universal").Version == API.Version)
+	assert(#API.GetGames() == 3)
 end)
 test("GitHub covers discover extensions and cache validated images", function()
 	local base = API.GetConfig().BaseUrl .. "/games/GrassCutter/icon."

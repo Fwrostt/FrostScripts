@@ -27,6 +27,7 @@ Upload your cover next to the matching game's `main.lua`:
 ```text
 games/GrassCutter/icon.png
 games/NeedleInHay/icon.png
+games/Universal/icon.png
 ```
 
 **PNG is preferred.** `icon.jpg` and `icon.jpeg` also work. Names are lowercase and case-sensitive. The loader tries PNG, JPG, then JPEG, from the same raw GitHub revision as the scripts. Keep just one cover in each game folder. Use an image under 4 MB; a centered subject works best because compact layouts crop to a square. Set `Image.ScaleType = "Fit"` to show the whole image, or `"Crop"` to fill the cover.
@@ -59,4 +60,4 @@ return { Unload = function() feature:Destroy(); window:Destroy() end }
 
 Put all feature settings and shortcuts inside their owning module. Keep UI Settings limited to interface preferences. The library controller manages selection, launch errors, returning to the catalog, and one active suite at a time.
 
-If `PlaceIds` is empty, players choose the card while in the correct game. Add actual place IDs to make the API reject launches in other places. No place IDs are guessed or inferred.
+If `PlaceIds` is empty, the entry can launch in any place. Universal intentionally uses an empty list; game-specific entries can add actual place IDs to reject launches elsewhere. No place IDs are guessed or inferred.

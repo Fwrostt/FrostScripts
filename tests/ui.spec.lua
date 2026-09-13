@@ -251,10 +251,15 @@ test("dashboard cards use two columns on a normal workspace", function()
 	assert(dashboard.DashboardGrid.CellSize.Y.Offset == 174)
 	assert(window.Sidebar:FindFirstChildWhichIsA("UICorner"))
 end)
-test("two script cards fit without scrolling across supported viewports", function()
+test("three script cards fit without scrolling across supported viewports", function()
 	local library = window._tabsByName.Library
 	library:AddScriptCard({ Name = "Second script", Description = "A second game with a longer description", Image = { AssetId = "12345" } }, function() end)
+	library:AddScriptCard({ Name = "Universal", Description = "Universal tools for every game", Image = { AssetId = "12345", ScaleType = "Fit" } }, function() end)
 	window:SelectTab(library)
+	window:SetSizePreset("Large")
+	Mock.Resize(1280, 720)
+	assert(math.abs(library.CardLayout.CellSize.X.Scale - (1 / 3)) < 0.001)
+	assert(library.ScriptCards[1].Cover.Size.Y.Offset >= 100, "desktop cards should give banners more room")
 	for _, preset in ipairs({ "Comfortable", "Large", "Extra Large" }) do
 		window:SetSizePreset(preset)
 		for _, textScale in ipairs({ 1, 1.3 }) do
@@ -262,11 +267,12 @@ test("two script cards fit without scrolling across supported viewports", functi
 		for _, size in ipairs({ { 1064, 678 }, { 1280, 720 }, { 1920, 1080 }, { 390, 844 }, { 844, 390 }, { 320, 568 } }) do
 			Mock.Resize(size[1], size[2])
 			local cell = library.CardLayout.CellSize
-			local columns = cell.X.Scale == 0.5 and 2 or 1
+			local columns = math.floor((1 / cell.X.Scale) + 0.5)
 			local height = cell.Y.Offset
 			local content = window.Content.AbsoluteSize
-			assert(height * math.ceil(2 / columns) + (columns == 1 and 12 or 0) + 8 <= content.Y + 0.01,
-				"both complete cards must fit without scrolling at " .. size[1] .. "x" .. size[2])
+			local rows = math.ceil(3 / columns)
+			assert(height * rows + (rows - 1) * 12 + 8 <= content.Y + 0.01,
+				"all complete cards must fit without scrolling at " .. size[1] .. "x" .. size[2])
 			for _, card in ipairs(library.ScriptCards) do
 				local function top(obj) return height * obj.Position.Y.Scale + obj.Position.Y.Offset end
 				assert(top(card.Title) + card.Title.Size.Y.Offset <= top(card.Description), "title and description must not overlap")

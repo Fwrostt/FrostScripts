@@ -53,15 +53,21 @@ function Window:_layoutScriptCards()
 	if not self.TargetSize then return end
 	local availableWidth = self.TargetSize.X - (self._compact and 68 or 192) - 40
 	local availableHeight = self.TargetSize.Y - 186
-	local horizontal = availableWidth < 520 or availableHeight < 250
-	local columns = horizontal and 1 or 2
 	for _, tab in ipairs(self.Tabs) do
 		if tab.CardLayout then
-			local count = math.min(2, math.max(1, #tab.ScriptCards))
-			local height = horizontal and math.clamp(math.floor((availableHeight - 8 - (count - 1) * 12) / count), 78, 152)
-				or math.min(244 + math.ceil((self.TextScale - 1) * 72), availableHeight - 8)
-			tab.CardLayout.CellSize = UDim2.new(1 / columns, columns == 2 and -10 or -8, 0, height)
-			for _, card in ipairs(tab.ScriptCards) do card:Layout(horizontal, height) end
+			local count = math.max(1, #tab.ScriptCards)
+			local columns = 1
+			if availableWidth >= 520 and availableHeight >= 250 then
+				columns = count >= 3 and availableWidth >= 750 and 3 or 2
+			end
+			local rows = math.ceil(count / columns)
+			local fittedHeight = math.max(54, math.floor((availableHeight - 8 - (rows - 1) * 12) / rows))
+			local preferredHeight = 310 + math.ceil((self.TextScale - 1) * 72)
+			local vertical = columns > 1 and rows == 1 and fittedHeight >= 270
+			local height = vertical and math.min(preferredHeight, fittedHeight) or fittedHeight
+			local offset = columns == 3 and -12 or columns == 2 and -10 or -8
+			tab.CardLayout.CellSize = UDim2.new(1 / columns, offset, 0, height)
+			for _, card in ipairs(tab.ScriptCards) do card:Layout(not vertical, height) end
 		end
 	end
 end

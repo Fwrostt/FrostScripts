@@ -2434,7 +2434,8 @@ function Tab:AddScriptCard(entry, onLaunch)
 	local title = label("ScriptTitle", entry.Name, 17, THEME.Text, Enum.Font.BuilderSansBold)
 	local description = label("ScriptDescription", entry.Description, 13, THEME.Muted, Enum.Font.BuilderSans)
 	description.TextWrapped = true
-	local status = label("LaunchStatus", "Open in the matching game", 11, THEME.Muted, Enum.Font.BuilderSans)
+	local defaultHint = entry.LaunchHint or "Open in the matching game"
+	local status = label("LaunchStatus", defaultHint, 11, THEME.Muted, Enum.Font.BuilderSans)
 	local button = create("TextButton", { Name = "LaunchScript", Text = "Launch script",
 		TextSize = 14, Font = Enum.Font.BuilderSansMedium, TextColor3 = THEME.Text,
 		BackgroundColor3 = THEME.Surface, BorderSizePixel = 0, AutoButtonColor = false, Parent = module.Card,
@@ -2453,7 +2454,8 @@ function Tab:AddScriptCard(entry, onLaunch)
 	self.Window:_connect(module.Card.MouseEnter, function() setHovered(true) end)
 	self.Window:_connect(module.Card.MouseLeave, function() setHovered(false) end)
 	self.Window:_connect(button.Activated, function() if button.Active then safeCall(self.Window, onLaunch) end end)
-	local card = { Module = module, Button = button, Cover = cover, Image = image, Title = title, Description = description, Status = status }
+	local card = { Module = module, Button = button, Cover = cover, Image = image, Title = title,
+		Description = description, Status = status, DefaultHint = defaultHint }
 	function card:Layout(horizontal, height)
 		local textScale = self.Module.Window.TextScale
 		local titleHeight = math.ceil(24 * textScale)
@@ -2468,7 +2470,9 @@ function Tab:AddScriptCard(entry, onLaunch)
 			local buttonHeight = compact and 28 or 32
 			local buttonBottom = compact and 6 or 8
 			local buttonY = height - buttonHeight - buttonBottom
-			description.Position, description.Size = UDim2.fromOffset(left, descriptionTop), UDim2.new(1, -left - 12, 0, math.max(12, buttonY - descriptionTop - 4))
+			local descriptionHeight = math.max(0, buttonY - descriptionTop - 4)
+			description.Position, description.Size = UDim2.fromOffset(left, descriptionTop), UDim2.new(1, -left - 12, 0, descriptionHeight)
+			description.Visible = descriptionHeight >= 12
 			button.Position, button.Size = UDim2.fromOffset(left, buttonY), UDim2.new(1, -left - 12, 0, buttonHeight)
 			hoverHint.Visible = side >= 84
 			status.Visible = false
@@ -2478,6 +2482,7 @@ function Tab:AddScriptCard(entry, onLaunch)
 			cover.Position, cover.Size = UDim2.fromOffset(12, 12), UDim2.new(1, -24, 0, coverHeight)
 			title.Position, title.Size = UDim2.fromOffset(14, coverHeight + 24), UDim2.new(1, -28, 0, titleHeight)
 			description.Position, description.Size = UDim2.fromOffset(14, coverHeight + 31 + titleHeight), UDim2.new(1, -28, 0, descriptionHeight)
+			description.Visible = true
 			button.Position, button.Size = UDim2.new(0, 12, 1, -68), UDim2.new(1, -24, 0, 38)
 			status.Position, status.Size = UDim2.new(0, 14, 1, -23), UDim2.new(1, -28, 0, 16)
 			hoverHint.Visible = coverHeight >= 84
@@ -2486,7 +2491,7 @@ function Tab:AddScriptCard(entry, onLaunch)
 	end
 	function card:SetLaunchState(state, detail)
 		self.Button.Text = state == "Loading" and "Loading..." or state == "Retry" and "Try again" or "Launch script"
-		status.Text = detail or "Open in the matching game"
+		status.Text = detail or self.DefaultHint
 	end
 	function card:SetLaunchEnabled(enabled)
 		self.Button.Active, self.Button.Selectable = enabled, enabled
@@ -2553,15 +2558,21 @@ function Window:_layoutScriptCards()
 	if not self.TargetSize then return end
 	local availableWidth = self.TargetSize.X - (self._compact and 68 or 192) - 40
 	local availableHeight = self.TargetSize.Y - 186
-	local horizontal = availableWidth < 520 or availableHeight < 250
-	local columns = horizontal and 1 or 2
 	for _, tab in ipairs(self.Tabs) do
 		if tab.CardLayout then
-			local count = math.min(2, math.max(1, #tab.ScriptCards))
-			local height = horizontal and math.clamp(math.floor((availableHeight - 8 - (count - 1) * 12) / count), 78, 152)
-				or math.min(244 + math.ceil((self.TextScale - 1) * 72), availableHeight - 8)
-			tab.CardLayout.CellSize = UDim2.new(1 / columns, columns == 2 and -10 or -8, 0, height)
-			for _, card in ipairs(tab.ScriptCards) do card:Layout(horizontal, height) end
+			local count = math.max(1, #tab.ScriptCards)
+			local columns = 1
+			if availableWidth >= 520 and availableHeight >= 250 then
+				columns = count >= 3 and availableWidth >= 750 and 3 or 2
+			end
+			local rows = math.ceil(count / columns)
+			local fittedHeight = math.max(54, math.floor((availableHeight - 8 - (rows - 1) * 12) / rows))
+			local preferredHeight = 310 + math.ceil((self.TextScale - 1) * 72)
+			local vertical = columns > 1 and rows == 1 and fittedHeight >= 270
+			local height = vertical and math.min(preferredHeight, fittedHeight) or fittedHeight
+			local offset = columns == 3 and -12 or columns == 2 and -10 or -8
+			tab.CardLayout.CellSize = UDim2.new(1 / columns, offset, 0, height)
+			for _, card in ipairs(tab.ScriptCards) do card:Layout(not vertical, height) end
 		end
 	end
 end

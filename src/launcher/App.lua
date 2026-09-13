@@ -64,7 +64,7 @@ API.ReturnToLauncher = function()
 	window.InputEnabled = true
 	window:ApplyPreferences()
 	window:SetVisible(true)
-	for _, card in pairs(launcher.Cards) do card:SetLaunchState("Launch", "Open while playing this game") end
+	for _, card in pairs(launcher.Cards) do card:SetLaunchState("Launch") end
 end
 
 function launcher:Unload()

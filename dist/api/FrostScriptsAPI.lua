@@ -8,21 +8,34 @@ return {
 	{
 		Id = "GrassCutter",
 		Name = "Grass Cutter",
-		Description = "Your complete cutting companion. Farming, loot discovery, world navigation, and live progress in one workspace.",
+		Description = "Auto grass and loot farming, selling, shop and zone navigation, ESP, movement, performance tools, and live stats.",
 		EntryPoint = "games/GrassCutter/main.lua",
 		Image = { Enabled = true, ScaleType = "Crop" },
 		Monogram = "GC",
 		Tag = "FARMING & EXPLORATION",
-		PlaceIds = {}, -- Optional: { 123456789 }; empty means choose manually in the correct game.
+		LaunchHint = "Open while playing this game",
+		PlaceIds = {}, -- Optional: add IDs to enforce a game; empty is unrestricted (used by Universal).
 	},
 	{
 		Id = "NeedleInHay",
 		Name = "Needle in a Haystack",
-		Description = "Find your rhythm in the haystack. Smart harvesting, needle tracking, upgrades, and clear session feedback.",
+		Description = "Auto pick and sell, RGB targeting, needle claiming, upgrades, event tracking, ESP, movement, and performance tools.",
 		EntryPoint = "games/NeedleInHay/main.lua",
 		Image = { Enabled = true, ScaleType = "Crop" },
 		Monogram = "NH",
 		Tag = "HARVESTING & DISCOVERY",
+		LaunchHint = "Open while playing this game",
+		PlaceIds = {},
+	},
+	{
+		Id = "Universal",
+		Name = "Universal",
+		Description = "Flight, speed and jump controls, infinite jump, noclip, auto clicker, anti-AFK, fullbright, and performance tools.",
+		EntryPoint = "games/Universal/main.lua",
+		Image = { Enabled = true, ScaleType = "Fit" },
+		Monogram = "UN",
+		Tag = "EVERY GAME",
+		LaunchHint = "Works in every game",
 		PlaceIds = {},
 	},
 }

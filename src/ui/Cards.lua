@@ -74,7 +74,8 @@ function Tab:AddScriptCard(entry, onLaunch)
 	local title = label("ScriptTitle", entry.Name, 17, THEME.Text, Enum.Font.BuilderSansBold)
 	local description = label("ScriptDescription", entry.Description, 13, THEME.Muted, Enum.Font.BuilderSans)
 	description.TextWrapped = true
-	local status = label("LaunchStatus", "Open in the matching game", 11, THEME.Muted, Enum.Font.BuilderSans)
+	local defaultHint = entry.LaunchHint or "Open in the matching game"
+	local status = label("LaunchStatus", defaultHint, 11, THEME.Muted, Enum.Font.BuilderSans)
 	local button = create("TextButton", { Name = "LaunchScript", Text = "Launch script",
 		TextSize = 14, Font = Enum.Font.BuilderSansMedium, TextColor3 = THEME.Text,
 		BackgroundColor3 = THEME.Surface, BorderSizePixel = 0, AutoButtonColor = false, Parent = module.Card,
@@ -93,7 +94,8 @@ function Tab:AddScriptCard(entry, onLaunch)
 	self.Window:_connect(module.Card.MouseEnter, function() setHovered(true) end)
 	self.Window:_connect(module.Card.MouseLeave, function() setHovered(false) end)
 	self.Window:_connect(button.Activated, function() if button.Active then safeCall(self.Window, onLaunch) end end)
-	local card = { Module = module, Button = button, Cover = cover, Image = image, Title = title, Description = description, Status = status }
+	local card = { Module = module, Button = button, Cover = cover, Image = image, Title = title,
+		Description = description, Status = status, DefaultHint = defaultHint }
 	function card:Layout(horizontal, height)
 		local textScale = self.Module.Window.TextScale
 		local titleHeight = math.ceil(24 * textScale)
@@ -108,7 +110,9 @@ function Tab:AddScriptCard(entry, onLaunch)
 			local buttonHeight = compact and 28 or 32
 			local buttonBottom = compact and 6 or 8
 			local buttonY = height - buttonHeight - buttonBottom
-			description.Position, description.Size = UDim2.fromOffset(left, descriptionTop), UDim2.new(1, -left - 12, 0, math.max(12, buttonY - descriptionTop - 4))
+			local descriptionHeight = math.max(0, buttonY - descriptionTop - 4)
+			description.Position, description.Size = UDim2.fromOffset(left, descriptionTop), UDim2.new(1, -left - 12, 0, descriptionHeight)
+			description.Visible = descriptionHeight >= 12
 			button.Position, button.Size = UDim2.fromOffset(left, buttonY), UDim2.new(1, -left - 12, 0, buttonHeight)
 			hoverHint.Visible = side >= 84
 			status.Visible = false
@@ -118,6 +122,7 @@ function Tab:AddScriptCard(entry, onLaunch)
 			cover.Position, cover.Size = UDim2.fromOffset(12, 12), UDim2.new(1, -24, 0, coverHeight)
 			title.Position, title.Size = UDim2.fromOffset(14, coverHeight + 24), UDim2.new(1, -28, 0, titleHeight)
 			description.Position, description.Size = UDim2.fromOffset(14, coverHeight + 31 + titleHeight), UDim2.new(1, -28, 0, descriptionHeight)
+			description.Visible = true
 			button.Position, button.Size = UDim2.new(0, 12, 1, -68), UDim2.new(1, -24, 0, 38)
 			status.Position, status.Size = UDim2.new(0, 14, 1, -23), UDim2.new(1, -28, 0, 16)
 			hoverHint.Visible = coverHeight >= 84
@@ -126,7 +131,7 @@ function Tab:AddScriptCard(entry, onLaunch)
 	end
 	function card:SetLaunchState(state, detail)
 		self.Button.Text = state == "Loading" and "Loading..." or state == "Retry" and "Try again" or "Launch script"
-		status.Text = detail or "Open in the matching game"
+		status.Text = detail or self.DefaultHint
 	end
 	function card:SetLaunchEnabled(enabled)
 		self.Button.Active, self.Button.Selectable = enabled, enabled

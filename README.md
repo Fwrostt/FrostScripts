@@ -15,6 +15,7 @@ The execution environment must support `loadstring` and `game:HttpGet`. Raw GitH
 ## The experience
 
 - Script cards with a name, description, optional image, and launch/retry status.
+- A Universal suite for every game with flight, movement controls, infinite jump, noclip, auto clicker, anti-AFK, fullbright, performance mode, and per-module keybinds.
 - Compact cards that fit together on desktop and become short rows on smaller screens, animated cover gradients, a soft background, and subtle interface sounds.
 - Black by default, with 10 clickable palette previews including Graphite, Midnight, Amethyst, Forest, and Ember.
 - Roblox avatar thumbnails, native solid navigation badges, Builder Sans typography, and search only on library/module pages.
@@ -27,7 +28,7 @@ The execution environment must support `loadstring` and `game:HttpGet`. Raw GitH
 
 ## Add scripts and images
 
-Upload `icon.png` beside each game's `main.lua`: [GrassCutter](games/GrassCutter/) or [NeedleInHay](games/NeedleInHay/). Lowercase `icon.jpg` / `icon.jpeg` also work. The loader discovers covers from raw GitHub automatically; image-only uploads need no rebuild. Missing images retain the monogram.
+Upload `icon.png` beside each script's `main.lua`: [Universal](games/Universal/), [GrassCutter](games/GrassCutter/), or [NeedleInHay](games/NeedleInHay/). Lowercase `icon.jpg` / `icon.jpeg` also work. The loader discovers covers from raw GitHub automatically; image-only uploads need no rebuild. Missing images retain the monogram.
 
 Edit the simple named variables at the top of **[config/Text.lua](config/Text.lua)** for branding, titles, subtitles, card actions, and script descriptions. Text-only edits need no rebuild, and fresh loader runs bypass stale GitHub caches. The advanced section keeps every module and status label editable. See [the text editing guide](docs/TEXT.md). Script entries and paths live in [config/Scripts.lua](config/Scripts.lua). Use `Image = { Enabled = true, ScaleType = "Crop" }` (or `"Fit"`). The image bridge needs `writefile` and `getcustomasset`; executable downloads remain GitHub-only. See [the complete catalog format](docs/CATALOG.md).
 
@@ -63,7 +64,7 @@ python tools/build.py
 python tools/check.py
 ```
 
-The checks compile the scripts, exercise 32 behavior tests, enforce the single entry point and module keybind layout, and reject filesystem loading or incorrect GitHub script hosts. GitHub Actions runs the same checks. These developer commands do not host a service or run on players' computers.
+The checks compile the scripts, exercise the API, UI, and launcher behavior tests, enforce the single entry point and module keybind layout, and reject filesystem loading or incorrect GitHub script hosts. GitHub Actions runs the same checks. These developer commands do not host a service or run on players' computers.
 
 To use another revision, set `getgenv().FrostScriptsConfig.BaseUrl` to this repository's raw branch or commit base URL before running the main loader. Use one revision for every file.
 
