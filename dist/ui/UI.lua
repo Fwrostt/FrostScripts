@@ -282,6 +282,9 @@ local SIZE_PRESETS = {
 
 local CARD_HORIZONTAL_GUTTER = 8
 local CARD_BODY_INSET = 16
+local TOAST_HEIGHT = 78
+local TOAST_GAP = 88
+local TOAST_MAX_WIDTH = 328
 
 local function create(className, properties, children)
 	local object = Instance.new(className)
@@ -783,7 +786,7 @@ function Module:SetEnabled(enabled, silent)
 	if changed and not silent and self.NotifyState ~= false and self.Window.ModuleNotificationsEnabled then
 		self.Window:Notify({
 			Title = self.Name,
-			Text = enabled and "Enabled" or "Disabled",
+			Text = enabled and "Module enabled" or "Module disabled",
 			Type = enabled and "Success" or "Info",
 			Duration = 2.6,
 		})
@@ -1527,7 +1530,7 @@ end
 
 function Window:_layoutNotifications()
 	local size = self.OverlayGui.AbsoluteSize
-	local maxVisible = math.max(1, math.min(3, math.floor((size.Y - 32) / 108)))
+	local maxVisible = math.max(1, math.min(3, math.floor((size.Y - 32) / TOAST_GAP)))
 	for index = #self.Notifications, 1, -1 do
 		if not self.Notifications[index].Parent then table.remove(self.Notifications, index) end
 	end
@@ -1536,9 +1539,9 @@ function Window:_layoutNotifications()
 	local left = position:find("Left", 1, true) ~= nil
 	local top = position:find("Top", 1, true) ~= nil
 	for index, frame in ipairs(self.Notifications) do
-		frame.Size = UDim2.fromOffset(math.min(380, math.max(120, size.X - 32)), 96)
+		frame.Size = UDim2.fromOffset(math.min(TOAST_MAX_WIDTH, math.max(120, size.X - 32)), TOAST_HEIGHT)
 		frame.AnchorPoint = Vector2.new(left and 0 or 1, top and 0 or 1)
-		local offset = (#self.Notifications - index) * 108
+		local offset = (#self.Notifications - index) * TOAST_GAP
 		frame.Position = UDim2.new(left and 0 or 1, left and 16 or -16,
 			top and 0 or 1, top and 16 + offset or -16 - offset)
 	end
@@ -1552,43 +1555,92 @@ function Window:Notify(options)
 	local duration = math.clamp(tonumber(options.Duration) or 4, 1, 30)
 	local tint = options.Type == "Error" and THEME.Danger or options.Type == "Success" and THEME.Success or THEME.Accent
 	local frame = create("CanvasGroup", {
-		Name = "Notification", AnchorPoint = Vector2.new(1, 1), Size = UDim2.fromOffset(380, 96),
-		BackgroundColor3 = THEME.PanelRaised, BorderSizePixel = 0, GroupTransparency = 1,
+		Name = "Notification", AnchorPoint = Vector2.new(1, 1), Size = UDim2.fromOffset(TOAST_MAX_WIDTH, TOAST_HEIGHT),
+		BackgroundColor3 = THEME.PanelRaised, BackgroundTransparency = 0.02,
+		BorderSizePixel = 0, GroupTransparency = 1, ClipsDescendants = true,
 		Parent = self.NotificationGui,
-	}, { corner(12), stroke(tint, 0.6) })
-	create("Frame", { Position = UDim2.fromOffset(0, 16), Size = UDim2.new(0, 3, 1, -32),
-		BackgroundColor3 = tint, BorderSizePixel = 0, Parent = frame }, { corner(2) })
-	create("TextLabel", { Position = UDim2.fromOffset(16, 12), Size = UDim2.new(1, -66, 0, 22),
-		Text = options.Title or "FrostScripts", TextColor3 = tint, BackgroundTransparency = 1,
+	}, { corner(14), stroke(THEME.Border, 0.22) })
+	local status = create("Frame", {
+		Name = "ToastStatus", Position = UDim2.fromOffset(14, 14), Size = UDim2.fromOffset(34, 34),
+		BackgroundColor3 = THEME.Surface, BorderSizePixel = 0, Parent = frame,
+	}, { corner(11), stroke(tint, 0.34) })
+	create("Frame", {
+		Name = "StatusDot", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.fromOffset(8, 8), BackgroundColor3 = tint, BorderSizePixel = 0, Parent = status,
+	}, { corner(4) })
+	create("TextLabel", { Name = "ToastTitle", Position = UDim2.fromOffset(60, 11), Size = UDim2.new(1, -104, 0, 22),
+		Text = options.Title or "FrostScripts", TextColor3 = THEME.Text, BackgroundTransparency = 1,
 		TextXAlignment = Enum.TextXAlignment.Left, TextSize = 14, Font = Enum.Font.BuilderSansBold, Parent = frame })
-	create("TextLabel", { Position = UDim2.fromOffset(16, 38), Size = UDim2.new(1, -32, 0, 44),
-		Text = options.Text or "", TextColor3 = THEME.Text, BackgroundTransparency = 1, TextWrapped = true,
-		TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top,
-		TextSize = 12, Font = Enum.Font.BuilderSansMedium, Parent = frame })
-	local close = create("TextButton", { Position = UDim2.new(1, -44, 0, 0), Size = UDim2.fromOffset(44, 44),
-		Text = "×", TextColor3 = THEME.Muted, TextSize = 20, Font = Enum.Font.BuilderSans,
-		BackgroundTransparency = 1, Parent = frame })
-	local progress = create("Frame", { Position = UDim2.new(0, 0, 1, -2), Size = UDim2.new(1, 0, 0, 2),
-		BackgroundColor3 = tint, BorderSizePixel = 0, Parent = frame })
-	local closeConnection
-	closeConnection = close.Activated:Connect(function()
-		closeConnection:Disconnect()
+	create("TextLabel", { Name = "ToastBody", Position = UDim2.fromOffset(60, 34), Size = UDim2.new(1, -104, 0, 19),
+		Text = options.Text or "", TextColor3 = THEME.Muted, BackgroundTransparency = 1, TextWrapped = false,
+		TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Center,
+		TextSize = 11, Font = Enum.Font.BuilderSansMedium, Parent = frame })
+	local close = create("TextButton", {
+		Name = "ToastClose", Position = UDim2.new(1, -38, 0, 10), Size = UDim2.fromOffset(28, 28),
+		Text = "", AutoButtonColor = false, BackgroundColor3 = THEME.Surface,
+		BorderSizePixel = 0, Parent = frame,
+	}, { corner(9) })
+	local closeLines = {}
+	for _, rotation in ipairs({ 45, -45 }) do
+		table.insert(closeLines, create("Frame", {
+			Name = "CloseLine", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
+			Size = UDim2.fromOffset(10, 1), Rotation = rotation,
+			BackgroundColor3 = THEME.Muted, BorderSizePixel = 0, Parent = close,
+		}, { corner(1) }))
+	end
+	local track = create("Frame", {
+		Name = "ToastProgressTrack", Position = UDim2.new(0, 14, 1, -9), Size = UDim2.new(1, -28, 0, 3),
+		BackgroundColor3 = THEME.Surface, BorderSizePixel = 0, ClipsDescendants = true, Parent = frame,
+	}, { corner(2) })
+	local progress = create("Frame", {
+		Name = "ToastProgress", Size = UDim2.fromScale(1, 1),
+		BackgroundColor3 = tint, BackgroundTransparency = 0.14, BorderSizePixel = 0, Parent = track,
+	}, { corner(2) })
+	local connections = {}
+	local dismissed = false
+	local function connect(signal, callback)
+		local connection = signal:Connect(callback)
+		table.insert(connections, connection)
+		return connection
+	end
+	local function disconnectAll()
+		for _, connection in ipairs(connections) do
+			if connection.Connected then connection:Disconnect() end
+		end
+	end
+	local function dismiss()
+		if dismissed then return end
+		dismissed = true
+		disconnectAll()
 		frame:Destroy()
 		if not self._destroyed then self:_layoutNotifications() end
+	end
+	connect(close.MouseEnter, function()
+		self:_tween(close, 0.12, { BackgroundColor3 = THEME.SurfaceHover })
+		for _, line in ipairs(closeLines) do self:_tween(line, 0.12, { BackgroundColor3 = THEME.Text }) end
 	end)
+	connect(close.MouseLeave, function()
+		self:_tween(close, 0.12, { BackgroundColor3 = THEME.Surface })
+		for _, line in ipairs(closeLines) do self:_tween(line, 0.12, { BackgroundColor3 = THEME.Muted }) end
+	end)
+	connect(frame.MouseEnter, function() self:_tween(frame, 0.12, { BackgroundColor3 = THEME.Surface }) end)
+	connect(frame.MouseLeave, function() self:_tween(frame, 0.12, { BackgroundColor3 = THEME.PanelRaised }) end)
+	connect(close.Activated, dismiss)
 	table.insert(self.Notifications, frame)
 	self:_layoutNotifications()
 	self:_queueTextScale()
-	self:_tween(frame, 0.18, { GroupTransparency = 0 })
-	if self.Animations then self:_tween(progress, duration, { Size = UDim2.new(0, 0, 0, 2) }, Enum.EasingStyle.Linear) end
+	local targetPosition = frame.Position
+	local left = (self.NotificationPosition or "Bottom Right"):find("Left", 1, true) ~= nil
+	frame.Position = UDim2.new(targetPosition.X.Scale, targetPosition.X.Offset + (left and -14 or 14),
+		targetPosition.Y.Scale, targetPosition.Y.Offset)
+	self:_tween(frame, 0.2, { GroupTransparency = 0, Position = targetPosition }, Enum.EasingStyle.Quart)
+	if self.Animations then self:_tween(progress, duration, { Size = UDim2.new(0, 0, 1, 0) }, Enum.EasingStyle.Linear) end
 	task.delay(duration, function()
-		closeConnection:Disconnect()
-		if self._destroyed or not frame.Parent then return end
-		self:_tween(frame, 0.14, { GroupTransparency = 1 })
-		task.delay(self.Animations and 0.15 or 0, function()
-			frame:Destroy()
-			if not self._destroyed then self:_layoutNotifications() end
-		end)
+		if dismissed or self._destroyed or not frame.Parent then disconnectAll(); return end
+		local exitPosition = UDim2.new(frame.Position.X.Scale, frame.Position.X.Offset + (left and -10 or 10),
+			frame.Position.Y.Scale, frame.Position.Y.Offset)
+		self:_tween(frame, 0.16, { GroupTransparency = 1, Position = exitPosition }, Enum.EasingStyle.Quart)
+		task.delay(self.Animations and 0.17 or 0, dismiss)
 	end)
 	return frame
 end

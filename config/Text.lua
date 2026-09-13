@@ -14,6 +14,8 @@ local Editable = {
 	NotificationsTitle = "Notifications",
 	ModuleNotificationsTitle = "Module notifications",
 	NotificationPositionTitle = "Notification position",
+	ModuleEnabledToast = "Module enabled",
+	ModuleDisabledToast = "Module disabled",
 
 	SearchPlaceholder = "Find a script...",
 	ScriptCount = "%d scripts in your collection",
@@ -99,6 +101,8 @@ return {
 		["Duplicate tab: "] = "Duplicate tab: ",
 		["Ember"] = "Ember",
 		["Enabled"] = "Enabled",
+		["Module enabled"] = Editable.ModuleEnabledToast,
+		["Module disabled"] = Editable.ModuleDisabledToast,
 		["Extra Large"] = "Extra Large",
 		["F"] = "F",
 		["FARMING & EXPLORATION"] = "FARMING & EXPLORATION",

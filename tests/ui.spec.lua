@@ -117,7 +117,12 @@ test("notifications are bounded, dismissible, and fit narrow viewports", functio
 	for index = 1, 5 do window:Notify({ Text = "Message " .. index }) end
 	assert(#window.Notifications == 3)
 	local frame = window.Notifications[3]
-	assert(frame.Size.X.Offset <= 288 and frame.Parent == window.NotificationGui)
+	assert(frame.Size.X.Offset <= 288 and frame.Size.Y.Offset == 78 and frame.Parent == window.NotificationGui)
+	assert(frame:FindFirstChild("ToastStatus") and frame:FindFirstChild("ToastProgressTrack"))
+	local close = frame:FindFirstChild("ToastClose")
+	assert(close and close.Text == "", "toast close must use native geometry instead of a font glyph")
+	close.MouseEnter:Fire(); assert(close.BackgroundColor3 == UI.Theme.SurfaceHover)
+	close.MouseLeave:Fire(); assert(close.BackgroundColor3 == UI.Theme.Surface)
 	for _, object in ipairs(frame:GetChildren()) do
 		if object:IsA("TextButton") then object.Activated:Fire(); break end
 	end
