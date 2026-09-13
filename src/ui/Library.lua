@@ -1322,10 +1322,21 @@ function Window:Notify(options)
 		Name = "ToastStatus", Position = UDim2.fromOffset(14, 14), Size = UDim2.fromOffset(34, 34),
 		BackgroundColor3 = THEME.Surface, BorderSizePixel = 0, Parent = frame,
 	}, { corner(11), stroke(tint, 0.34) })
-	create("Frame", {
-		Name = "StatusDot", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
-		Size = UDim2.fromOffset(8, 8), BackgroundColor3 = tint, BorderSizePixel = 0, Parent = status,
-	}, { corner(4) })
+	local statusMark = create("Frame", {
+		Name = "StatusMark", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Parent = status,
+	})
+	local markParts = options.Type == "Success"
+		and { { 13, 18, 7, 2, 45 }, { 20, 15, 12, 2, -45 } }
+		or options.Type == "Error"
+		and { { 17, 17, 13, 2, 45 }, { 17, 17, 13, 2, -45 } }
+		or { { 17, 17, 12, 2, 0 } }
+	for _, part in ipairs(markParts) do
+		create("Frame", {
+			Name = "MarkLine", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(part[1], part[2]),
+			Size = UDim2.fromOffset(part[3], part[4]), Rotation = part[5],
+			BackgroundColor3 = tint, BorderSizePixel = 0, Parent = statusMark,
+		}, { corner(1) })
+	end
 	create("TextLabel", { Name = "ToastTitle", Position = UDim2.fromOffset(60, 11), Size = UDim2.new(1, -104, 0, 22),
 		Text = options.Title or "FrostScripts", TextColor3 = THEME.Text, BackgroundTransparency = 1,
 		TextXAlignment = Enum.TextXAlignment.Left, TextSize = 14, Font = Enum.Font.BuilderSansBold, Parent = frame })

@@ -118,7 +118,9 @@ test("notifications are bounded, dismissible, and fit narrow viewports", functio
 	assert(#window.Notifications == 3)
 	local frame = window.Notifications[3]
 	assert(frame.Size.X.Offset <= 288 and frame.Size.Y.Offset == 78 and frame.Parent == window.NotificationGui)
-	assert(frame:FindFirstChild("ToastStatus") and frame:FindFirstChild("ToastProgressTrack"))
+	local status = frame:FindFirstChild("ToastStatus")
+	assert(status and status:FindFirstChild("StatusMark") and not status:FindFirstChild("StatusDot"))
+	assert(frame:FindFirstChild("ToastProgressTrack"))
 	local close = frame:FindFirstChild("ToastClose")
 	assert(close and close.Text == "", "toast close must use native geometry instead of a font glyph")
 	close.MouseEnter:Fire(); assert(close.BackgroundColor3 == UI.Theme.SurfaceHover)
@@ -138,6 +140,8 @@ test("module notifications follow theme, location, and enable settings", functio
 	alpha:SetEnabled(true)
 	assert(#window.Notifications == 1)
 	local toast = window.Notifications[1]
+	assert(#toast:FindFirstChild("ToastStatus"):FindFirstChild("StatusMark"):GetChildren() == 2,
+		"success toasts need a drawn check mark")
 	assert(toast.AnchorPoint.X == 0 and toast.AnchorPoint.Y == 0)
 	assert(toast.Position.X.Offset == 16 and toast.Position.Y.Offset == 16)
 	window:SetTheme("Rose")
