@@ -15,9 +15,17 @@ local function signal()
 end
 local vectorMeta = {}
 local function vector(x, y, z) return setmetatable({ X = x or 0, Y = y or 0, Z = z or 0, _type = z and "Vector3" or "Vector2" }, vectorMeta) end
-vectorMeta.__add = function(a, b) return vector(a.X + b.X, a.Y + b.Y) end
-vectorMeta.__sub = function(a, b) return vector(a.X - b.X, a.Y - b.Y) end
-vectorMeta.__div = function(a, b) return vector(a.X / b, a.Y / b) end
+local function vectorOperation(a, b, operation)
+	assert(a._type == b._type, "Vector2 and Vector3 cannot be combined")
+	if a._type == "Vector3" then return vector(operation(a.X, b.X), operation(a.Y, b.Y), operation(a.Z, b.Z)) end
+	return vector(operation(a.X, b.X), operation(a.Y, b.Y))
+end
+vectorMeta.__add = function(a, b) return vectorOperation(a, b, function(x, y) return x + y end) end
+vectorMeta.__sub = function(a, b) return vectorOperation(a, b, function(x, y) return x - y end) end
+vectorMeta.__div = function(a, b)
+	if a._type == "Vector3" then return vector(a.X / b, a.Y / b, a.Z / b) end
+	return vector(a.X / b, a.Y / b)
+end
 local function udim(scale, offset) return { Scale = scale or 0, Offset = offset or 0 } end
 local function udim2(xs, xo, ys, yo) return { X = udim(xs, xo), Y = udim(ys, yo) } end
 local colors = {}

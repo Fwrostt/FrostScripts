@@ -195,25 +195,36 @@ function Window:_hover(button, normalColor, hoverColor)
 end
 
 function Window:_makeDraggable(object, handle)
-	local activeInput, dragStart, startCenter, viewport, half
+	local dragging, activeInput, inputType, dragStart, startTopLeft, viewport, size
+	local function pointerPosition(input)
+		return Vector2.new(input.Position.X, input.Position.Y)
+	end
 	handle.Active = true
 	self:_connect(handle.InputBegan, function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-			activeInput, dragStart = input, input.Position
-			startCenter = object.AbsolutePosition + object.AbsoluteSize / 2
-			viewport, half = self.Gui.AbsoluteSize, object.AbsoluteSize / 2
+			dragging, activeInput, inputType = true, input, input.UserInputType
+			dragStart = pointerPosition(input)
+			startTopLeft, viewport, size = object.AbsolutePosition, self.Gui.AbsoluteSize, object.AbsoluteSize
 		end
 	end)
 	self:_connect(UserInputService.InputEnded, function(input)
-		if input == activeInput then activeInput = nil end
+		if dragging and (input == activeInput or input.UserInputType == inputType) then
+			dragging, activeInput, inputType = false, nil, nil
+		end
 	end)
 	self:_connect(UserInputService.InputChanged, function(input)
-		if not activeInput or not self.Visible then return end
-		if input ~= activeInput and input.UserInputType ~= Enum.UserInputType.MouseMovement then return end
-		local center = startCenter + (input.Position - dragStart)
+		if not dragging or not self.Visible then return end
+		local mouseMove = inputType == Enum.UserInputType.MouseButton1
+			and input.UserInputType == Enum.UserInputType.MouseMovement
+		local touchMove = inputType == Enum.UserInputType.Touch and input == activeInput
+		if not mouseMove and not touchMove then return end
+		local topLeft = startTopLeft + (pointerPosition(input) - dragStart)
+		topLeft = Vector2.new(
+			math.clamp(topLeft.X, 0, math.max(0, viewport.X - size.X)),
+			math.clamp(topLeft.Y, 0, math.max(0, viewport.Y - size.Y)))
 		object.Position = UDim2.fromOffset(
-			math.clamp(center.X, half.X, math.max(half.X, viewport.X - half.X)),
-			math.clamp(center.Y, half.Y, math.max(half.Y, viewport.Y - half.Y)))
+			topLeft.X + size.X * object.AnchorPoint.X,
+			topLeft.Y + size.Y * object.AnchorPoint.Y)
 	end)
 end
 
