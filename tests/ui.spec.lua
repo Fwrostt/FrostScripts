@@ -69,14 +69,16 @@ test("window and monitor dragging follow Vector3 input without jumping", functio
 	local down = { UserInputType = Mock.Env.Enum.UserInputType.MouseButton1, Position = Mock.Env.Vector3.new(200, 180, 0) }
 	header.InputBegan:Fire(down)
 	input.InputChanged:Fire({ UserInputType = Mock.Env.Enum.UserInputType.MouseMovement, Position = Mock.Env.Vector3.new(245, 210, 0) })
-	assert(window.Frame.Position.X.Offset > 0 and window.Frame.Position.Y.Offset > 0)
+	assert(window.Frame.Position.X.Scale == 0.5 and window.Frame.Position.Y.Scale == 0.5)
+	assert(window.Frame.Position.X.Offset == 45 and window.Frame.Position.Y.Offset == 30, "window should move from its current position without snapping")
 	input.InputEnded:Fire(down)
 	window:SetMonitor("DragTest", "Move me")
 	local panel = window.Monitors.DragTest.Frame
 	local panelDown = { UserInputType = Mock.Env.Enum.UserInputType.MouseButton1, Position = Mock.Env.Vector3.new(300, 200, 0) }
 	panel.InputBegan:Fire(panelDown)
 	input.InputChanged:Fire({ UserInputType = Mock.Env.Enum.UserInputType.MouseMovement, Position = Mock.Env.Vector3.new(330, 225, 0) })
-	assert(panel.Position.X.Offset == 510 and panel.Position.Y.Offset == 125, "panel should preserve its anchor while dragging")
+	assert(panel.Position.X.Scale == 1 and panel.Position.X.Offset == 8)
+	assert(panel.Position.Y.Scale == 0 and panel.Position.Y.Offset == 47, "panel should move from its current position without snapping")
 	input.InputEnded:Fire(panelDown)
 end)
 test("dropdown chooses arbitrary options and disconnects popup events", function()

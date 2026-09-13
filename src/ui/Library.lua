@@ -195,7 +195,7 @@ function Window:_hover(button, normalColor, hoverColor)
 end
 
 function Window:_makeDraggable(object, handle)
-	local dragging, activeInput, inputType, dragStart, startTopLeft, viewport, size
+	local dragging, activeInput, inputType, dragStart, startPosition
 	local function pointerPosition(input)
 		return Vector2.new(input.Position.X, input.Position.Y)
 	end
@@ -204,7 +204,7 @@ function Window:_makeDraggable(object, handle)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 			dragging, activeInput, inputType = true, input, input.UserInputType
 			dragStart = pointerPosition(input)
-			startTopLeft, viewport, size = object.AbsolutePosition, self.Gui.AbsoluteSize, object.AbsoluteSize
+			startPosition = object.Position
 		end
 	end)
 	self:_connect(UserInputService.InputEnded, function(input)
@@ -218,13 +218,10 @@ function Window:_makeDraggable(object, handle)
 			and input.UserInputType == Enum.UserInputType.MouseMovement
 		local touchMove = inputType == Enum.UserInputType.Touch and input == activeInput
 		if not mouseMove and not touchMove then return end
-		local topLeft = startTopLeft + (pointerPosition(input) - dragStart)
-		topLeft = Vector2.new(
-			math.clamp(topLeft.X, 0, math.max(0, viewport.X - size.X)),
-			math.clamp(topLeft.Y, 0, math.max(0, viewport.Y - size.Y)))
-		object.Position = UDim2.fromOffset(
-			topLeft.X + size.X * object.AnchorPoint.X,
-			topLeft.Y + size.Y * object.AnchorPoint.Y)
+		local delta = pointerPosition(input) - dragStart
+		object.Position = UDim2.new(
+			startPosition.X.Scale, startPosition.X.Offset + delta.X,
+			startPosition.Y.Scale, startPosition.Y.Offset + delta.Y)
 	end)
 end
 
