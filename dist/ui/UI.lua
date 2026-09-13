@@ -64,6 +64,8 @@ return {
 	Sounds = true,
 	SoundVolume = 0.18,
 	NotificationsEnabled = true,
+	ModuleNotificationsEnabled = true,
+	NotificationPosition = "Bottom Right",
 	ThemeName = "Black",
 	SizePreset = "Large",
 	TextScale = 1,
@@ -435,7 +437,7 @@ function Window:_hover(button, normalColor, hoverColor)
 end
 
 function Window:_makeDraggable(object, handle)
-	local dragging, activeInput, inputType, dragStart, startPosition
+	local dragging, activeInput, inputType, dragStart, startPosition, startTopLeft, viewport, size
 	local function pointerPosition(input)
 		return Vector2.new(input.Position.X, input.Position.Y)
 	end
@@ -445,6 +447,7 @@ function Window:_makeDraggable(object, handle)
 			dragging, activeInput, inputType = true, input, input.UserInputType
 			dragStart = pointerPosition(input)
 			startPosition = object.Position
+			startTopLeft, viewport, size = object.AbsolutePosition, self.Gui.AbsoluteSize, object.AbsoluteSize
 		end
 	end)
 	self:_connect(UserInputService.InputEnded, function(input)
@@ -459,9 +462,14 @@ function Window:_makeDraggable(object, handle)
 		local touchMove = inputType == Enum.UserInputType.Touch and input == activeInput
 		if not mouseMove and not touchMove then return end
 		local delta = pointerPosition(input) - dragStart
+		local topLeft = startTopLeft + delta
+		local clampedTopLeft = Vector2.new(
+			math.clamp(topLeft.X, 0, math.max(0, viewport.X - size.X)),
+			math.clamp(topLeft.Y, 0, math.max(0, viewport.Y - size.Y)))
+		local clampedDelta = clampedTopLeft - startTopLeft
 		object.Position = UDim2.new(
-			startPosition.X.Scale, startPosition.X.Offset + delta.X,
-			startPosition.Y.Scale, startPosition.Y.Offset + delta.Y)
+			startPosition.X.Scale, startPosition.X.Offset + clampedDelta.X,
+			startPosition.Y.Scale, startPosition.Y.Offset + clampedDelta.Y)
 	end)
 end
 
@@ -763,7 +771,7 @@ function Module:SetStatus(status)
 	self.Status.Text = tostring(status or "")
 end
 
-function Module:SetEnabled(enabled)
+function Module:SetEnabled(enabled, silent)
 	enabled = enabled == true
 	local changed = self.Enabled ~= enabled
 	self.Enabled = enabled
@@ -772,6 +780,14 @@ function Module:SetEnabled(enabled)
 	self.Window:_tween(self.Accent, 0.14, {
 		BackgroundColor3 = enabled and THEME.Accent or THEME.Border,
 	})
+	if changed and not silent and self.NotifyState ~= false and self.Window.ModuleNotificationsEnabled then
+		self.Window:Notify({
+			Title = self.Name,
+			Text = enabled and "Enabled" or "Disabled",
+			Type = enabled and "Success" or "Info",
+			Duration = 2.6,
+		})
+	end
 end
 
 function Window:_queueTextScale()
@@ -1212,6 +1228,7 @@ function Tab:AddModule(options)
 		HeaderHeight = options.HeaderHeight or 56,
 		Expanded = options.Expanded == true or options.Collapsible == false,
 		Collapsible = options.Collapsible ~= false,
+		NotifyState = options.Notifications ~= false,
 		Enabled = false,
 	}, Module)
 	module.Card = create("Frame", {
@@ -1328,7 +1345,7 @@ function Tab:AddModule(options)
 			self.Module.Window:_tween(knob, 0.14, {
 				Position = self.Value and UDim2.fromOffset(25, 3) or UDim2.fromOffset(3, 3),
 			})
-			self.Module:SetEnabled(self.Value)
+			self.Module:SetEnabled(self.Value, silent)
 			if not silent then safeCall(self.Module.Window, options.Callback, self.Value) end
 		end
 		local hitTarget = create("TextButton", {
@@ -1515,9 +1532,15 @@ function Window:_layoutNotifications()
 		if not self.Notifications[index].Parent then table.remove(self.Notifications, index) end
 	end
 	while #self.Notifications > maxVisible do table.remove(self.Notifications, 1):Destroy() end
+	local position = self.NotificationPosition or "Bottom Right"
+	local left = position:find("Left", 1, true) ~= nil
+	local top = position:find("Top", 1, true) ~= nil
 	for index, frame in ipairs(self.Notifications) do
 		frame.Size = UDim2.fromOffset(math.min(380, math.max(120, size.X - 32)), 96)
-		frame.Position = UDim2.new(1, -16, 1, -16 - (#self.Notifications - index) * 108)
+		frame.AnchorPoint = Vector2.new(left and 0 or 1, top and 0 or 1)
+		local offset = (#self.Notifications - index) * 108
+		frame.Position = UDim2.new(left and 0 or 1, left and 16 or -16,
+			top and 0 or 1, top and 16 + offset or -16 - offset)
 	end
 end
 
@@ -2042,6 +2065,20 @@ function Window:SetNotifications(enabled)
 	end
 end
 
+function Window:SetModuleNotifications(enabled)
+	self.ModuleNotificationsEnabled = enabled == true
+	self:_remember("ModuleNotificationsEnabled", self.ModuleNotificationsEnabled)
+end
+
+function Window:SetNotificationPosition(position)
+	local allowed = { ["Top Left"] = true, ["Top Right"] = true, ["Bottom Left"] = true, ["Bottom Right"] = true }
+	if not allowed[position] then return false end
+	self.NotificationPosition = position
+	self:_remember("NotificationPosition", position)
+	self:_layoutNotifications()
+	return true
+end
+
 function Window:_syncAmbient()
 	if self._ambientConnection then self._ambientConnection:Disconnect(); self._ambientConnection = nil end
 	if not self.Ambient then return end
@@ -2110,6 +2147,8 @@ function Window:ApplyPreferences()
 	self:SetSounds(state.Sounds ~= false)
 	self:SetSoundVolume(state.SoundVolume or 0.18)
 	self:SetNotifications(state.NotificationsEnabled ~= false)
+	self:SetModuleNotifications(state.ModuleNotificationsEnabled ~= false)
+	self:SetNotificationPosition(state.NotificationPosition or "Bottom Right")
 	self:SetTextScale(state.TextScale or 1)
 	self:SetDimAmount(state.DimAmount or 40)
 	self:SetSizePreset(state.SizePreset or "Large")
@@ -2145,6 +2184,11 @@ function Window:AddClientSettings(tab)
 		{ Step = 0.05, Formatter = function(value) return math.floor(value * 100) .. "%" end }), "SoundVolume")
 	audio:AddButton("Preview sound", function() self:PlaySound("Open") end)
 	bind(audio:AddToggle("Notifications", self.NotificationsEnabled, function(value) self:SetNotifications(value) end), "NotificationsEnabled")
+	bind(audio:AddToggle("Module notifications", self.ModuleNotificationsEnabled,
+		function(value) self:SetModuleNotifications(value) end,
+		"Show a toast when modules are enabled or disabled"), "ModuleNotificationsEnabled")
+	bind(audio:AddDropdown("Notification position", { "Top Left", "Top Right", "Bottom Left", "Bottom Right" },
+		self.NotificationPosition, function(value) self:SetNotificationPosition(value) end), "NotificationPosition")
 	local appearance = tab:AddModule({ Name = "Appearance", Description = "Color, type, and spacing" })
 	appearance:AddColorPicker("Accent", THEME.Accent, function(value) self:SetThemeColor("Accent", value) end)
 	bind(appearance:AddDropdown("Window size", { "Comfortable", "Large", "Extra Large" }, self.SizePreset,
@@ -2552,6 +2596,8 @@ function Library:CreateWindow(options)
 		BackgroundAnimations = options.BackgroundAnimations ~= false,
 		Sounds = options.Sounds ~= false, SoundVolume = math.clamp(tonumber(options.SoundVolume) or 0.18, 0, 1),
 		NotificationsEnabled = options.NotificationsEnabled ~= false,
+		ModuleNotificationsEnabled = options.ModuleNotificationsEnabled ~= false,
+		NotificationPosition = options.NotificationPosition or "Bottom Right",
 		SizePreset = options.SizePreset or "Large", ThemeName = options.Theme or "Black",
 		TextScale = math.clamp(tonumber(options.TextScale) or 1, 1, 1.3),
 		DimAmount = math.clamp(tonumber(options.DimAmount) or 40, 0, 75),

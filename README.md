@@ -18,7 +18,8 @@ The execution environment must support `loadstring` and `game:HttpGet`. Raw GitH
 - Compact cards that fit together on desktop and become short rows on smaller screens, animated cover gradients, a soft background, and subtle interface sounds.
 - Black by default, with 10 clickable palette previews including Graphite, Midnight, Amethyst, Forest, and Ember.
 - Roblox avatar thumbnails, native solid navigation badges, Builder Sans typography, and search only on library/module pages.
-- One **UI Settings** page for themes, text, window size, sound, notifications, and separate animation/background switches.
+- One **UI Settings** page for themes, text, window size, sound, notification controls and corner placement, and separate animation/background switches.
+- Theme-aware toasts for module enable/disable events, with separate global and module-event switches.
 - Each feature owns its settings and keybind inside its module. There is no separate keybind page.
 - The back arrow returns to the library and unloads the active game suite. Starting another script unloads the previous one.
 - UI preferences carry across the launcher and game windows for the current client session.

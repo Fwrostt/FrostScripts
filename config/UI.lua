@@ -8,6 +8,8 @@ return {
 	Sounds = true,
 	SoundVolume = 0.18,
 	NotificationsEnabled = true,
+	ModuleNotificationsEnabled = true,
+	NotificationPosition = "Bottom Right",
 	ThemeName = "Black",
 	SizePreset = "Large",
 	TextScale = 1,

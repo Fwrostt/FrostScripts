@@ -247,6 +247,8 @@ function Library:CreateWindow(options)
 		BackgroundAnimations = options.BackgroundAnimations ~= false,
 		Sounds = options.Sounds ~= false, SoundVolume = math.clamp(tonumber(options.SoundVolume) or 0.18, 0, 1),
 		NotificationsEnabled = options.NotificationsEnabled ~= false,
+		ModuleNotificationsEnabled = options.ModuleNotificationsEnabled ~= false,
+		NotificationPosition = options.NotificationPosition or "Bottom Right",
 		SizePreset = options.SizePreset or "Large", ThemeName = options.Theme or "Black",
 		TextScale = math.clamp(tonumber(options.TextScale) or 1, 1, 1.3),
 		DimAmount = math.clamp(tonumber(options.DimAmount) or 40, 0, 75),

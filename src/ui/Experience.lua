@@ -40,6 +40,20 @@ function Window:SetNotifications(enabled)
 	end
 end
 
+function Window:SetModuleNotifications(enabled)
+	self.ModuleNotificationsEnabled = enabled == true
+	self:_remember("ModuleNotificationsEnabled", self.ModuleNotificationsEnabled)
+end
+
+function Window:SetNotificationPosition(position)
+	local allowed = { ["Top Left"] = true, ["Top Right"] = true, ["Bottom Left"] = true, ["Bottom Right"] = true }
+	if not allowed[position] then return false end
+	self.NotificationPosition = position
+	self:_remember("NotificationPosition", position)
+	self:_layoutNotifications()
+	return true
+end
+
 function Window:_syncAmbient()
 	if self._ambientConnection then self._ambientConnection:Disconnect(); self._ambientConnection = nil end
 	if not self.Ambient then return end
@@ -108,6 +122,8 @@ function Window:ApplyPreferences()
 	self:SetSounds(state.Sounds ~= false)
 	self:SetSoundVolume(state.SoundVolume or 0.18)
 	self:SetNotifications(state.NotificationsEnabled ~= false)
+	self:SetModuleNotifications(state.ModuleNotificationsEnabled ~= false)
+	self:SetNotificationPosition(state.NotificationPosition or "Bottom Right")
 	self:SetTextScale(state.TextScale or 1)
 	self:SetDimAmount(state.DimAmount or 40)
 	self:SetSizePreset(state.SizePreset or "Large")
@@ -143,6 +159,11 @@ function Window:AddClientSettings(tab)
 		{ Step = 0.05, Formatter = function(value) return math.floor(value * 100) .. "%" end }), "SoundVolume")
 	audio:AddButton("Preview sound", function() self:PlaySound("Open") end)
 	bind(audio:AddToggle("Notifications", self.NotificationsEnabled, function(value) self:SetNotifications(value) end), "NotificationsEnabled")
+	bind(audio:AddToggle("Module notifications", self.ModuleNotificationsEnabled,
+		function(value) self:SetModuleNotifications(value) end,
+		"Show a toast when modules are enabled or disabled"), "ModuleNotificationsEnabled")
+	bind(audio:AddDropdown("Notification position", { "Top Left", "Top Right", "Bottom Left", "Bottom Right" },
+		self.NotificationPosition, function(value) self:SetNotificationPosition(value) end), "NotificationPosition")
 	local appearance = tab:AddModule({ Name = "Appearance", Description = "Color, type, and spacing" })
 	appearance:AddColorPicker("Accent", THEME.Accent, function(value) self:SetThemeColor("Accent", value) end)
 	bind(appearance:AddDropdown("Window size", { "Comfortable", "Large", "Extra Large" }, self.SizePreset,

@@ -23,8 +23,8 @@ end
 function Feature:_syncControl()
 	local control = self._control
 	if not control then return end
-	if control.Toggle then control.Toggle:SetValue(self.Enabled, true) end
 	control:SetEnabled(self.Enabled)
+	if control.Toggle then control.Toggle:SetValue(self.Enabled, true) end
 	control:SetStatus(self.Status)
 end
 

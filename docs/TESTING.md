@@ -15,6 +15,7 @@ Project checks enforce one player launcher, generated-file consistency, no root 
 7. Confirm the default is Black. Click all 10 theme previews; verify profile/avatar backgrounds, player name, brand name, keycaps, and selected/hover states follow the palette. Settings/Home must not show search. No dot decorations or missing disclosure glyphs should appear. Exercise controls and themes at normal and large text sizes. Scroll long modules and popup menus. Check readable card descriptions and module labels.
 8. Test failed HTTP requests and script initialization; the library should show Retry and remain usable. Rerun the loader and confirm old windows/features are cleaned up.
 9. Upload icon.png/icon.jpg beside a game, verify discovery without a build, missing-image fallback, and a changed upload on a new loader session. Edit config/Text.lua and verify subtitles, game controls, dropdown labels, and search while original option values still work.
+10. Enable and disable a module, confirm themed toasts appear, switch each notification corner, then disable module notifications and confirm state changes stay quiet.
 10. Verify actual game behavior: feature discovery, remotes, farming/harvesting, navigation, overlays, stopping, and respawn.
 
 UI references: [UIGradient](https://create.roblox.com/docs/reference/engine/classes/UIGradient), [ImageLabel](https://create.roblox.com/docs/reference/engine/classes/ImageLabel), and [GuiButton](https://create.roblox.com/docs/reference/engine/classes/GuiButton).

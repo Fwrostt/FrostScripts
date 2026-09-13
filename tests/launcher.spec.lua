@@ -1,5 +1,7 @@
 -- Exercise the real entry point -> API -> launcher -> UI chain with mocked HTTPS.
-local session, requests, requestedUrls = { FrostScriptsUIPreferences = { ThemeName = "Frost", Sounds = false } }, {}, {}
+local session, requests, requestedUrls = { FrostScriptsUIPreferences = {
+	ThemeName = "Frost", Sounds = false, ModuleNotificationsEnabled = false, NotificationPosition = "Top Left",
+} }, {}, {}
 local prefix = "https://raw.githubusercontent.com/Fwrostt/FrostScripts/main/"
 Mock.Env.getgenv = function() return session end
 Mock.Env.loadstring = function(source, name)
@@ -26,6 +28,7 @@ Mock.Flush()
 assert(launcher.Window.ActiveTab.Name == "Library")
 assert(launcher.Window.BrandSubtitle.Text == "Cheating is Fun")
 assert(launcher.Window.PageSubtitle.Text == "Pick your script according to your game.")
+assert(not launcher.Window.ModuleNotificationsEnabled and launcher.Window.NotificationPosition == "Top Left")
 assert(launcher.Window.ThemeName == "Black" and not launcher.Window.Sounds, "new design resets the legacy theme while preserving other preferences")
 launcher.Window:SetTheme("Graphite")
 assert(requests["config/Text.lua"] == 1, "main loader must fetch editable text from GitHub")
@@ -42,6 +45,7 @@ local ok, grass = launcher:Launch("GrassCutter")
 assert(ok and not launcher.Window.Visible and launcher.Window.InputEnabled == false)
 assert(requests["games/GrassCutter/main.lua"] == 1 and not requests["games/NeedleInHay/main.lua"])
 assert(grass.Window.Sounds == false and grass.Window.BackgroundAnimations == false and grass.Window.ThemeName == "Graphite")
+assert(not grass.Window.ModuleNotificationsEnabled and grass.Window.NotificationPosition == "Top Left")
 local back = grass.Window.Gui:FindFirstChildWhichIsA("TextButton", true)
 for _, object in ipairs(grass.Window.Gui:GetDescendants()) do
 	if object.Name == "ReturnToLibrary" then back = object; break end
