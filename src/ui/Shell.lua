@@ -92,8 +92,8 @@ function Window:_refreshSearch()
 	self.Empty.Text = tab.FavoritesView and "No favorites yet\nUse the star on any module to pin it here."
 		or #tab.Modules == 0 and "Your workspace is ready.\nAdd a module to get started."
 		or "No matching modules\nTry a different search or turn off Active."
-	self.Footer.Text = tab.ItemNoun == "scripts" and string.format("%d scripts in your collection", shown)
-		or string.format("%d of %d modules  ·  %d active", shown, #tab.Modules, active)
+	self.Footer.Text = tab.StatusText or (tab.ItemNoun == "scripts" and string.format("%d scripts in your collection", shown)
+		or string.format("%d of %d modules  ·  %d active", shown, #tab.Modules, active))
 end
 
 function Window:SetSearch(query)

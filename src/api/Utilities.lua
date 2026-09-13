@@ -180,7 +180,14 @@ function API.CreateCharacterManager(player)
 		local entry = { Callback = callback, Connected = true }
 		table.insert(list, entry)
 		function entry:Disconnect() self.Connected = false end
-		if immediate and manager.Character then task.defer(callback, manager.Character, manager.Humanoid, manager.Root) end
+		if immediate and manager.Character then
+			local character = manager.Character
+			task.spawn(function()
+				local humanoid = manager.Humanoid or character:FindFirstChildOfClass("Humanoid") or character:WaitForChild("Humanoid", 10)
+				local root = manager.Root or character:FindFirstChild("HumanoidRootPart") or character:WaitForChild("HumanoidRootPart", 10)
+				if entry.Connected and not manager.Destroyed and manager.Character == character then callback(character, humanoid, root) end
+			end)
+		end
 		return entry
 	end
 
@@ -207,7 +214,13 @@ function API.CreateCharacterManager(player)
 	refresh(player.Character)
 	table.insert(manager._connections, player.CharacterAdded:Connect(function(character)
 		refresh(character)
-		for _, entry in ipairs(manager._added) do if entry.Connected then task.defer(entry.Callback, character, manager.Humanoid, manager.Root) end end
+		task.spawn(function()
+			local humanoid = character:FindFirstChildOfClass("Humanoid") or character:WaitForChild("Humanoid", 10)
+			local root = character:FindFirstChild("HumanoidRootPart") or character:WaitForChild("HumanoidRootPart", 10)
+			if manager.Destroyed or manager.Character ~= character then return end
+			manager.Humanoid, manager.Root = humanoid, root
+			for _, entry in ipairs(manager._added) do if entry.Connected then task.defer(entry.Callback, character, humanoid, root) end end
+		end)
 	end))
 	table.insert(manager._connections, player.CharacterRemoving:Connect(function(character)
 		for _, entry in ipairs(manager._removing) do if entry.Connected then pcall(entry.Callback, character) end end

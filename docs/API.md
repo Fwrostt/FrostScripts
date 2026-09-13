@@ -1,4 +1,4 @@
-# FrostScriptsAPI 2.0
+# FrostScriptsAPI 2.1
 
 The API returns a table from `loadstring(source)()`. Game methods and remotes stay in their respective `games/<name>/main.lua` files. The shared API does not import either game until explicitly requested.
 
@@ -17,7 +17,7 @@ The API returns a table from `loadstring(source)()`. Game methods and remotes st
 | `OpenLauncher()` | Opens the script library without running a game. |
 | `UnloadGame()` | Unloads the active suite. |
 
-Failed loads do not poison the cache. A fresh load bypasses the cache. Execution errors include the module path. The one launcher at `dist/launchers/Loader.lua` requires API version `2.0.0`.
+Failed loads do not poison the cache. A fresh load bypasses the cache. Execution errors include the module path. The one launcher at `dist/launchers/Loader.lua` requires API version `2.1.0`.
 
 ## Features and cleanup
 
@@ -31,17 +31,22 @@ Failed loads do not poison the cache. A fresh load bypasses the cache. Execution
 | `SetStatus(text)` | Updates status and the bound UI control. |
 | `Track(connection)` / `ClearConnections()` | Owns and disconnects feature listeners. |
 | `BindControl(module)` | Syncs the UI without replacing lifecycle callbacks. |
+| `ObserveState(callback, immediate?)` | Adds an independent enable/disable observer and returns a disconnectable handle. |
 | `Destroy()` | Disables, clears connections, and releases the control. |
 
 Define lifecycle hooks with colon syntax: `function feature:OnEnable(token)`, `function feature:OnDisable()`, and `function feature:OnSettingChanged(key, value)`. Observers use plain functions: `feature.OnStateChanged = function(enabled)` and `feature.OnStatusChanged = function(status)`.
 
-Long-running work must check `self.Enabled` and `self._token == token` after yielding. Shared features do not automatically run a `Tick`; the game owns its scheduler.
+Long-running yielded work must check `self.Enabled` and `self._token == token`. Frame and interval work should register with `API.CreateUpdateManager()` so a suite shares scheduler connections.
 
 `API.CreateScope()` owns connections, destroyable objects, or cleanup functions. `scope:Track(item)` returns the item; `scope:Destroy()` cleans in reverse order exactly once, including resources tracked after closure.
 
+`API.CreateUpdateManager(options)` exposes `Register(name, bucket, callback)`, `Count()`, and `Destroy()`. Buckets are `Render`, `Heartbeat`, `Slow`, and `Stats`; the default timed intervals are 0.1 and 0.75 seconds. A callback that errors three consecutive times is isolated and removed.
+
+`API.CreateCharacterManager(player?)` caches the current character, humanoid, and root; exposes `Get()`, `OnAdded(callback)`, `OnRemoving(callback)`, and `Destroy()`; and waits for a new rig's core objects before notifying respawn listeners.
+
 ## Universal modules and helpers
 
-- `UniversalModules.CreateFlight({ Name, Speed, VerticalSpeed, ToggleKey, UpKey, DownKey, IsInputCaptured })`
+- `UniversalModules.CreateFlight({ Name, Speed, VerticalSpeed, ToggleKey, UpKey, DownKey, Mode, Style, Direction, Inertia, CharacterManager, UpdateManager, GetMoveVector, GetVertical, IsInputCaptured })`
 - `UniversalModules.CreateAutoClicker({ Name, ClicksPerSecond, ToggleKey, IsInputCaptured })`
 - `GetCharacter(player?)` returns character, humanoid, root.
 - `GetPosition(object)` accepts a part, attachment, model, descendant container, or Vector3.
@@ -54,9 +59,9 @@ The clicker also exposes `feature:Click()` for one click through the same input 
 
 `UI.new(options)` creates a window. Window options include `Name`, `Game`, `GuiName`, `OverlayName`, `Animations`, `SizePreset`, `TextScale`, `DimAmount`, `MonitorWidth`, and `MonitorSide`.
 
-Use `window:AddTab(name, icon, subtitle)` (use library/home/settings/modules/controls badge names; legacy H/L/S/M/C names map to these badges). Library, Modules, and Controls show search by default; other pages hide it. Set `tab.SearchEnabled` to override and select the tab again to refresh its toolbar. Then `tab:AddModule(options)`. Modules support `AddToggle`, `AddSlider`, `AddDropdown`, `AddMultiDropdown`, `AddNumberInput`, `AddButton`, `AddParagraph`, `AddColorPicker`, and `AddKeybind`. Shortcuts belong inside their owning modules. Pass a feature as `options.Feature` to bind its UI state.
+Use `window:AddTab(name, icon, subtitle)` (use library/home/favorites/settings/modules/controls badge names; legacy H/L/F/S/M/C names map to these badges). `window:AddFavoritesTab()` creates a searchable pinned-module page. Pass `Favoritable = true` and a stable `FavoriteId` to `tab:AddModule()` to add the star control and lazy synchronized shortcut. Modules support `AddToggle`, `AddSlider`, `AddDropdown`, `AddMultiDropdown`, `AddNumberInput`, `AddTextInput`, `AddActionGrid`, `AddButton`, `AddParagraph`, `AddColorPicker`, and `AddKeybind`. Shortcuts belong inside their owning modules. Pass a feature as `options.Feature` to bind its UI state.
 
-Window methods include `SelectTab`, `Toggle`, `SetVisible`, `SetAnimations`, `SetSizePreset`, `SetTextScale`, `SetTheme`, `SetThemeColor`, `GetThemeNames`, `AddClientSettings`, `Notify`, `SetMonitor`, `HideMonitor`, `AddWorldMarker`, and `Destroy`.
+Window methods include `SelectTab`, `Toggle`, `SetVisible`, `SetAnimations`, `SetSizePreset`, `SetTextScale`, `SetTheme`, `SetThemeColor`, `GetThemeNames`, `AddClientSettings`, `CreateMobileControls`, `Notify`, `SetMonitor`, `HideMonitor`, `AddWorldMarker`, and `Destroy`. `tab:SetStatusBar(text)` replaces the footer count for live telemetry pages.
 
 `SetSearch(text)` matches words against the current tab's module names, descriptions, and control labels. `SetActiveOnly(boolean)` filters that tab to enabled modules. `Ctrl K` focuses search; Escape clears focused search or closes an option menu. Hidden windows can be reopened through the floating F button. `Theme` is an optional creation setting. A new `API.LoadUI()` call gives each suite its own UI factory; windows created from the same factory share its theme palette.
 

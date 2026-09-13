@@ -35,6 +35,7 @@ local sandbox = setmetatable({
 local apiChunk = assert(loadstring(API_SOURCE, "@FrostScriptsAPI"))
 setfenv(apiChunk, sandbox)
 local API = apiChunk()
+assert(API.Version == "2.1.0")
 local passed = 0
 local function test(name, callback)
 	local ok, err = pcall(callback)

@@ -93,6 +93,10 @@ function API.UniversalModules.CreateFlight(options)
 		local root, humanoid = self._root, self._humanoid
 		if not root or not humanoid or not root.Parent or not humanoid.Parent or humanoid.Health <= 0 then
 			if root or humanoid then self:_detach(false) end
+			if options.CharacterManager then
+				local character, nextHumanoid, nextRoot = options.CharacterManager:Get()
+				if nextHumanoid and nextRoot and self:_attach(character, nextHumanoid, nextRoot) then return end
+			end
 			self:SetStatus("Waiting for character")
 			return
 		end

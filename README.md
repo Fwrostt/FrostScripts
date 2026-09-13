@@ -15,7 +15,9 @@ The execution environment must support `loadstring` and `game:HttpGet`. Raw GitH
 ## The experience
 
 - Script cards with a name, description, optional image, and launch/retry status.
-- A Universal suite for every game with flight, movement controls, infinite jump, noclip, auto clicker, anti-AFK, fullbright, performance mode, and per-module keybinds.
+- A focused Universal catalog of 100–200 working local modules across movement, character, camera, world, players, server, navigation, performance, fun, utility, and HUD categories.
+- Home quick actions for Flight, Noclip, Speed, Infinite Jump, Freecam, Fullbright, Anti-AFK, and FPS Boost, plus Favorites, Recently Used, commands, and a live FPS/ping/active-module status bar.
+- Optional Mobile Mode with touch movement, rise/drop, drag-to-look, and synchronized quick-toggle controls; controller shortcuts are available as a separate module.
 - Compact cards that fit together on desktop and become short rows on smaller screens, animated cover gradients, a soft background, and subtle interface sounds.
 - Black by default, with 10 clickable palette previews including Graphite, Midnight, Amethyst, Forest, and Ember.
 - Roblox avatar thumbnails, native solid navigation badges, Builder Sans typography, and search only on library/module pages.
@@ -23,6 +25,7 @@ The execution environment must support `loadstring` and `game:HttpGet`. Raw GitH
 - Theme-aware toasts for module enable/disable events, with separate global and module-event switches.
 - Optional system-style middle-finger pointer loaded from raw GitHub, with automatic native-cursor restoration.
 - Each feature owns its settings and keybind inside its module. There is no separate keybind page.
+- One shared update manager services render, heartbeat, 0.1-second, and telemetry work; a character manager reconnects respawn-sensitive features without per-module polling connections.
 - The back arrow returns to the library and unloads the active game suite. Starting another script unloads the previous one.
 - UI preferences carry across the launcher and game windows for the current client session.
 

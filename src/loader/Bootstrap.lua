@@ -16,7 +16,7 @@ assert(ok, "FrostScriptsAPI download failed: " .. tostring(source)
 local chunk, compileError = loadstring(source, "@FrostScriptsAPI")
 assert(chunk, compileError)
 local API = chunk()
-assert(type(API) == "table" and API.Version == "2.0.0" and type(API.Configure) == "function",
+assert(type(API) == "table" and API.Version == "2.1.0" and type(API.Configure) == "function",
 	"Incompatible FrostScriptsAPI; publish all files from the same build")
 API.Configure(config)
 return API.OpenLauncher()

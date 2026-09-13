@@ -659,6 +659,9 @@ function Module:SetFavorite(favorite)
 	favorite = favorite == true
 	if favorite then self.Window.Favorites[self.FavoriteId] = true else self.Window.Favorites[self.FavoriteId] = nil end
 	self.Window:_remember("Favorites", self.Window.Favorites)
+	if favorite then
+		for _, tab in ipairs(self.Window._favoriteTabs) do self.Window:_addFavoriteProxy(tab, self) end
+	end
 	self.Window:_refreshFavoriteModule(self)
 	return true
 end
@@ -669,6 +672,8 @@ end
 
 function Window:_addFavoriteProxy(tab, source)
 	source.FavoriteProxies = source.FavoriteProxies or {}
+	source.FavoriteProxyTabs = source.FavoriteProxyTabs or {}
+	if source.FavoriteProxyTabs[tab] then return source.FavoriteProxyTabs[tab] end
 	local proxy = tab:AddModule({
 		Name = source.Name,
 		Description = source.Status.Text,
@@ -681,12 +686,16 @@ function Window:_addFavoriteProxy(tab, source)
 			if source.Toggle then source.Toggle:SetValue(enabled) end
 		end,
 	})
+	if source.FavoriteAction then
+		proxy:AddButton(source.FavoriteActionText or "Run", function() safeCall(self, source.FavoriteAction) end)
+	end
 	proxy:AddButton("Open settings", function()
 		self:SelectTab(source.Tab)
 		self:SetSearch(source.Name)
 	end)
 	proxy:AddButton("Remove favorite", function() source:SetFavorite(false) end, { Danger = true })
 	table.insert(source.FavoriteProxies, proxy)
+	source.FavoriteProxyTabs[tab] = proxy
 	proxy.Card.Visible = source:IsFavorite()
 	return proxy
 end
@@ -696,7 +705,9 @@ function Window:AddFavoritesTab(name, icon, subtitle)
 	tab.SearchEnabled = true
 	tab.FavoritesView = true
 	table.insert(self._favoriteTabs, tab)
-	for _, module in ipairs(self._favoriteModules) do self:_addFavoriteProxy(tab, module) end
+	for _, module in ipairs(self._favoriteModules) do
+		if module:IsFavorite() then self:_addFavoriteProxy(tab, module) end
+	end
 	return tab
 end
 
@@ -710,6 +721,12 @@ function Tab:SetCategories(categories, default)
 	end
 	assert(valid, "Default category must be present in categories")
 	if self.Window.ActiveTab == self then self.Window:SelectTab(self) end
+	return self
+end
+
+function Tab:SetStatusBar(text)
+	self.StatusText = text ~= nil and tostring(text) or nil
+	if self.Window.ActiveTab == self then self.Window:_refreshSearch() end
 	return self
 end
 
@@ -1293,6 +1310,37 @@ function Module:AddNumberInput(name, default, callback, options)
 	return control
 end
 
+function Module:AddTextInput(name, default, callback, options)
+	self:_index(name)
+	options = options or {}
+	local row = self:_row(96)
+	create("TextLabel", {
+		Position = UDim2.fromOffset(16, 8), Size = UDim2.new(1, -32, 0, 24),
+		BackgroundTransparency = 1, Text = name, TextColor3 = THEME.Text,
+		TextXAlignment = Enum.TextXAlignment.Left, Font = Enum.Font.BuilderSansBold,
+		TextSize = 14, Parent = row,
+	})
+	local box = create("TextBox", {
+		Position = UDim2.fromOffset(12, 40), Size = UDim2.new(1, -24, 0, 44),
+		BackgroundColor3 = THEME.PanelRaised, BorderSizePixel = 0,
+		ClearTextOnFocus = options.ClearOnFocus == true, Text = tostring(default or ""),
+		PlaceholderText = options.Placeholder or "Type here...", TextColor3 = THEME.Text,
+		PlaceholderColor3 = THEME.Muted, Font = Enum.Font.BuilderSansMedium,
+		TextSize = 13, Parent = row,
+	}, { corner(8), stroke(THEME.Border, 0.45) })
+	local control = { Module = self, Value = tostring(default or ""), Box = box }
+	function control:SetValue(value, silent)
+		self.Value = tostring(value or "")
+		box.Text = self.Value
+		if not silent then safeCall(self.Module.Window, callback, self.Value) end
+	end
+	self.Window:_connect(box.FocusLost, function(enterPressed)
+		control:SetValue(box.Text)
+		if enterPressed and options.OnEnter then safeCall(self.Window, options.OnEnter, control.Value) end
+	end)
+	return control
+end
+
 function Module:AddButton(name, callback, options)
 	self:_index(name)
 	options = options or {}
@@ -1368,6 +1416,8 @@ function Tab:AddModule(options)
 		Category = options.Category,
 		FavoriteId = options.Favoritable and tostring(options.FavoriteId or options.Name or "Module") or nil,
 		FavoriteSource = options.FavoriteSource,
+		FavoriteAction = options.FavoriteAction,
+		FavoriteActionText = options.FavoriteActionText,
 		Enabled = false,
 	}, Module)
 	module.Card = create("Frame", {
@@ -1516,7 +1566,9 @@ function Tab:AddModule(options)
 		self.Window:_hover(module.FavoriteButton, THEME.Surface, THEME.SurfaceHover)
 		self.Window:_connect(module.FavoriteButton.Activated, function() module:SetFavorite(not module:IsFavorite()) end)
 		table.insert(self.Window._favoriteModules, module)
-		for _, favoriteTab in ipairs(self.Window._favoriteTabs) do self.Window:_addFavoriteProxy(favoriteTab, module) end
+		if module:IsFavorite() then
+			for _, favoriteTab in ipairs(self.Window._favoriteTabs) do self.Window:_addFavoriteProxy(favoriteTab, module) end
+		end
 		self.Window:_refreshFavoriteModule(module)
 	end
 
@@ -1529,7 +1581,7 @@ end
 function Window:CreateMobileControls(options)
 	options = options or {}
 	local window = self
-	local controls = { Move = Vector2.zero, Vertical = 0, Buttons = {}, Visible = false }
+	local controls = { Move = Vector2.zero, Vertical = 0, LookDelta = Vector2.zero, Buttons = {}, Visible = false }
 	local root = create("Frame", {
 		Name = "FrostMobileControls",
 		Size = UDim2.fromScale(1, 1),
@@ -1586,6 +1638,24 @@ function Window:CreateMobileControls(options)
 			if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then moveState[item[1]] = false; refreshMove() end
 		end)
 	end
+	local lookPad = mobileButton(root, "LookPad", "DRAG TO LOOK", UDim2.new(1, -198, 0.5, -70), UDim2.fromOffset(170, 116))
+	lookPad.AnchorPoint = Vector2.new(0, 0.5)
+	lookPad.BackgroundTransparency = 0.38
+	local lookInput, lookPosition
+	window:_connect(lookPad.InputBegan, function(input)
+		if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+			lookInput, lookPosition = input, Vector2.new(input.Position.X, input.Position.Y)
+		end
+	end)
+	window:_connect(lookPad.InputChanged, function(input)
+		if input ~= lookInput or not lookPosition then return end
+		local position = Vector2.new(input.Position.X, input.Position.Y)
+		controls.LookDelta += position - lookPosition
+		lookPosition = position
+	end)
+	window:_connect(lookPad.InputEnded, function(input)
+		if input == lookInput then lookInput, lookPosition = nil, nil end
+	end)
 	local quick = create("Frame", {
 		Name = "QuickToggles", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -18, 0, 18),
 		Size = UDim2.fromOffset(228, 208), BackgroundTransparency = 1, Parent = root,
@@ -1609,7 +1679,13 @@ function Window:CreateMobileControls(options)
 		if not self.Visible then
 			for key in pairs(moveState) do moveState[key] = false end
 			refreshMove()
+			self.LookDelta = Vector2.zero
 		end
+	end
+	function controls:ConsumeLookDelta()
+		local delta = self.LookDelta
+		self.LookDelta = Vector2.zero
+		return delta
 	end
 	return controls
 end
@@ -2847,8 +2923,8 @@ function Window:_refreshSearch()
 	self.Empty.Text = tab.FavoritesView and "No favorites yet\nUse the star on any module to pin it here."
 		or #tab.Modules == 0 and "Your workspace is ready.\nAdd a module to get started."
 		or "No matching modules\nTry a different search or turn off Active."
-	self.Footer.Text = tab.ItemNoun == "scripts" and string.format("%d scripts in your collection", shown)
-		or string.format("%d of %d modules  ·  %d active", shown, #tab.Modules, active)
+	self.Footer.Text = tab.StatusText or (tab.ItemNoun == "scripts" and string.format("%d scripts in your collection", shown)
+		or string.format("%d of %d modules  ·  %d active", shown, #tab.Modules, active))
 end
 
 function Window:SetSearch(query)
