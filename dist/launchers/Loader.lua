@@ -9,7 +9,8 @@ assert(config.Mode == nil or config.Mode == "http", "FrostScripts loads only fro
 assert(type(config.BaseUrl) == "string" and config.BaseUrl:gsub("/+$", ""):match("^https://raw%.githubusercontent%.com/Fwrostt/FrostScripts/[%w%._/%-]+$"),
 	"Use a raw.githubusercontent.com/Fwrostt/FrostScripts branch or commit URL")
 local ok, source = pcall(function()
-	return game:HttpGet(config.BaseUrl:gsub("/+$", "") .. "/dist/api/FrostScriptsAPI.lua")
+	local fresh = tostring(os.time()) .. "_" .. tostring(math.floor(os.clock() * 1000000))
+	return game:HttpGet(config.BaseUrl:gsub("/+$", "") .. "/dist/api/FrostScriptsAPI.lua?frost=" .. fresh)
 end)
 assert(ok, "FrostScriptsAPI download failed: " .. tostring(source)
 	.. ". The GitHub repository and raw source files must be publicly readable.")

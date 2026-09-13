@@ -1,5 +1,5 @@
 -- Exercise the real entry point -> API -> launcher -> UI chain with mocked HTTPS.
-local session, requests = { FrostScriptsUIPreferences = { ThemeName = "Frost", Sounds = false } }, {}
+local session, requests, requestedUrls = { FrostScriptsUIPreferences = { ThemeName = "Frost", Sounds = false } }, {}, {}
 local prefix = "https://raw.githubusercontent.com/Fwrostt/FrostScripts/main/"
 Mock.Env.getgenv = function() return session end
 Mock.Env.loadstring = function(source, name)
@@ -9,8 +9,9 @@ Mock.Env.loadstring = function(source, name)
 end
 Mock.Env.game.HttpGet = function(_, url)
 	assert(url:sub(1, #prefix) == prefix, "Unexpected script host: " .. url)
-	local path = url:sub(#prefix + 1)
+	local path = url:sub(#prefix + 1):match("^[^?]+")
 	requests[path] = (requests[path] or 0) + 1
+	requestedUrls[path] = url
 	return assert(SOURCES[path], "No mock source for " .. path)
 end
 local function suiteSource(name)
@@ -23,9 +24,12 @@ local main = assert(Mock.Env.loadstring(SOURCES["dist/launchers/Loader.lua"]))
 local launcher = main()
 Mock.Flush()
 assert(launcher.Window.ActiveTab.Name == "Library")
+assert(launcher.Window.BrandSubtitle.Text == "Cheating is Fun")
+assert(launcher.Window.PageSubtitle.Text == "Pick your script according to your game.")
 assert(launcher.Window.ThemeName == "Black" and not launcher.Window.Sounds, "new design resets the legacy theme while preserving other preferences")
 launcher.Window:SetTheme("Graphite")
 assert(requests["config/Text.lua"] == 1, "main loader must fetch editable text from GitHub")
+assert(requestedUrls["config/Text.lua"]:find("?frost=", 1, true), "editable text must bypass HTTP caches")
 assert(requests["dist/api/FrostScriptsAPI.lua"] == 1)
 assert(requests["dist/launcher/App.lua"] == 1)
 assert(requests["dist/ui/UI.lua"] == 1)

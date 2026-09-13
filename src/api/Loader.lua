@@ -1,6 +1,7 @@
 -- Each API instance owns its configuration and module cache.
 local settings = { BaseUrl = "https://raw.githubusercontent.com/Fwrostt/FrostScripts/main" }
 local cache, loading = {}, {}
+local freshRequestCount = 0
 local games = {}
 for _, entry in ipairs(API.Catalog) do
 	assert(type(entry.Id) == "string" and not games[entry.Id], "Catalog IDs must be unique strings")
@@ -45,7 +46,12 @@ function API.LoadModule(path, expectedMethod, fresh, ...)
 	loading[path] = true
 	local args = table.pack(...)
 	local ok, result = pcall(function()
-		local source = game:HttpGet(settings.BaseUrl .. "/" .. path)
+		local url = settings.BaseUrl .. "/" .. path
+		if fresh then
+			freshRequestCount += 1
+			url ..= "?frost=" .. tostring(os.time()) .. "_" .. tostring(math.floor(os.clock() * 1000000)) .. "_" .. tostring(freshRequestCount)
+		end
+		local source = game:HttpGet(url)
 		assert(type(source) == "string" and #source > 0, "Empty source for " .. path)
 		local chunk, compileError = loadstring(source, "@FrostScripts/" .. path)
 		assert(chunk, compileError)

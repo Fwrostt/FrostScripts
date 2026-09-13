@@ -1,5 +1,5 @@
 -- Executed by tools/check.py with the built API and a mocked Roblox boundary.
-local requests, sources = {}, {}
+local requests, sources, lastRequest = {}, {}, nil
 local focused, clicks = false, 0
 local services = { Players = {}, RunService = {},
 	UserInputService = { GetFocusedTextBox = function() return focused end, IsMouseButtonPressed = function() return false end },
@@ -10,9 +10,11 @@ local sandbox = setmetatable({
 	game = {
 		GetService = function(_, name) return services[name] end,
 		HttpGet = function(_, url)
-			requests[url] = (requests[url] or 0) + 1
-			assert(sources[url], "test download failure")
-			return sources[url]
+			lastRequest = url
+			local sourceUrl = url:match("^[^?]+")
+			requests[sourceUrl] = (requests[sourceUrl] or 0) + 1
+			assert(sources[sourceUrl], "test download failure")
+			return sources[sourceUrl]
 		end,
 	},
 }, { __index = getfenv() })
@@ -97,6 +99,7 @@ test("HTTP loader caches and fresh loads bypass cache", function()
 	assert(a == API.LoadModule("sample.lua", "new"))
 	assert(a ~= API.LoadModule("sample.lua", "new", true))
 	assert(requests["https://raw.githubusercontent.com/Fwrostt/FrostScripts/test-ref/sample.lua"] == 2)
+	assert(lastRequest:find("?frost=", 1, true), "fresh downloads must bypass HTTP caches")
 	assert(not pcall(API.LoadModule, "sample.lua", "missingMethod"))
 	local config = API.GetConfig()
 	config.BaseUrl = "changed"
