@@ -372,8 +372,11 @@ function Window:SelectTab(tab)
 	self.Search.Text = tab.Query or ""
 	self.ActiveOnly = tab.ActiveOnly == true
 	self.Search.PlaceholderText = tab.ItemNoun == "scripts" and "Find a script..." or "Search modules..."
+	local categorized = searchable and tab.Categories and #tab.Categories > 0
+	self.CategoryFilter.Visible = categorized == true
+	self.CategoryFilter.Text = categorized and self:Text(tab.ActiveCategory or "All") or ""
 	self.ActiveFilter.Visible = searchable and tab.ItemNoun ~= "scripts"
-	self.Search.Parent.Size = UDim2.new(1, tab.ItemNoun == "scripts" and 0 or -92, 1, 0)
+	self.Search.Parent.Size = UDim2.new(1, tab.ItemNoun == "scripts" and 0 or (categorized and -230 or -92), 1, 0)
 	self.Content.Position = UDim2.fromOffset(20, searchable and 142 or 94)
 	self.Content.Size = UDim2.new(1, -40, 1, searchable and -186 or -138)
 	self:SetActiveOnly(self.ActiveOnly)
@@ -389,6 +392,19 @@ function Window:SelectTab(tab)
 	tab.Page.Position = UDim2.fromOffset(0, self.Animations and 10 or 0)
 	self:_tween(tab.Page, 0.18, { Position = UDim2.fromOffset(0, 0) })
 	self:_refreshSearch()
+end
+
+function Tab:SetCategories(categories, default)
+	assert(type(categories) == "table" and #categories > 0, "Categories must contain at least one option")
+	self.Categories = table.clone(categories)
+	self.ActiveCategory = default or categories[1]
+	local valid = false
+	for _, category in ipairs(self.Categories) do
+		if category == self.ActiveCategory then valid = true; break end
+	end
+	assert(valid, "Default category must be present in categories")
+	if self.Window.ActiveTab == self then self.Window:SelectTab(self) end
+	return self
 end
 
 function Window:AddTab(name, icon, subtitle)
@@ -991,6 +1007,7 @@ function Tab:AddModule(options)
 		Expanded = options.Expanded == true or options.Collapsible == false,
 		Collapsible = options.Collapsible ~= false,
 		NotifyState = options.Notifications ~= false,
+		Category = options.Category,
 		Enabled = false,
 	}, Module)
 	module.Card = create("Frame", {

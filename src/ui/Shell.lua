@@ -78,7 +78,8 @@ function Window:_refreshSearch()
 	local query = (self.Search.Text or ""):lower()
 	local shown, active = 0, 0
 	for _, module in ipairs(tab.Modules) do
-		local matches = not self.ActiveOnly or module.Enabled
+		local matches = (not self.ActiveOnly or module.Enabled)
+			and (not tab.ActiveCategory or tab.ActiveCategory == "All" or module.Category == tab.ActiveCategory)
 		for word in query:gmatch("%S+") do
 			if not module.SearchText:find(word, 1, true) then matches = false; break end
 		end
@@ -105,6 +106,20 @@ function Window:SetActiveOnly(enabled)
 		TextColor3 = self.ActiveOnly and THEME.Accent or THEME.Muted,
 	})
 	self:_refreshSearch()
+end
+
+function Window:SetCategory(category)
+	local tab = self.ActiveTab
+	if not tab or not tab.Categories then return false end
+	for _, candidate in ipairs(tab.Categories) do
+		if candidate == category then
+			tab.ActiveCategory = category
+			self.CategoryFilter.Text = self:Text(category)
+			self:_refreshSearch()
+			return true
+		end
+	end
+	return false
 end
 
 function Window:CloseDropdown()
@@ -378,6 +393,20 @@ function Library:CreateWindow(options)
 		BackgroundColor3 = THEME.PanelRaised, AutoButtonColor = false, BorderSizePixel = 0, Parent = toolbar,
 	}, { corner(10), stroke(THEME.Border, 0.4) })
 	window:_connect(window.ActiveFilter.Activated, function() window:SetActiveOnly(not window.ActiveOnly) end)
+	window.CategoryFilter = create("TextButton", {
+		Name = "CategoryFilter", Position = UDim2.new(1, -216, 0, 0), Size = UDim2.fromOffset(128, 40),
+		Text = "", TextSize = 12, Font = Enum.Font.BuilderSansBold, TextColor3 = THEME.Text,
+		BackgroundColor3 = THEME.PanelRaised, AutoButtonColor = false, BorderSizePixel = 0,
+		Visible = false, Parent = toolbar,
+	}, { corner(10), stroke(THEME.Border, 0.4) })
+	window:_hover(window.CategoryFilter, THEME.PanelRaised, THEME.SurfaceHover)
+	window:_connect(window.CategoryFilter.Activated, function()
+		local tab = window.ActiveTab
+		if not tab or not tab.Categories then return end
+		local control = { Value = tab.ActiveCategory }
+		function control:SetValue(value) window:SetCategory(value) end
+		window:_openDropdown(control, "Category", tab.Categories, window.CategoryFilter)
+	end)
 	window.Content = create("Frame", { Position = UDim2.fromOffset(20, 142), Size = UDim2.new(1, -40, 1, -186),
 		BackgroundTransparency = 1, ClipsDescendants = true, Parent = window.Main })
 	window.Empty = label(window.Main, "", UDim2.new(0, 32, 0.5, 0), UDim2.new(1, -64, 0, 90), 14, THEME.Muted, false)
