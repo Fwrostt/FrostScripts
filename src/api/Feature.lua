@@ -5,8 +5,24 @@ API.Feature = Feature
 function API.CreateFeature(name, settings)
 	return setmetatable({
 		Name = name, Settings = settings or {}, Enabled = false, Status = "Ready",
-		NextRun = 0, _token = 0, _connections = {},
+		NextRun = 0, _token = 0, _connections = {}, _stateListeners = {},
 	}, Feature)
+end
+
+function Feature:_emitState(enabled)
+	if self.OnStateChanged then self.OnStateChanged(enabled) end
+	for _, listener in ipairs(self._stateListeners) do
+		if listener.Connected then pcall(listener.Callback, enabled) end
+	end
+end
+
+function Feature:ObserveState(callback, immediate)
+	assert(type(callback) == "function", "State observer must be a function")
+	local listener = { Callback = callback, Connected = true }
+	function listener:Disconnect() self.Connected = false end
+	table.insert(self._stateListeners, listener)
+	if immediate ~= false then callback(self.Enabled) end
+	return listener
 end
 
 function Feature:AddSetting(key, default)
@@ -57,7 +73,7 @@ function Feature:Enable()
 	self.Enabled = true
 	self._token += 1
 	local ok, result = pcall(function()
-		if self.OnStateChanged then self.OnStateChanged(true) end
+		self:_emitState(true)
 		if self.OnEnable then return self:OnEnable(self._token) end
 	end)
 	if not ok or result == false then
@@ -78,7 +94,7 @@ function Feature:Disable()
 		if self.OnDisable then self:OnDisable() end
 	end)
 	local stateOK, stateError = pcall(function()
-		if self.OnStateChanged then self.OnStateChanged(false) end
+		self:_emitState(false)
 	end)
 	if not ok or not stateOK then self.Status = tostring(not ok and err or stateError) end
 	self:_syncControl()
@@ -93,5 +109,6 @@ end
 function Feature:Destroy()
 	self:Disable()
 	self:ClearConnections()
+	table.clear(self._stateListeners)
 	self._control = nil
 end

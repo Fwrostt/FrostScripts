@@ -41,11 +41,19 @@ local function makeMark(root)
 	badgePiece(root, "CrystalCenter", UDim2.fromOffset(7, 7), UDim2.fromOffset(6, 6), 0.02, 45)
 end
 
+local function makeFavorite(root)
+	for _, rotation in ipairs({ 0, 45, 90, 135 }) do
+		badgePiece(root, "FavoriteRay", UDim2.fromOffset(3, 9), UDim2.fromOffset(14, 3), 0.14, rotation)
+	end
+	badgePiece(root, "FavoriteCore", UDim2.fromOffset(7, 7), UDim2.fromOffset(6, 6), 0.02, 45)
+end
+
 local ICON_BUILDERS = {
 	library = makeLibrary,
 	modules = makeModules,
 	settings = makeSliders,
 	controls = makeSliders,
+	favorites = makeFavorite,
 	snowflake = makeMark,
 }
 

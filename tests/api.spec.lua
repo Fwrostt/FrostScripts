@@ -1,7 +1,21 @@
 -- Executed by tools/check.py with the built API and a mocked Roblox boundary.
 local requests, sources, lastRequest = {}, {}, nil
 local focused, clicks = false, 0
-local services = { Players = {}, RunService = {},
+local function signal()
+	local value = { Listeners = {} }
+	function value:Connect(callback)
+		local connection = { Connected = true }
+		function connection:Disconnect() self.Connected = false end
+		table.insert(self.Listeners, { Connection = connection, Callback = callback })
+		return connection
+	end
+	function value:Fire(...)
+		for _, item in ipairs(self.Listeners) do if item.Connection.Connected then item.Callback(...) end end
+	end
+	return value
+end
+local renderStepped, heartbeat = signal(), signal()
+local services = { Players = {}, RunService = { RenderStepped = renderStepped, Heartbeat = heartbeat },
 	UserInputService = { GetFocusedTextBox = function() return focused end, IsMouseButtonPressed = function() return false end },
 	VirtualInputManager = { SendMouseButtonEvent = function() clicks += 1 end },
 }
@@ -63,6 +77,33 @@ test("control binding preserves lifecycle callbacks and false settings", functio
 	f:Disable()
 	f:Disable()
 	assert(state == false and calls == 2 and f._token > token)
+end)
+
+test("features support independent state observers", function()
+	local feature, first, second = API.CreateFeature("Observed", {}), 0, 0
+	local listener = feature:ObserveState(function(enabled) first += enabled and 1 or -1 end)
+	feature:ObserveState(function() second += 1 end, false)
+	assert(first == -1 and second == 0)
+	feature:Enable()
+	listener:Disconnect()
+	feature:Disable()
+	assert(first == 0 and second == 2)
+end)
+
+test("update manager shares render and timed heartbeat loops", function()
+	local manager = API.CreateUpdateManager({ SlowInterval = 0.1, StatsInterval = 0.5 })
+	local renderCalls, slowCalls = 0, 0
+	local render = manager:Register("render-test", "Render", function(dt) renderCalls += dt end)
+	manager:Register("slow-test", "Slow", function(dt) slowCalls += dt end)
+	renderStepped:Fire(0.25)
+	heartbeat:Fire(0.11)
+	assert(renderCalls == 0.25 and slowCalls == 0.11 and manager:Count() == 2)
+	render:Disconnect()
+	renderStepped:Fire(0.25)
+	assert(renderCalls == 0.25 and manager:Count() == 1)
+	manager:Destroy()
+	heartbeat:Fire(1)
+	assert(slowCalls == 0.11 and manager:Count() == 0)
 end)
 
 test("disable errors still disconnect and synchronize", function()

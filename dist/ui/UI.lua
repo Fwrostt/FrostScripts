@@ -638,6 +638,68 @@ function Window:SelectTab(tab)
 	self:_refreshSearch()
 end
 
+function Window:IsFavorite(id)
+	return self.Favorites[tostring(id)] == true
+end
+
+function Window:_refreshFavoriteModule(module)
+	if module.FavoriteButton then
+		local favorite = self:IsFavorite(module.FavoriteId)
+		module.FavoriteButton.Text = favorite and "★" or "☆"
+		module.FavoriteButton.TextColor3 = favorite and THEME.Accent or THEME.Muted
+	end
+	for _, proxy in ipairs(module.FavoriteProxies or {}) do
+		proxy.Card.Visible = self:IsFavorite(module.FavoriteId)
+	end
+	if self.ActiveTab and self.ActiveTab.FavoritesView then self:_refreshSearch() end
+end
+
+function Module:SetFavorite(favorite)
+	if not self.FavoriteId then return false end
+	favorite = favorite == true
+	if favorite then self.Window.Favorites[self.FavoriteId] = true else self.Window.Favorites[self.FavoriteId] = nil end
+	self.Window:_remember("Favorites", self.Window.Favorites)
+	self.Window:_refreshFavoriteModule(self)
+	return true
+end
+
+function Module:IsFavorite()
+	return self.FavoriteId and self.Window:IsFavorite(self.FavoriteId) or false
+end
+
+function Window:_addFavoriteProxy(tab, source)
+	source.FavoriteProxies = source.FavoriteProxies or {}
+	local proxy = tab:AddModule({
+		Name = source.Name,
+		Description = source.Status.Text,
+		Toggleable = source.Toggle ~= nil,
+		Default = source.Enabled,
+		Collapsible = false,
+		Notifications = false,
+		FavoriteSource = source,
+		Callback = function(enabled)
+			if source.Toggle then source.Toggle:SetValue(enabled) end
+		end,
+	})
+	proxy:AddButton("Open settings", function()
+		self:SelectTab(source.Tab)
+		self:SetSearch(source.Name)
+	end)
+	proxy:AddButton("Remove favorite", function() source:SetFavorite(false) end, { Danger = true })
+	table.insert(source.FavoriteProxies, proxy)
+	proxy.Card.Visible = source:IsFavorite()
+	return proxy
+end
+
+function Window:AddFavoritesTab(name, icon, subtitle)
+	local tab = self:AddTab(name or "Favorites", icon or "favorites", subtitle or "Your pinned modules and shortcuts")
+	tab.SearchEnabled = true
+	tab.FavoritesView = true
+	table.insert(self._favoriteTabs, tab)
+	for _, module in ipairs(self._favoriteModules) do self:_addFavoriteProxy(tab, module) end
+	return tab
+end
+
 function Tab:SetCategories(categories, default)
 	assert(type(categories) == "table" and #categories > 0, "Categories must contain at least one option")
 	self.Categories = table.clone(categories)
@@ -656,8 +718,8 @@ function Window:AddTab(name, icon, subtitle)
 	local tab = setmetatable({
 		Window = self,
 		Name = name,
-		Icon = ({ H = "home", L = "library", S = "settings", M = "modules", C = "controls" })[icon] or icon or "controls",
-		SearchEnabled = name == "Library" or name == "Modules" or name == "Controls",
+		Icon = ({ H = "home", L = "library", S = "settings", M = "modules", C = "controls", F = "favorites" })[icon] or icon or "controls",
+		SearchEnabled = name == "Library" or name == "Modules" or name == "Controls" or name == "Favorites",
 		Subtitle = subtitle or "",
 		Modules = {},
 	}, Tab)
@@ -791,6 +853,7 @@ end
 
 function Module:SetStatus(status)
 	self.Status.Text = tostring(status or "")
+	for _, proxy in ipairs(self.FavoriteProxies or {}) do proxy.Status.Text = self.Status.Text end
 end
 
 function Module:SetEnabled(enabled, silent)
@@ -802,6 +865,10 @@ function Module:SetEnabled(enabled, silent)
 	self.Window:_tween(self.Accent, 0.14, {
 		BackgroundColor3 = enabled and THEME.Accent or THEME.Border,
 	})
+	for _, proxy in ipairs(self.FavoriteProxies or {}) do
+		if proxy.Toggle and proxy.Toggle.Value ~= enabled then proxy.Toggle:SetValue(enabled, true) end
+		proxy.Status.Text = self.Status.Text
+	end
 	if changed and not silent and self.NotifyState ~= false and self.Window.ModuleNotificationsEnabled then
 		self.Window:Notify({
 			Title = self.Name,
@@ -902,6 +969,53 @@ function Module:AddToggle(name, default, callback, description)
 	end)
 	control:SetValue(control.Value, true)
 	return control
+end
+
+function Module:AddActionGrid(actions, options)
+	assert(type(actions) == "table" and #actions > 0, "Action grid needs at least one action")
+	options = options or {}
+	local columns = math.max(1, math.floor(options.Columns or 2))
+	local buttonHeight = options.ButtonHeight or 42
+	local rows = math.ceil(#actions / columns)
+	local row = self:_row(rows * buttonHeight + math.max(0, rows - 1) * 8)
+	local grid = create("UIGridLayout", {
+		CellSize = UDim2.new(1 / columns, -6, 0, buttonHeight),
+		CellPadding = UDim2.fromOffset(8, 8),
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		HorizontalAlignment = Enum.HorizontalAlignment.Center,
+		Parent = row,
+	})
+	local controls = {}
+	for index, action in ipairs(actions) do
+		local button = create("TextButton", {
+			Name = tostring(action.Id or action.Name or index),
+			LayoutOrder = index,
+			BackgroundColor3 = THEME.PanelRaised,
+			BorderSizePixel = 0,
+			Text = tostring(action.Name or action.Id or "Action"),
+			TextColor3 = THEME.Text,
+			TextSize = 12,
+			Font = Enum.Font.BuilderSansBold,
+			AutoButtonColor = false,
+			Parent = row,
+		}, { corner(10), stroke(THEME.Border, 0.35) })
+		local control = { Button = button, Active = action.Active == true, Module = self }
+		function control:SetActive(active)
+			self.Active = active == true
+			self.Module.Window:_tween(self.Button, 0.14, {
+				BackgroundColor3 = self.Active and THEME.AccentSoft or THEME.PanelRaised,
+				TextColor3 = self.Active and THEME.Accent or THEME.Text,
+			})
+		end
+		self.Window:_connect(button.MouseEnter, function()
+			if not control.Active then self.Window:_tween(button, 0.12, { BackgroundColor3 = THEME.SurfaceHover }) end
+		end)
+		self.Window:_connect(button.MouseLeave, function() control:SetActive(control.Active) end)
+		self.Window:_connect(button.Activated, function() safeCall(self.Window, action.Callback, control) end)
+		control:SetActive(control.Active)
+		table.insert(controls, control)
+	end
+	return controls, grid
 end
 
 function Module:AddSlider(name, minimum, maximum, default, callback, options)
@@ -1252,6 +1366,8 @@ function Tab:AddModule(options)
 		Collapsible = options.Collapsible ~= false,
 		NotifyState = options.Notifications ~= false,
 		Category = options.Category,
+		FavoriteId = options.Favoritable and tostring(options.FavoriteId or options.Name or "Module") or nil,
+		FavoriteSource = options.FavoriteSource,
 		Enabled = false,
 	}, Module)
 	module.Card = create("Frame", {
@@ -1382,11 +1498,120 @@ function Tab:AddModule(options)
 		toggleRow:SetValue(options.Default == true, true)
 	end
 	if options.Feature then options.Feature:BindControl(module) end
+	if module.FavoriteId then
+		module.FavoriteButton = create("TextButton", {
+			Name = "FavoriteButton",
+			Position = UDim2.new(1, options.Toggleable and -142 or -76, 0, 12),
+			Size = UDim2.fromOffset(36, 34),
+			BackgroundColor3 = THEME.Surface,
+			BorderSizePixel = 0,
+			Text = "☆",
+			TextColor3 = THEME.Muted,
+			TextSize = 20,
+			Font = Enum.Font.BuilderSansBold,
+			AutoButtonColor = false,
+			ZIndex = 8,
+			Parent = module.Card,
+		}, { corner(9), stroke(THEME.Border, 0.45) })
+		self.Window:_hover(module.FavoriteButton, THEME.Surface, THEME.SurfaceHover)
+		self.Window:_connect(module.FavoriteButton.Activated, function() module:SetFavorite(not module:IsFavorite()) end)
+		table.insert(self.Window._favoriteModules, module)
+		for _, favoriteTab in ipairs(self.Window._favoriteTabs) do self.Window:_addFavoriteProxy(favoriteTab, module) end
+		self.Window:_refreshFavoriteModule(module)
+	end
 
 	module:SetExpanded(module.Expanded)
 	table.insert(self.Modules, module)
 	self.Window:_refreshSearch()
 	return module
+end
+
+function Window:CreateMobileControls(options)
+	options = options or {}
+	local window = self
+	local controls = { Move = Vector2.zero, Vertical = 0, Buttons = {}, Visible = false }
+	local root = create("Frame", {
+		Name = "FrostMobileControls",
+		Size = UDim2.fromScale(1, 1),
+		BackgroundTransparency = 1,
+		Visible = false,
+		Parent = self.OverlayGui,
+	})
+	controls.Root = root
+
+	local moveState = { Forward = false, Back = false, Left = false, Right = false, Up = false, Down = false }
+	local function refreshMove()
+		controls.Move = Vector2.new((moveState.Right and 1 or 0) - (moveState.Left and 1 or 0),
+			(moveState.Forward and 1 or 0) - (moveState.Back and 1 or 0))
+		local magnitude = math.sqrt(controls.Move.X * controls.Move.X + controls.Move.Y * controls.Move.Y)
+		if magnitude > 1 then controls.Move = controls.Move / magnitude end
+		controls.Vertical = (moveState.Up and 1 or 0) - (moveState.Down and 1 or 0)
+	end
+	local function mobileButton(parent, name, text, position, size)
+		return create("TextButton", {
+			Name = name, Position = position, Size = size or UDim2.fromOffset(50, 50),
+			BackgroundColor3 = THEME.PanelRaised, BackgroundTransparency = 0.08,
+			BorderSizePixel = 0, Text = text, TextColor3 = THEME.Text,
+			TextSize = 13, Font = Enum.Font.BuilderSansBold, AutoButtonColor = false,
+			Parent = parent,
+		}, { corner(14), stroke(THEME.Border, 0.2) })
+	end
+	local movement = create("Frame", {
+		Name = "Movement", AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 18, 1, -18),
+		Size = UDim2.fromOffset(170, 170), BackgroundTransparency = 1, Parent = root,
+	})
+	local directions = {
+		{ "Forward", "UP", UDim2.fromOffset(60, 0) }, { "Left", "LEFT", UDim2.fromOffset(0, 60) },
+		{ "Right", "RIGHT", UDim2.fromOffset(120, 60) }, { "Back", "DOWN", UDim2.fromOffset(60, 120) },
+	}
+	for _, item in ipairs(directions) do
+		local button = mobileButton(movement, item[1], item[2], item[3])
+		window:_connect(button.InputBegan, function(input)
+			if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then moveState[item[1]] = true; refreshMove() end
+		end)
+		window:_connect(button.InputEnded, function(input)
+			if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then moveState[item[1]] = false; refreshMove() end
+		end)
+	end
+	local vertical = create("Frame", {
+		Name = "Vertical", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -18, 1, -18),
+		Size = UDim2.fromOffset(58, 118), BackgroundTransparency = 1, Parent = root,
+	})
+	for index, item in ipairs({ { "Up", "RISE" }, { "Down", "DROP" } }) do
+		local button = mobileButton(vertical, item[1], item[2], UDim2.fromOffset(4, (index - 1) * 60))
+		window:_connect(button.InputBegan, function(input)
+			if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then moveState[item[1]] = true; refreshMove() end
+		end)
+		window:_connect(button.InputEnded, function(input)
+			if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then moveState[item[1]] = false; refreshMove() end
+		end)
+	end
+	local quick = create("Frame", {
+		Name = "QuickToggles", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -18, 0, 18),
+		Size = UDim2.fromOffset(228, 208), BackgroundTransparency = 1, Parent = root,
+	}, { create("UIGridLayout", { CellSize = UDim2.fromOffset(108, 44), CellPadding = UDim2.fromOffset(8, 8), FillDirectionMaxCells = 2 }) })
+
+	function controls:AddToggle(name, callback)
+		local button = mobileButton(quick, name, name:upper(), UDim2.new(), UDim2.fromOffset(108, 44))
+		local control = { Button = button, Active = false }
+		function control:SetActive(active)
+			self.Active = active == true
+			button.BackgroundColor3 = self.Active and THEME.AccentSoft or THEME.PanelRaised
+			button.TextColor3 = self.Active and THEME.Accent or THEME.Text
+		end
+		window:_connect(button.Activated, function() safeCall(window, callback, control) end)
+		table.insert(self.Buttons, control)
+		return control
+	end
+	function controls:SetVisible(visible)
+		self.Visible = visible == true
+		root.Visible = self.Visible
+		if not self.Visible then
+			for key in pairs(moveState) do moveState[key] = false end
+			refreshMove()
+		end
+	end
+	return controls
 end
 
 function Module:AddKeybind(options)
@@ -1995,11 +2220,19 @@ local function makeMark(root)
 	badgePiece(root, "CrystalCenter", UDim2.fromOffset(7, 7), UDim2.fromOffset(6, 6), 0.02, 45)
 end
 
+local function makeFavorite(root)
+	for _, rotation in ipairs({ 0, 45, 90, 135 }) do
+		badgePiece(root, "FavoriteRay", UDim2.fromOffset(3, 9), UDim2.fromOffset(14, 3), 0.14, rotation)
+	end
+	badgePiece(root, "FavoriteCore", UDim2.fromOffset(7, 7), UDim2.fromOffset(6, 6), 0.02, 45)
+end
+
 local ICON_BUILDERS = {
 	library = makeLibrary,
 	modules = makeModules,
 	settings = makeSliders,
 	controls = makeSliders,
+	favorites = makeFavorite,
 	snowflake = makeMark,
 }
 
@@ -2600,7 +2833,8 @@ function Window:_refreshSearch()
 	local query = (self.Search.Text or ""):lower()
 	local shown, active = 0, 0
 	for _, module in ipairs(tab.Modules) do
-		local matches = (not self.ActiveOnly or module.Enabled)
+		local matches = (not tab.FavoritesView or (module.FavoriteSource and module.FavoriteSource:IsFavorite()))
+		and (not self.ActiveOnly or module.Enabled)
 			and (not tab.ActiveCategory or tab.ActiveCategory == "All" or module.Category == tab.ActiveCategory)
 		for word in query:gmatch("%S+") do
 			if not module.SearchText:find(word, 1, true) then matches = false; break end
@@ -2610,7 +2844,8 @@ function Window:_refreshSearch()
 		if module.Enabled then active += 1 end
 	end
 	self.Empty.Visible = shown == 0
-	self.Empty.Text = #tab.Modules == 0 and "Your workspace is ready.\nAdd a module to get started."
+	self.Empty.Text = tab.FavoritesView and "No favorites yet\nUse the star on any module to pin it here."
+		or #tab.Modules == 0 and "Your workspace is ready.\nAdd a module to get started."
 		or "No matching modules\nTry a different search or turn off Active."
 	self.Footer.Text = tab.ItemNoun == "scripts" and string.format("%d scripts in your collection", shown)
 		or string.format("%d of %d modules  ·  %d active", shown, #tab.Modules, active)
@@ -2801,6 +3036,7 @@ function Library:CreateWindow(options)
 		MonitorWidth = math.clamp(tonumber(options.MonitorWidth) or 380, 320, 520),
 		MonitorSide = options.MonitorSide == "Left" and "Left" or "Right",
 		Tabs = {}, _tabsByName = {}, Keybinds = {}, Monitors = {}, Notifications = {},
+		Favorites = state.Favorites or {}, _favoriteTabs = {}, _favoriteModules = {},
 		_monitorCount = 0, _connections = {}, _tweens = setmetatable({}, { __mode = "k" }),
 		ActiveOnly = false, _visibilityToken = 0,
 		ReservedKeys = options.ReservedKeys or {

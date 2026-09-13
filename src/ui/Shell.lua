@@ -78,7 +78,8 @@ function Window:_refreshSearch()
 	local query = (self.Search.Text or ""):lower()
 	local shown, active = 0, 0
 	for _, module in ipairs(tab.Modules) do
-		local matches = (not self.ActiveOnly or module.Enabled)
+		local matches = (not tab.FavoritesView or (module.FavoriteSource and module.FavoriteSource:IsFavorite()))
+		and (not self.ActiveOnly or module.Enabled)
 			and (not tab.ActiveCategory or tab.ActiveCategory == "All" or module.Category == tab.ActiveCategory)
 		for word in query:gmatch("%S+") do
 			if not module.SearchText:find(word, 1, true) then matches = false; break end
@@ -88,7 +89,8 @@ function Window:_refreshSearch()
 		if module.Enabled then active += 1 end
 	end
 	self.Empty.Visible = shown == 0
-	self.Empty.Text = #tab.Modules == 0 and "Your workspace is ready.\nAdd a module to get started."
+	self.Empty.Text = tab.FavoritesView and "No favorites yet\nUse the star on any module to pin it here."
+		or #tab.Modules == 0 and "Your workspace is ready.\nAdd a module to get started."
 		or "No matching modules\nTry a different search or turn off Active."
 	self.Footer.Text = tab.ItemNoun == "scripts" and string.format("%d scripts in your collection", shown)
 		or string.format("%d of %d modules  ·  %d active", shown, #tab.Modules, active)
@@ -279,6 +281,7 @@ function Library:CreateWindow(options)
 		MonitorWidth = math.clamp(tonumber(options.MonitorWidth) or 380, 320, 520),
 		MonitorSide = options.MonitorSide == "Left" and "Left" or "Right",
 		Tabs = {}, _tabsByName = {}, Keybinds = {}, Monitors = {}, Notifications = {},
+		Favorites = state.Favorites or {}, _favoriteTabs = {}, _favoriteModules = {},
 		_monitorCount = 0, _connections = {}, _tweens = setmetatable({}, { __mode = "k" }),
 		ActiveOnly = false, _visibilityToken = 0,
 		ReservedKeys = options.ReservedKeys or {

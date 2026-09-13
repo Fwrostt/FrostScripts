@@ -332,6 +332,7 @@ end
 -- Utilities
 do
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 
 function API.GetCharacter(player)
 	player = player or Players.LocalPlayer
@@ -406,6 +407,147 @@ function API.CreateScope()
 	end
 	return scope
 end
+
+-- One scheduler can service an entire suite. Modules register work instead of
+-- each owning another RenderStepped or Heartbeat connection.
+function API.CreateUpdateManager(options)
+	options = options or {}
+	local manager = {
+		Destroyed = false,
+		Jobs = { Render = {}, Heartbeat = {}, Slow = {}, Stats = {} },
+		Errors = {},
+		_slowElapsed = 0,
+		_statsElapsed = 0,
+		_connections = {},
+	}
+
+	local function run(bucket, deltaTime)
+		for name, job in pairs(manager.Jobs[bucket]) do
+			local ok, err = pcall(job.Callback, deltaTime)
+			if not ok then
+				job.Failures += 1
+				manager.Errors[name] = tostring(err)
+				if options.OnError then pcall(options.OnError, name, err) end
+				if job.Failures >= 3 then manager.Jobs[bucket][name] = nil end
+			else
+				job.Failures = 0
+			end
+		end
+	end
+
+	function manager:Register(name, bucket, callback)
+		assert(not self.Destroyed, "Update manager is destroyed")
+		assert(type(name) == "string" and name ~= "", "Update job needs a name")
+		assert(self.Jobs[bucket], "Unknown update bucket: " .. tostring(bucket))
+		assert(type(callback) == "function", "Update callback must be a function")
+		for _, jobs in pairs(self.Jobs) do
+			assert(jobs[name] == nil, "Duplicate update job: " .. name)
+		end
+		local job = { Callback = callback, Failures = 0 }
+		self.Jobs[bucket][name] = job
+		local registration = { Connected = true }
+		function registration:Disconnect()
+			if not self.Connected then return end
+			self.Connected = false
+			if manager.Jobs[bucket][name] == job then manager.Jobs[bucket][name] = nil end
+		end
+		return registration
+	end
+
+	function manager:Count()
+		local count = 0
+		for _, jobs in pairs(self.Jobs) do for _ in pairs(jobs) do count += 1 end end
+		return count
+	end
+
+	function manager:Destroy()
+		if self.Destroyed then return end
+		self.Destroyed = true
+		for _, connection in ipairs(self._connections) do connection:Disconnect() end
+		table.clear(self._connections)
+		for _, jobs in pairs(self.Jobs) do table.clear(jobs) end
+	end
+
+	table.insert(manager._connections, RunService.RenderStepped:Connect(function(deltaTime)
+		if not manager.Destroyed then run("Render", deltaTime) end
+	end))
+	table.insert(manager._connections, RunService.Heartbeat:Connect(function(deltaTime)
+		if manager.Destroyed then return end
+		run("Heartbeat", deltaTime)
+		manager._slowElapsed += deltaTime
+		manager._statsElapsed += deltaTime
+		if manager._slowElapsed >= (options.SlowInterval or 0.1) then
+			local elapsed = manager._slowElapsed
+			manager._slowElapsed = 0
+			run("Slow", elapsed)
+		end
+		if manager._statsElapsed >= (options.StatsInterval or 0.75) then
+			local elapsed = manager._statsElapsed
+			manager._statsElapsed = 0
+			run("Stats", elapsed)
+		end
+	end))
+	return manager
+end
+
+function API.CreateCharacterManager(player)
+	player = player or Players.LocalPlayer
+	local manager = {
+		Player = player,
+		Character = nil,
+		Humanoid = nil,
+		Root = nil,
+		Destroyed = false,
+		_added = {},
+		_removing = {},
+		_connections = {},
+	}
+
+	local function refresh(character)
+		manager.Character = character
+		manager.Humanoid = character and character:FindFirstChildOfClass("Humanoid") or nil
+		manager.Root = character and character:FindFirstChild("HumanoidRootPart") or nil
+	end
+	local function subscribe(list, callback, immediate)
+		assert(type(callback) == "function", "Character callback must be a function")
+		local entry = { Callback = callback, Connected = true }
+		table.insert(list, entry)
+		function entry:Disconnect() self.Connected = false end
+		if immediate and manager.Character then task.defer(callback, manager.Character, manager.Humanoid, manager.Root) end
+		return entry
+	end
+
+	function manager:Get()
+		if self.Character ~= self.Player.Character then refresh(self.Player.Character) end
+		if self.Character then
+			if not self.Humanoid or not self.Humanoid.Parent then self.Humanoid = self.Character:FindFirstChildOfClass("Humanoid") end
+			if not self.Root or not self.Root.Parent then self.Root = self.Character:FindFirstChild("HumanoidRootPart") end
+		end
+		return self.Character, self.Humanoid, self.Root
+	end
+	function manager:OnAdded(callback, immediate) return subscribe(self._added, callback, immediate ~= false) end
+	function manager:OnRemoving(callback) return subscribe(self._removing, callback, false) end
+	function manager:Destroy()
+		if self.Destroyed then return end
+		self.Destroyed = true
+		for _, connection in ipairs(self._connections) do connection:Disconnect() end
+		table.clear(self._connections)
+		table.clear(self._added)
+		table.clear(self._removing)
+		refresh(nil)
+	end
+
+	refresh(player.Character)
+	table.insert(manager._connections, player.CharacterAdded:Connect(function(character)
+		refresh(character)
+		for _, entry in ipairs(manager._added) do if entry.Connected then task.defer(entry.Callback, character, manager.Humanoid, manager.Root) end end
+	end))
+	table.insert(manager._connections, player.CharacterRemoving:Connect(function(character)
+		for _, entry in ipairs(manager._removing) do if entry.Connected then pcall(entry.Callback, character) end end
+		refresh(nil)
+	end))
+	return manager
+end
 end
 
 -- Feature
@@ -417,8 +559,24 @@ API.Feature = Feature
 function API.CreateFeature(name, settings)
 	return setmetatable({
 		Name = name, Settings = settings or {}, Enabled = false, Status = "Ready",
-		NextRun = 0, _token = 0, _connections = {},
+		NextRun = 0, _token = 0, _connections = {}, _stateListeners = {},
 	}, Feature)
+end
+
+function Feature:_emitState(enabled)
+	if self.OnStateChanged then self.OnStateChanged(enabled) end
+	for _, listener in ipairs(self._stateListeners) do
+		if listener.Connected then pcall(listener.Callback, enabled) end
+	end
+end
+
+function Feature:ObserveState(callback, immediate)
+	assert(type(callback) == "function", "State observer must be a function")
+	local listener = { Callback = callback, Connected = true }
+	function listener:Disconnect() self.Connected = false end
+	table.insert(self._stateListeners, listener)
+	if immediate ~= false then callback(self.Enabled) end
+	return listener
 end
 
 function Feature:AddSetting(key, default)
@@ -469,7 +627,7 @@ function Feature:Enable()
 	self.Enabled = true
 	self._token += 1
 	local ok, result = pcall(function()
-		if self.OnStateChanged then self.OnStateChanged(true) end
+		self:_emitState(true)
 		if self.OnEnable then return self:OnEnable(self._token) end
 	end)
 	if not ok or result == false then
@@ -490,7 +648,7 @@ function Feature:Disable()
 		if self.OnDisable then self:OnDisable() end
 	end)
 	local stateOK, stateError = pcall(function()
-		if self.OnStateChanged then self.OnStateChanged(false) end
+		self:_emitState(false)
 	end)
 	if not ok or not stateOK then self.Status = tostring(not ok and err or stateError) end
 	self:_syncControl()
@@ -505,6 +663,7 @@ end
 function Feature:Destroy()
 	self:Disable()
 	self:ClearConnections()
+	table.clear(self._stateListeners)
 	self._control = nil
 end
 end
@@ -523,23 +682,54 @@ function API.UniversalModules.CreateFlight(options)
 	options = options or {}
 	local feature = API.CreateFeature(options.Name or "Flight", {
 		Speed = options.Speed or 70,
-		ToggleKey = options.ToggleKey or Enum.KeyCode.F,
+		ToggleKey = options.ToggleKey or Enum.KeyCode.Unknown,
 		VerticalSpeed = options.VerticalSpeed or 50,
+		Mode = options.Mode or "Character Flight",
+		Style = options.Style or "Smooth Flight",
+		Direction = options.Direction or "Camera-direction Flight",
+		Inertia = options.Inertia or 12,
+		FlightHover = options.FlightHover ~= false,
+		HoverHeight = options.HoverHeight or 8,
 		UpKey = options.UpKey or Enum.KeyCode.Space,
 		DownKey = options.DownKey or Enum.KeyCode.LeftControl,
 	})
-	function feature:OnEnable()
-		local player = Players.LocalPlayer
-		local character = player.Character
-		local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-		local root = character and character:FindFirstChild("HumanoidRootPart")
-		if not humanoid or not root or humanoid.Health <= 0 then return false end
+	function feature:_detach(restore)
+		if self._velocity then self._velocity:Destroy() end
+		if self._orientation then self._orientation:Destroy() end
+		if self._attachment then self._attachment:Destroy() end
+		if restore and self._humanoid and self._humanoid.Parent and self._controlsCharacter then
+			self._humanoid.PlatformStand = self._previousPlatformStand
+			self._humanoid.AutoRotate = self._previousAutoRotate
+			self._humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+		end
+		if restore and self._root and self._root.Parent then self._root.AssemblyLinearVelocity = Vector3.zero end
+		self._velocity, self._orientation, self._attachment = nil, nil, nil
+		self._humanoid, self._root, self._controlsCharacter = nil, nil, nil
+		self._currentVelocity = Vector3.zero
+	end
+
+	function feature:_attach(character, humanoid, characterRoot)
+		self:_detach(true)
+		humanoid = humanoid or (character and character:FindFirstChildOfClass("Humanoid"))
+		characterRoot = characterRoot or (character and character:FindFirstChild("HumanoidRootPart"))
+		local root = characterRoot
+		if self.Settings.Mode == "Vehicle Flight" then
+			local seat = humanoid and humanoid.SeatPart
+			root = seat and (seat.AssemblyRootPart or seat)
+		end
+		if not humanoid or not root or humanoid.Health <= 0 then
+			self:SetStatus(self.Settings.Mode == "Vehicle Flight" and "Sit in a vehicle to begin" or "Waiting for character")
+			return false
+		end
 		self._humanoid = humanoid
 		self._root = root
 		self._previousAutoRotate = humanoid.AutoRotate
 		self._previousPlatformStand = humanoid.PlatformStand
-		humanoid.AutoRotate = false
-		humanoid.PlatformStand = true
+		self._controlsCharacter = self.Settings.Mode ~= "Vehicle Flight"
+		if self._controlsCharacter then
+			humanoid.AutoRotate = false
+			humanoid.PlatformStand = true
+		end
 		local attachment = Instance.new("Attachment")
 		attachment.Name = "FrostScriptsFlightAttachment"
 		attachment.Parent = root
@@ -556,54 +746,117 @@ function API.UniversalModules.CreateFlight(options)
 		orientation.Attachment0 = attachment
 		orientation.Mode = Enum.OrientationAlignmentMode.OneAttachment
 		orientation.MaxTorque = math.huge
-		orientation.Responsiveness = 18
+		orientation.Responsiveness = math.max(5, self.Settings.Inertia)
 		orientation.Parent = root
 		self._attachment = attachment
 		self._velocity = velocity
 		self._orientation = orientation
-		self:Track(RunService.RenderStepped:Connect(function()
-			if not root.Parent or not humanoid.Parent or humanoid.Health <= 0 then
-				self:Disable()
-				return
-			end
+		self._mouse = Players.LocalPlayer:GetMouse()
+		local raycast = RaycastParams.new()
+		raycast.FilterType = Enum.RaycastFilterType.Exclude
+		raycast.FilterDescendantsInstances = character and { character } or {}
+		self._raycast = raycast
+		self._currentVelocity = Vector3.zero
+		self:SetStatus(self.Settings.Mode .. " active")
+		return true
+	end
+
+	function feature:_step(deltaTime)
+		local root, humanoid = self._root, self._humanoid
+		if not root or not humanoid or not root.Parent or not humanoid.Parent or humanoid.Health <= 0 then
+			if root or humanoid then self:_detach(false) end
+			self:SetStatus("Waiting for character")
+			return
+		end
 			local camera = workspace.CurrentCamera
-			local look = camera and camera.CFrame.LookVector or Vector3.new(0, 0, -1)
+			local look
+			if self.Settings.Direction == "Mouse-direction Flight" and self._mouse and self._mouse.Hit then
+				look = self._mouse.Hit.Position - root.Position
+			elseif self.Settings.Direction == "Character-direction Flight" then
+				look = root.CFrame.LookVector
+			else
+				look = camera and camera.CFrame.LookVector or Vector3.new(0, 0, -1)
+			end
 			local flatLook = Vector3.new(look.X, 0, look.Z)
 			flatLook = flatLook.Magnitude > 0.001 and flatLook.Unit or Vector3.new(0, 0, -1)
 			local flatRight = Vector3.new(-flatLook.Z, 0, flatLook.X)
 			local move = Vector3.zero
 			if UserInputService:GetFocusedTextBox() or (options.IsInputCaptured and options.IsInputCaptured()) then
-				velocity.VectorVelocity = Vector3.zero
+				self._velocity.VectorVelocity = Vector3.zero
 				return
 			end
 			if UserInputService:IsKeyDown(Enum.KeyCode.W) then move += flatLook end
 			if UserInputService:IsKeyDown(Enum.KeyCode.S) then move -= flatLook end
 			if UserInputService:IsKeyDown(Enum.KeyCode.D) then move += flatRight end
 			if UserInputService:IsKeyDown(Enum.KeyCode.A) then move -= flatRight end
+			if options.GetMoveVector then
+				local mobile = options.GetMoveVector()
+				if typeof(mobile) == "Vector2" then move += flatRight * mobile.X + flatLook * mobile.Y end
+			end
 			if move.Magnitude > 1 then move = move.Unit end
 			local vertical = 0
 			if UserInputService:IsKeyDown(self.Settings.UpKey) then vertical += 1 end
 			if UserInputService:IsKeyDown(self.Settings.DownKey) then vertical -= 1 end
-			velocity.VectorVelocity = move * self.Settings.Speed + Vector3.new(0, vertical * self.Settings.VerticalSpeed, 0)
-			orientation.CFrame = CFrame.lookAt(Vector3.zero, flatLook)
-		end))
-		self:SetStatus("WASD flight active")
+			if options.GetVertical then vertical += tonumber(options.GetVertical()) or 0 end
+			vertical = math.clamp(vertical, -1, 1)
+			local mode = self.Settings.Mode
+			if mode == "Levitate" and vertical == 0 then vertical = 0.35 end
+			if mode == "Hover" and vertical == 0 then
+				local hit = workspace:Raycast(root.Position, Vector3.new(0, -500, 0), self._raycast)
+				if hit then
+					vertical = math.clamp((self.Settings.HoverHeight - hit.Distance) / math.max(1, self.Settings.HoverHeight), -1, 1)
+				end
+			elseif mode == "Float" and vertical == 0 then
+				vertical = 0
+			elseif not self.Settings.FlightHover and vertical == 0 then
+				vertical = -0.12
+			end
+			local targetVelocity = move * self.Settings.Speed
+				+ Vector3.new(0, vertical * self.Settings.VerticalSpeed, 0)
+			if self.Settings.Style == "Instant Flight" then
+				self._currentVelocity = targetVelocity
+			else
+				local response = math.max(1, tonumber(self.Settings.Inertia) or 12)
+				self._currentVelocity = self._currentVelocity:Lerp(targetVelocity, 1 - math.exp(-response * deltaTime))
+			end
+			self._velocity.VectorVelocity = self._currentVelocity
+			self._orientation.Responsiveness = math.max(5, tonumber(self.Settings.Inertia) or 12)
+			self._orientation.CFrame = CFrame.lookAt(Vector3.zero, flatLook)
+	end
+
+	function feature:OnEnable()
+		local manager = options.CharacterManager
+		local function attach(character, humanoid, root)
+			if self.Enabled then self:_attach(character, humanoid, root) end
+		end
+		if manager then
+			self:Track(manager:OnAdded(attach, false))
+			self:Track(manager:OnRemoving(function() self:_detach(false) end))
+			attach(manager:Get())
+		else
+			local player = Players.LocalPlayer
+			attach(player.Character)
+			self:Track(player.CharacterAdded:Connect(function(character) attach(character) end))
+		end
+		if options.UpdateManager then
+			self:Track(options.UpdateManager:Register(self.Name .. ":" .. tostring(self), "Render", function(deltaTime)
+				self:_step(deltaTime)
+			end))
+		else
+			self:Track(RunService.RenderStepped:Connect(function(deltaTime) self:_step(deltaTime) end))
+		end
 		return true
 	end
+	function feature:OnSettingChanged(key)
+		if self.Enabled and (key == "Mode") then
+			self:Disable()
+			self:Enable()
+		elseif self.Enabled then
+			self:SetStatus(self.Settings.Mode .. " active")
+		end
+	end
 	function feature:OnDisable()
-		if self._velocity then self._velocity:Destroy() end
-		if self._orientation then self._orientation:Destroy() end
-		if self._attachment then self._attachment:Destroy() end
-		if self._humanoid and self._humanoid.Parent then
-			self._humanoid.PlatformStand = self._previousPlatformStand
-			self._humanoid.AutoRotate = self._previousAutoRotate
-			self._humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
-		end
-		if self._root and self._root.Parent then
-			self._root.AssemblyLinearVelocity = Vector3.zero
-		end
-		self._velocity, self._orientation, self._attachment = nil, nil, nil
-		self._humanoid, self._root = nil, nil
+		self:_detach(true)
 		self:SetStatus("Flight disabled")
 	end
 	return feature
@@ -613,7 +866,7 @@ function API.UniversalModules.CreateAutoClicker(options)
 	options = options or {}
 	local feature = API.CreateFeature(options.Name or "Auto Clicker", {
 		ClicksPerSecond = options.ClicksPerSecond or 8,
-		ToggleKey = options.ToggleKey or Enum.KeyCode.V,
+		ToggleKey = options.ToggleKey or Enum.KeyCode.Unknown,
 	})
 	function feature:Click()
 		if not VirtualInputManager then return false, "VirtualInputManager unavailable" end
