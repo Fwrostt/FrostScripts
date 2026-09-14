@@ -403,6 +403,7 @@ function Window:_refreshFavoriteModule(module)
 	if module.FavoriteButton then
 		local favorite = self:IsFavorite(module.FavoriteId)
 		module.FavoriteIcon:FindFirstChild("HeartFill").Visible = favorite
+		module.FavoriteIcon:FindFirstChild("HeartOutline").Visible = not favorite
 		self:_tween(module.FavoriteButton, 0.12, { TextColor3 = favorite and THEME.Accent or THEME.Muted })
 	end
 	for _, proxy in ipairs(module.FavoriteProxies or {}) do

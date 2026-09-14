@@ -28,33 +28,19 @@ function Tab:AddScriptCard(entry, onLaunch)
 	end
 	local cover = create("Frame", { Name = "ScriptCover", ClipsDescendants = true,
 		BackgroundColor3 = THEME.Surface, BorderSizePixel = 0, Parent = module.Card }, { corner(10) })
-	local gradient = create("UIGradient", { Rotation = 25,
-		Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(90, 95, 110)), Parent = cover })
-	table.insert(self.Window._coverGradients, gradient)
 	local fallback = create("TextLabel", {
 		Name = "CoverFallback", Size = UDim2.fromScale(1, 1), Text = entry.Monogram or entry.Name:sub(1, 2):upper(),
 		TextSize = 36, Font = Enum.Font.BuilderSansBold, TextColor3 = THEME.Accent,
 		BackgroundTransparency = 1, Parent = cover,
 	})
-	local cardHovered = false
 	local image = create("ImageLabel", {
 		Name = "CustomCover", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1,
 		Image = Library.ImageContent(entry.Image),
-		ScaleType = type(entry.Image) == "table" and entry.Image.ScaleType == "Fit" and Enum.ScaleType.Fit or Enum.ScaleType.Crop,
+		ScaleType = Enum.ScaleType.Crop,
 		ZIndex = 2, Parent = cover,
 	}, { corner(10) })
 	image.Visible = image.Image ~= ""
-	local hoverWash = create("Frame", {
-		Name = "CardHoverWash", Size = UDim2.fromScale(1, 1), BackgroundColor3 = THEME.Accent,
-		BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 3, Parent = cover,
-	}, { corner(10) })
-	local hoverHint = create("TextLabel", {
-		Name = "CardHoverHint", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -10),
-		Size = UDim2.new(1, -20, 0, 18), BackgroundTransparency = 1, Text = "OPEN WORKSPACE",
-		TextColor3 = THEME.Text, TextTransparency = 1, Font = Enum.Font.BuilderSansBold, TextSize = 10,
-		Parent = cover, ZIndex = 4,
-	})
-	local function imageReady() fallback.Visible = not cardHovered and not (image.Visible and image.IsLoaded) end
+	local function imageReady() fallback.Visible = not (image.Visible and image.IsLoaded) end
 	self.Window:_connect(image:GetPropertyChangedSignal("IsLoaded"), imageReady)
 	imageReady()
 	if self.Window.ResolveCover then
@@ -83,12 +69,8 @@ function Tab:AddScriptCard(entry, onLaunch)
 	self.Window:_hover(button, THEME.Surface, THEME.SurfaceHover)
 	local cardStroke = module.Card:FindFirstChildWhichIsA("UIStroke")
 	local function setHovered(hovered)
-		cardHovered = hovered
-		imageReady()
 		self.Window:_tween(module.Card, 0.13, { BackgroundColor3 = hovered and THEME.Surface or THEME.PanelRaised })
 		if cardStroke then self.Window:_tween(cardStroke, 0.13, { Color = hovered and THEME.Accent or THEME.Border, Transparency = hovered and 0.65 or 0.5 }) end
-		self.Window:_tween(hoverWash, 0.13, { BackgroundTransparency = hovered and 0.96 or 1 })
-		self.Window:_tween(hoverHint, 0.13, { TextTransparency = hovered and hoverHint.Visible and 0 or 1 })
 		if hovered then self.Window:PlaySound("Hover") end
 	end
 	self.Window:_connect(module.Card.MouseEnter, function() setHovered(true) end)
@@ -103,7 +85,7 @@ function Tab:AddScriptCard(entry, onLaunch)
 			local compact = height < 100
 			local side = math.min(104, height - (compact and 20 or 24))
 			local left = side + 26
-			cover.Position, cover.Size = UDim2.fromOffset(compact and 10 or 12, compact and 10 or 12), UDim2.fromOffset(side, side)
+			cover.Position, cover.Size = UDim2.fromOffset(0, 0), UDim2.fromOffset(side, height)
 			local compactTitleHeight = compact and math.min(20, titleHeight) or titleHeight
 			title.Position, title.Size = UDim2.fromOffset(left, compact and 6 or 10), UDim2.new(1, -left - 12, 0, compactTitleHeight)
 			local descriptionTop = (compact and 8 or 14) + compactTitleHeight
@@ -114,18 +96,16 @@ function Tab:AddScriptCard(entry, onLaunch)
 			description.Position, description.Size = UDim2.fromOffset(left, descriptionTop), UDim2.new(1, -left - 12, 0, descriptionHeight)
 			description.Visible = descriptionHeight >= 12
 			button.Position, button.Size = UDim2.fromOffset(left, buttonY), UDim2.new(1, -left - 12, 0, buttonHeight)
-			hoverHint.Visible = side >= 84
 			status.Visible = false
 		else
 			local descriptionHeight = math.ceil(68 * textScale)
-			local coverHeight = height - 116 - titleHeight - descriptionHeight
-			cover.Position, cover.Size = UDim2.fromOffset(12, 12), UDim2.new(1, -24, 0, coverHeight)
-			title.Position, title.Size = UDim2.fromOffset(14, coverHeight + 24), UDim2.new(1, -28, 0, titleHeight)
-			description.Position, description.Size = UDim2.fromOffset(14, coverHeight + 31 + titleHeight), UDim2.new(1, -28, 0, descriptionHeight)
+			local coverHeight = math.max(0, height - 116 - titleHeight - descriptionHeight)
+			cover.Position, cover.Size = UDim2.fromOffset(0, 0), UDim2.new(1, 0, 0, coverHeight)
+			title.Position, title.Size = UDim2.fromOffset(14, coverHeight + 14), UDim2.new(1, -28, 0, titleHeight)
+			description.Position, description.Size = UDim2.fromOffset(14, coverHeight + 21 + titleHeight), UDim2.new(1, -28, 0, descriptionHeight)
 			description.Visible = true
 			button.Position, button.Size = UDim2.new(0, 12, 1, -68), UDim2.new(1, -24, 0, 38)
 			status.Position, status.Size = UDim2.new(0, 14, 1, -23), UDim2.new(1, -28, 0, 16)
-			hoverHint.Visible = coverHeight >= 84
 			status.Visible = true
 		end
 	end

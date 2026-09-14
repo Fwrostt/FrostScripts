@@ -21,7 +21,6 @@ local Editable = {
 
 	SearchPlaceholder = "Find a script...",
 	ScriptCount = "%d scripts in your collection",
-	CardHoverAction = "OPEN WORKSPACE",
 	LaunchAction = "Launch script",
 	LaunchHint = "Open while playing this game",
 	LoadingHint = "Preparing your workspace…",
@@ -153,7 +152,6 @@ return {
 		["Top Right"] = "Top Right",
 		["Bottom Left"] = "Bottom Left",
 		["Bottom Right"] = "Bottom Right",
-		["OPEN WORKSPACE"] = Editable.CardHoverAction,
 		["Off"] = "Off",
 		["On"] = "On",
 		["Open in the matching game"] = "Open in the matching game",

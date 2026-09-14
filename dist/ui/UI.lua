@@ -102,7 +102,7 @@ function Window:Text(value)
 	return self.Translate(value)
 end
 
--- Every palette keeps the same black foundation. Color belongs to small accents.
+-- Each palette owns its complete surface system. Accent colors never replace it.
 local THEMES = {
 	Black = {
 		Accent = Color3.fromRGB(220, 220, 226),
@@ -186,18 +186,20 @@ local THEMES = {
 	},
 }
 
-local foundation = {
-	Background = Color3.fromRGB(8, 8, 9),
-	Panel = Color3.fromRGB(12, 12, 13),
-	PanelRaised = Color3.fromRGB(18, 18, 20),
-	Surface = Color3.fromRGB(26, 26, 29),
-	SurfaceHover = Color3.fromRGB(34, 34, 38),
-	Border = Color3.fromRGB(48, 48, 53),
-	Text = Color3.fromRGB(241, 241, 244),
-	Muted = Color3.fromRGB(150, 150, 160),
+local SURFACES = {
+	Black = { Background = Color3.fromRGB(7, 7, 8), Panel = Color3.fromRGB(13, 13, 15), PanelRaised = Color3.fromRGB(21, 21, 24), Surface = Color3.fromRGB(29, 29, 33), SurfaceHover = Color3.fromRGB(43, 43, 49), Border = Color3.fromRGB(56, 56, 63), Text = Color3.fromRGB(245, 245, 247), Muted = Color3.fromRGB(165, 165, 175) },
+	Graphite = { Background = Color3.fromRGB(20, 22, 25), Panel = Color3.fromRGB(27, 29, 33), PanelRaised = Color3.fromRGB(35, 38, 43), Surface = Color3.fromRGB(44, 48, 54), SurfaceHover = Color3.fromRGB(60, 66, 74), Border = Color3.fromRGB(74, 81, 91), Text = Color3.fromRGB(241, 244, 248), Muted = Color3.fromRGB(176, 185, 198) },
+	Midnight = { Background = Color3.fromRGB(8, 12, 22), Panel = Color3.fromRGB(14, 20, 35), PanelRaised = Color3.fromRGB(21, 30, 48), Surface = Color3.fromRGB(30, 41, 64), SurfaceHover = Color3.fromRGB(44, 61, 89), Border = Color3.fromRGB(60, 80, 109), Text = Color3.fromRGB(239, 244, 254), Muted = Color3.fromRGB(161, 179, 207) },
+	Frost = { Background = Color3.fromRGB(11, 16, 20), Panel = Color3.fromRGB(17, 25, 31), PanelRaised = Color3.fromRGB(26, 36, 43), Surface = Color3.fromRGB(36, 49, 57), SurfaceHover = Color3.fromRGB(52, 74, 85), Border = Color3.fromRGB(69, 96, 108), Text = Color3.fromRGB(238, 248, 252), Muted = Color3.fromRGB(162, 189, 201) },
+	Amethyst = { Background = Color3.fromRGB(16, 13, 25), Panel = Color3.fromRGB(25, 20, 35), PanelRaised = Color3.fromRGB(35, 29, 49), Surface = Color3.fromRGB(48, 40, 63), SurfaceHover = Color3.fromRGB(73, 57, 92), Border = Color3.fromRGB(96, 80, 117), Text = Color3.fromRGB(246, 240, 254), Muted = Color3.fromRGB(187, 170, 207) },
+	Forest = { Background = Color3.fromRGB(11, 18, 15), Panel = Color3.fromRGB(18, 28, 23), PanelRaised = Color3.fromRGB(28, 40, 33), Surface = Color3.fromRGB(41, 55, 46), SurfaceHover = Color3.fromRGB(57, 78, 65), Border = Color3.fromRGB(74, 100, 83), Text = Color3.fromRGB(237, 247, 239), Muted = Color3.fromRGB(168, 192, 175) },
+	Ember = { Background = Color3.fromRGB(22, 15, 12), Panel = Color3.fromRGB(32, 23, 17), PanelRaised = Color3.fromRGB(44, 33, 25), Surface = Color3.fromRGB(58, 44, 34), SurfaceHover = Color3.fromRGB(82, 61, 46), Border = Color3.fromRGB(107, 80, 64), Text = Color3.fromRGB(255, 243, 233), Muted = Color3.fromRGB(203, 178, 161) },
+	Rose = { Background = Color3.fromRGB(22, 13, 18), Panel = Color3.fromRGB(32, 20, 27), PanelRaised = Color3.fromRGB(45, 30, 39), Surface = Color3.fromRGB(59, 41, 52), SurfaceHover = Color3.fromRGB(84, 59, 74), Border = Color3.fromRGB(108, 77, 96), Text = Color3.fromRGB(255, 240, 247), Muted = Color3.fromRGB(203, 174, 190) },
+	Neon = { Background = Color3.fromRGB(8, 13, 16), Panel = Color3.fromRGB(16, 25, 29), PanelRaised = Color3.fromRGB(23, 37, 43), Surface = Color3.fromRGB(32, 52, 58), SurfaceHover = Color3.fromRGB(47, 75, 82), Border = Color3.fromRGB(65, 98, 105), Text = Color3.fromRGB(238, 253, 255), Muted = Color3.fromRGB(160, 196, 201) },
+	Hayfield = { Background = Color3.fromRGB(20, 18, 9), Panel = Color3.fromRGB(30, 27, 16), PanelRaised = Color3.fromRGB(43, 38, 23), Surface = Color3.fromRGB(57, 51, 31), SurfaceHover = Color3.fromRGB(80, 71, 44), Border = Color3.fromRGB(105, 94, 60), Text = Color3.fromRGB(255, 248, 228), Muted = Color3.fromRGB(200, 189, 153) },
 }
-for _, palette in pairs(THEMES) do
-	for key, value in pairs(foundation) do palette[key] = value end
+for name, palette in pairs(THEMES) do
+	for key, value in pairs(SURFACES[name]) do palette[key] = value end
 end
 
 local function copyTheme(source)
@@ -581,6 +583,7 @@ function Window:_refreshFavoriteModule(module)
 	if module.FavoriteButton then
 		local favorite = self:IsFavorite(module.FavoriteId)
 		module.FavoriteIcon:FindFirstChild("HeartFill").Visible = favorite
+		module.FavoriteIcon:FindFirstChild("HeartOutline").Visible = not favorite
 		self:_tween(module.FavoriteButton, 0.12, { TextColor3 = favorite and THEME.Accent or THEME.Muted })
 	end
 	for _, proxy in ipairs(module.FavoriteProxies or {}) do
@@ -2227,80 +2230,87 @@ function Module:AddColorPicker(name, default, callback)
 	return control
 end
 
--- Asset-free line icons with a shared stroke weight and explicit favorite state.
-local function iconLine(root, x1, y1, x2, y2)
-	local dx, dy = x2 - x1, y2 - y1
+-- Solid native badges are more reliable than thin rotated lines in Roblox renderers.
+local function badgePiece(parent, name, position, size, transparency, rotation, radius)
 	return create("Frame", {
-		Name = "IconStroke", AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromOffset((x1 + x2) / 2, (y1 + y2) / 2),
-		Size = UDim2.fromOffset(math.sqrt(dx * dx + dy * dy), 1.6),
-		Rotation = math.deg(math.atan2(dy, dx)), BorderSizePixel = 0,
-		ZIndex = root.ZIndex, Parent = root,
-	}, { corner(1) })
+		Name = name, Position = position, Size = size, Rotation = rotation or 0,
+		BackgroundTransparency = transparency or 0, BorderSizePixel = 0, ZIndex = parent.ZIndex,
+		Parent = parent,
+	}, { corner(radius or math.max(2, math.floor(math.min(size.X.Offset, size.Y.Offset) / 3))) })
 end
 
-local HEART_POINTS = {
-	{10, 5}, {8, 3}, {5, 2.8}, {2.7, 4.2}, {2, 6.5}, {2.6, 9},
-	{4.5, 11.5}, {10, 17}, {15.5, 11.5}, {17.4, 9}, {18, 6.5},
-	{17.3, 4.2}, {15, 2.8}, {12, 3},
+local function makeLibrary(root)
+	badgePiece(root, "ScriptPage", UDim2.fromOffset(3, 1), UDim2.fromOffset(14, 18), 0.52)
+	badgePiece(root, "ScriptBinding", UDim2.fromOffset(3, 1), UDim2.fromOffset(3, 18), 0.05)
+	badgePiece(root, "ScriptLine", UDim2.fromOffset(9, 5), UDim2.fromOffset(5, 2), 0.08)
+	badgePiece(root, "ScriptLine", UDim2.fromOffset(9, 9), UDim2.fromOffset(6, 2), 0.22)
+	badgePiece(root, "ScriptLine", UDim2.fromOffset(9, 13), UDim2.fromOffset(4, 2), 0.38)
+end
+
+local function makeSliders(root)
+	for index, x in ipairs({ 12, 7, 13 }) do
+		local y = 3 + (index - 1) * 7
+		badgePiece(root, "Track", UDim2.fromOffset(2, y + 2), UDim2.fromOffset(16, 2), 0.62)
+		badgePiece(root, "Knob", UDim2.fromOffset(x, y), UDim2.fromOffset(5, 5), 0.08, nil, 3)
+	end
+end
+
+local function makeModules(root)
+	for index = 0, 2 do
+		badgePiece(root, "ModuleBar", UDim2.fromOffset(2, 2 + index * 7), UDim2.fromOffset(16, 3), index == 1 and 0.08 or 0.32)
+	end
+end
+
+local function makeMark(root)
+	for _, rotation in ipairs({ 0, 60, -60 }) do
+		badgePiece(root, "CrystalArm", UDim2.fromOffset(2, 9), UDim2.fromOffset(16, 2), 0.12, rotation)
+	end
+	badgePiece(root, "CrystalCenter", UDim2.fromOffset(7, 7), UDim2.fromOffset(6, 6), 0.03, 45)
+end
+
+local function heartPiece(parent, transparency)
+	badgePiece(parent, "HeartLobe", UDim2.fromOffset(2, 2), UDim2.fromOffset(10, 10), transparency, nil, 8)
+	badgePiece(parent, "HeartLobe", UDim2.fromOffset(8, 2), UDim2.fromOffset(10, 10), transparency, nil, 8)
+	badgePiece(parent, "HeartPoint", UDim2.fromOffset(4, 7), UDim2.fromOffset(12, 12), transparency, 45, 3)
+end
+
+local function makeFavorite(root)
+	local outline = create("Frame", { Name = "HeartOutline", Size = UDim2.fromScale(1, 1),
+		BackgroundTransparency = 1, ZIndex = root.ZIndex, Parent = root })
+	heartPiece(outline, 0.68)
+	local fill = create("Frame", { Name = "HeartFill", Size = UDim2.fromScale(1, 1),
+		BackgroundTransparency = 1, Visible = false, ZIndex = root.ZIndex, Parent = root })
+	heartPiece(fill, 0.04)
+end
+
+local ICON_BUILDERS = {
+	library = makeLibrary,
+	modules = makeModules,
+	settings = makeSliders,
+	controls = makeSliders,
+	favorites = makeFavorite,
+	snowflake = makeMark,
 }
 
 function Window:_attachIcon(host, name)
 	host.Text = ""
+	if name == "home" then
+		local image = create("ImageLabel", {
+			Name = "NavigationHome", Size = UDim2.fromOffset(20, 20),
+			AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
+			BackgroundTransparency = 1, Image = "rbxassetid://7733960981", ImageColor3 = host.TextColor3,
+			ScaleType = Enum.ScaleType.Fit, ZIndex = host.ZIndex, Parent = host,
+		})
+		self:_connect(host:GetPropertyChangedSignal("TextColor3"), function() image.ImageColor3 = host.TextColor3 end)
+		return image
+	end
 	local root = create("Frame", {
 		Name = "NavigationBadge_" .. name, Size = UDim2.fromOffset(20, 20),
 		AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
 		BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = host.ZIndex, Parent = host,
 	})
-	local function path(points, closed)
-		for index = 1, #points - (closed and 0 or 1) do
-			local a, b = points[index], points[index % #points + 1]
-			iconLine(root, a[1], a[2], b[1], b[2])
-		end
-	end
-	if name == "favorites" then
-		path(HEART_POINTS, true)
-		local fill = create("Frame", { Name = "HeartFill", Size = UDim2.fromScale(1, 1),
-			BackgroundTransparency = 1, Visible = false, ZIndex = host.ZIndex, Parent = root })
-		-- Interior shares the outline contour. Only saved favorites show the fill.
-		for y = 3, 16 do
-			local intersections = {}
-			for index, a in ipairs(HEART_POINTS) do
-				local b = HEART_POINTS[index % #HEART_POINTS + 1]
-				if (a[2] <= y and b[2] > y) or (b[2] <= y and a[2] > y) then
-					table.insert(intersections, a[1] + (y - a[2]) * (b[1] - a[1]) / (b[2] - a[2]))
-				end
-			end
-			table.sort(intersections)
-			for index = 1, #intersections - 1, 2 do
-				create("Frame", { Name = "HeartInterior", Position = UDim2.fromOffset(intersections[index], y),
-					Size = UDim2.fromOffset(intersections[index + 1] - intersections[index], 1),
-					BorderSizePixel = 0, ZIndex = host.ZIndex, Parent = fill })
-			end
-		end
-	elseif name == "home" then
-		path({{2, 9}, {10, 2}, {18, 9}})
-		path({{4, 8}, {4, 18}, {8, 18}, {8, 12}, {12, 12}, {12, 18}, {16, 18}, {16, 8}})
-	elseif name == "library" then
-		path({{4, 2}, {16, 2}, {16, 18}, {4, 18}}, true)
-		iconLine(root, 7, 2, 7, 18)
-		iconLine(root, 10, 7, 13, 7); iconLine(root, 10, 11, 13, 11)
-	elseif name == "modules" then
-		for _, position in ipairs({{2, 2}, {12, 2}, {2, 12}, {12, 12}}) do
-			local x, y = position[1], position[2]
-			path({{x, y}, {x + 6, y}, {x + 6, y + 6}, {x, y + 6}}, true)
-		end
-	elseif name == "snowflake" then
-		for _, rotation in ipairs({0, 60, 120}) do
-			local arm = iconLine(root, 2, 10, 18, 10); arm.Rotation = rotation
-		end
-	else
-		for index, x in ipairs({12, 6, 12}) do
-			local y = 4 + (index - 1) * 6
-			iconLine(root, 2, y, x - 2, y); iconLine(root, x + 2, y, 18, y)
-			path({{x - 2, y - 2}, {x + 2, y - 2}, {x + 2, y + 2}, {x - 2, y + 2}}, true)
-		end
-	end
+	local buildBadge = ICON_BUILDERS[name] or makeSliders
+	buildBadge(root)
 	local function tint()
 		for _, piece in ipairs(root:GetDescendants()) do
 			if piece:IsA("Frame") then piece.BackgroundColor3 = host.TextColor3 end
@@ -2313,7 +2323,7 @@ end
 
 -- Inline palette previews, with separate hover and selected treatments.
 function Window:AddThemeGallery(tab)
-	local module = tab:AddModule({ Name = "Themes", Description = "Choose an accent. Every palette keeps the black foundation.", Expanded = true })
+	local module = tab:AddModule({ Name = "Themes", Description = "Choose a complete palette for your workspace.", Expanded = true })
 	local row = module:_row(348)
 	row.Name, row.BackgroundTransparency = "ThemeGallery", 1
 	local layout = create("UIGridLayout", { CellSize = UDim2.new(1 / 3, -8, 0, 78),
@@ -2672,33 +2682,19 @@ function Tab:AddScriptCard(entry, onLaunch)
 	end
 	local cover = create("Frame", { Name = "ScriptCover", ClipsDescendants = true,
 		BackgroundColor3 = THEME.Surface, BorderSizePixel = 0, Parent = module.Card }, { corner(10) })
-	local gradient = create("UIGradient", { Rotation = 25,
-		Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(90, 95, 110)), Parent = cover })
-	table.insert(self.Window._coverGradients, gradient)
 	local fallback = create("TextLabel", {
 		Name = "CoverFallback", Size = UDim2.fromScale(1, 1), Text = entry.Monogram or entry.Name:sub(1, 2):upper(),
 		TextSize = 36, Font = Enum.Font.BuilderSansBold, TextColor3 = THEME.Accent,
 		BackgroundTransparency = 1, Parent = cover,
 	})
-	local cardHovered = false
 	local image = create("ImageLabel", {
 		Name = "CustomCover", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1,
 		Image = Library.ImageContent(entry.Image),
-		ScaleType = type(entry.Image) == "table" and entry.Image.ScaleType == "Fit" and Enum.ScaleType.Fit or Enum.ScaleType.Crop,
+		ScaleType = Enum.ScaleType.Crop,
 		ZIndex = 2, Parent = cover,
 	}, { corner(10) })
 	image.Visible = image.Image ~= ""
-	local hoverWash = create("Frame", {
-		Name = "CardHoverWash", Size = UDim2.fromScale(1, 1), BackgroundColor3 = THEME.Accent,
-		BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 3, Parent = cover,
-	}, { corner(10) })
-	local hoverHint = create("TextLabel", {
-		Name = "CardHoverHint", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -10),
-		Size = UDim2.new(1, -20, 0, 18), BackgroundTransparency = 1, Text = "OPEN WORKSPACE",
-		TextColor3 = THEME.Text, TextTransparency = 1, Font = Enum.Font.BuilderSansBold, TextSize = 10,
-		Parent = cover, ZIndex = 4,
-	})
-	local function imageReady() fallback.Visible = not cardHovered and not (image.Visible and image.IsLoaded) end
+	local function imageReady() fallback.Visible = not (image.Visible and image.IsLoaded) end
 	self.Window:_connect(image:GetPropertyChangedSignal("IsLoaded"), imageReady)
 	imageReady()
 	if self.Window.ResolveCover then
@@ -2727,12 +2723,8 @@ function Tab:AddScriptCard(entry, onLaunch)
 	self.Window:_hover(button, THEME.Surface, THEME.SurfaceHover)
 	local cardStroke = module.Card:FindFirstChildWhichIsA("UIStroke")
 	local function setHovered(hovered)
-		cardHovered = hovered
-		imageReady()
 		self.Window:_tween(module.Card, 0.13, { BackgroundColor3 = hovered and THEME.Surface or THEME.PanelRaised })
 		if cardStroke then self.Window:_tween(cardStroke, 0.13, { Color = hovered and THEME.Accent or THEME.Border, Transparency = hovered and 0.65 or 0.5 }) end
-		self.Window:_tween(hoverWash, 0.13, { BackgroundTransparency = hovered and 0.96 or 1 })
-		self.Window:_tween(hoverHint, 0.13, { TextTransparency = hovered and hoverHint.Visible and 0 or 1 })
 		if hovered then self.Window:PlaySound("Hover") end
 	end
 	self.Window:_connect(module.Card.MouseEnter, function() setHovered(true) end)
@@ -2747,7 +2739,7 @@ function Tab:AddScriptCard(entry, onLaunch)
 			local compact = height < 100
 			local side = math.min(104, height - (compact and 20 or 24))
 			local left = side + 26
-			cover.Position, cover.Size = UDim2.fromOffset(compact and 10 or 12, compact and 10 or 12), UDim2.fromOffset(side, side)
+			cover.Position, cover.Size = UDim2.fromOffset(0, 0), UDim2.fromOffset(side, height)
 			local compactTitleHeight = compact and math.min(20, titleHeight) or titleHeight
 			title.Position, title.Size = UDim2.fromOffset(left, compact and 6 or 10), UDim2.new(1, -left - 12, 0, compactTitleHeight)
 			local descriptionTop = (compact and 8 or 14) + compactTitleHeight
@@ -2758,18 +2750,16 @@ function Tab:AddScriptCard(entry, onLaunch)
 			description.Position, description.Size = UDim2.fromOffset(left, descriptionTop), UDim2.new(1, -left - 12, 0, descriptionHeight)
 			description.Visible = descriptionHeight >= 12
 			button.Position, button.Size = UDim2.fromOffset(left, buttonY), UDim2.new(1, -left - 12, 0, buttonHeight)
-			hoverHint.Visible = side >= 84
 			status.Visible = false
 		else
 			local descriptionHeight = math.ceil(68 * textScale)
-			local coverHeight = height - 116 - titleHeight - descriptionHeight
-			cover.Position, cover.Size = UDim2.fromOffset(12, 12), UDim2.new(1, -24, 0, coverHeight)
-			title.Position, title.Size = UDim2.fromOffset(14, coverHeight + 24), UDim2.new(1, -28, 0, titleHeight)
-			description.Position, description.Size = UDim2.fromOffset(14, coverHeight + 31 + titleHeight), UDim2.new(1, -28, 0, descriptionHeight)
+			local coverHeight = math.max(0, height - 116 - titleHeight - descriptionHeight)
+			cover.Position, cover.Size = UDim2.fromOffset(0, 0), UDim2.new(1, 0, 0, coverHeight)
+			title.Position, title.Size = UDim2.fromOffset(14, coverHeight + 14), UDim2.new(1, -28, 0, titleHeight)
+			description.Position, description.Size = UDim2.fromOffset(14, coverHeight + 21 + titleHeight), UDim2.new(1, -28, 0, descriptionHeight)
 			description.Visible = true
 			button.Position, button.Size = UDim2.new(0, 12, 1, -68), UDim2.new(1, -24, 0, 38)
 			status.Position, status.Size = UDim2.new(0, 14, 1, -23), UDim2.new(1, -28, 0, 16)
-			hoverHint.Visible = coverHeight >= 84
 			status.Visible = true
 		end
 	end
