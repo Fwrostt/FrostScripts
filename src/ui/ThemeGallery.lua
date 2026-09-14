@@ -1,6 +1,6 @@
 -- Inline palette previews, with separate hover and selected treatments.
 function Window:AddThemeGallery(tab)
-	local module = tab:AddModule({ Name = "Themes", Description = "Choose a palette. Your whole workspace changes together.", Expanded = true })
+	local module = tab:AddModule({ Name = "Themes", Description = "Choose an accent. Every palette keeps the black foundation.", Expanded = true })
 	local row = module:_row(348)
 	row.Name, row.BackgroundTransparency = "ThemeGallery", 1
 	local layout = create("UIGridLayout", { CellSize = UDim2.new(1 / 3, -8, 0, 78),

@@ -43,10 +43,10 @@ end)()
 API.UIState = (function()
 -- UI defaults only. Feature settings belong to their game modules.
 return {
-	DesignRevision = 5,
+	DesignRevision = 6,
 	Animations = true,
-	-- Ambient motion is deliberately lightweight (two ribbons at 15 fps).
-	BackgroundEffects = true,
+	-- Keep the black foundation clean; decorative motion is opt-in.
+	BackgroundEffects = false,
 	BackgroundAnimations = true,
 	Sounds = true,
 	SoundVolume = 0.18,

@@ -1581,35 +1581,35 @@ local Modules = Interface:AddTab("Modules", "modules", "Fast, respawn-safe tools
 local Settings = Interface:AddTab("UI Settings", "settings", "Appearance, motion, sound, and mobile controls")
 Modules:SetCategories({ "All", "Movement", "Character", "Camera", "World", "Players", "Server", "Navigation", "Performance", "Fun", "Utility", "HUD" }, "All")
 
-local overview = Home:AddModule({ Name = "Universal ready", Description = "A focused suite of tested local tools", Accent = true, Collapsible = false })
-local overviewText = overview:AddParagraph("Catalog", "Loading modules…", { Height = 62 })
+local overview = Home:AddModule({ Frameless = true, Name = "Universal ready", Description = "A focused suite of tested local tools", Collapsible = false })
+local overviewText = overview:AddParagraph("Catalog", "Loading modules…", { Height = 52, Plain = true })
 
-local quick = Home:AddModule({ Name = "Quick Actions", Description = "The eight controls most useful across Roblox", Collapsible = false })
+local quick = Home:AddModule({ Frameless = true, Name = "Quick Actions", Description = "The eight controls most useful across Roblox", Collapsible = false })
 local quickFeatures = {
-	{ Label = "FLY", Feature = Flight }, { Label = "NOCLIP", Feature = Noclip }, { Label = "SPEED", Feature = Speed },
-	{ Label = "INFINITE JUMP", Feature = InfiniteJump }, { Label = "FREECAM", Feature = Freecam },
-	{ Label = "FULLBRIGHT", Feature = Fullbright }, { Label = "ANTI-AFK", Feature = AntiAFK }, { Label = "FPS BOOST", Feature = FPSBoost },
+	{ Label = "Flight", Feature = Flight }, { Label = "Noclip", Feature = Noclip }, { Label = "Speed", Feature = Speed },
+	{ Label = "Infinite Jump", Feature = InfiniteJump }, { Label = "Freecam", Feature = Freecam },
+	{ Label = "Fullbright", Feature = Fullbright }, { Label = "Anti-AFK", Feature = AntiAFK }, { Label = "FPS Boost", Feature = FPSBoost },
 }
 local actionSpecs = {}
 for _, item in ipairs(quickFeatures) do table.insert(actionSpecs, { Name = item.Label, Active = item.Feature.Enabled,
 	Callback = function() item.Feature:SetEnabled(not item.Feature.Enabled) end }) end
-local quickControls = quick:AddActionGrid(actionSpecs, { Columns = 2, ButtonHeight = 42 })
+local quickControls = quick:AddActionGrid(actionSpecs, { Columns = 4, MinCellWidth = 140, ButtonHeight = 42 })
 
-local status = Home:AddModule({ Name = "Status", Description = "Live session telemetry", Collapsible = false })
-local statusText = status:AddParagraph("Current session", "FPS —  |  Ping —  |  0 Modules Active", { Height = 82 })
+local status = Home:AddModule({ Frameless = true, Name = "Status", Description = "Live session telemetry", Collapsible = false })
+local statusText = status:AddParagraph("Current session", "FPS —  |  Ping —  |  0 Modules Active", { Height = 66, Plain = true })
 
-local recentlyUsed = Home:AddModule({ Name = "Recently Used", Description = "Your five latest module activations and commands", Collapsible = false })
-Interface.RecentText = recentlyUsed:AddParagraph("History", "Nothing used yet", { Height = 52 })
+local recentlyUsed = Home:AddModule({ Frameless = true, Name = "Recently Used", Description = "Your five latest module activations and commands", Collapsible = false })
+Interface.RecentText = recentlyUsed:AddParagraph("History", "Nothing used yet", { Height = 52, Plain = true })
 
-local targetCard = Home:AddModule({ Name = "Player Target", Description = "Used by goto, spectate, follow, highlight, and player HUDs", Collapsible = false })
+local targetCard = Home:AddModule({ Frameless = true, Name = "Player Target", Description = "Used by goto, spectate, follow, highlight, and player HUDs", Collapsible = false })
 targetCard:AddTextInput("Username or display name", "", function(value) selectedPlayerQuery = value end, { Placeholder = "PlayerName" })
 
-local commandCard = Home:AddModule({ Name = "Command Bar", Description = "Commands: fly, noclip, speed, jump, goto, spectate, follow, freecam, fov, fullbright, nofog, day, night, savepos, loadpos, serverhop, panic", Collapsible = false })
+local commandCard = Home:AddModule({ Frameless = true, Name = "Command Bar", Description = "Commands: fly, noclip, speed, jump, goto, spectate, follow, freecam, fov, fullbright, nofog, day, night, savepos, loadpos, serverhop, panic", Collapsible = false })
 local pendingCommand = ""
 commandCard:AddTextInput("Command", "", function(value) pendingCommand = value end, { Placeholder = "flyspeed 50" })
 commandCard:AddButton("Run Command", function() runCommand(pendingCommand) end)
 
-local session = Home:AddModule({ Name = "Session Controls", Description = "Server actions and emergency cleanup", Collapsible = false })
+local session = Home:AddModule({ Frameless = true, Name = "Session Controls", Description = "Server actions and emergency cleanup", Collapsible = false })
 session:AddButton("Rejoin current server", rejoin)
 session:AddButton("Disable all modules", stopAll, { Danger = true })
 

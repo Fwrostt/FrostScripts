@@ -379,11 +379,12 @@ function Window:SelectTab(tab)
 	self.Search.Parent.Size = UDim2.new(1, tab.ItemNoun == "scripts" and 0 or (categorized and -230 or -92), 1, 0)
 	self.Content.Position = UDim2.fromOffset(20, searchable and 142 or 94)
 	self.Content.Size = UDim2.new(1, -40, 1, searchable and -186 or -138)
+	self:_layoutToolbar()
 	self:SetActiveOnly(self.ActiveOnly)
 	for _, item in ipairs(self.Tabs) do
 		local selected = item == tab
 		item.Page.Visible = selected
-		self:_tween(item.Button, 0.14, { BackgroundColor3 = selected and THEME.AccentSoft or THEME.Panel })
+		self:_tween(item.Button, 0.14, { BackgroundColor3 = selected and THEME.Surface or THEME.Panel })
 		self:_tween(item.Label, 0.14, { TextColor3 = selected and THEME.Text or THEME.Muted })
 		self:_tween(item.IconLabel, 0.14, { TextColor3 = selected and THEME.Accent or THEME.Muted })
 		item.Indicator.BackgroundTransparency = selected and 0 or 1
@@ -401,8 +402,8 @@ end
 function Window:_refreshFavoriteModule(module)
 	if module.FavoriteButton then
 		local favorite = self:IsFavorite(module.FavoriteId)
-		module.FavoriteButton.Text = favorite and "★" or "☆"
-		module.FavoriteButton.TextColor3 = favorite and THEME.Accent or THEME.Muted
+		module.FavoriteIcon:FindFirstChild("HeartFill").Visible = favorite
+		self:_tween(module.FavoriteButton, 0.12, { TextColor3 = favorite and THEME.Accent or THEME.Muted })
 	end
 	for _, proxy in ipairs(module.FavoriteProxies or {}) do
 		proxy.Card.Visible = self:IsFavorite(module.FavoriteId)
@@ -518,7 +519,7 @@ function Window:AddTab(name, icon, subtitle)
 		Parent = tab.Page,
 	}, {
 		create("UIListLayout", {
-			Padding = UDim.new(0, 14),
+			Padding = UDim.new(0, 10),
 			SortOrder = Enum.SortOrder.LayoutOrder,
 			HorizontalAlignment = Enum.HorizontalAlignment.Center,
 		}),
@@ -529,7 +530,7 @@ function Window:AddTab(name, icon, subtitle)
 	})
 	local button = create("TextButton", {
 		Name = name,
-		Size = UDim2.new(1, 0, 0, 50),
+		Size = UDim2.new(1, 0, 0, 44),
 		LayoutOrder = #self.Tabs + 1,
 		AutoButtonColor = false,
 		BackgroundColor3 = THEME.Panel,
@@ -538,8 +539,8 @@ function Window:AddTab(name, icon, subtitle)
 		Parent = self.Navigation,
 	}, { corner(10) })
 	local indicator = create("Frame", {
-		Position = UDim2.fromOffset(4, 10),
-		Size = UDim2.fromOffset(3, 30),
+		Position = UDim2.fromOffset(0, 14),
+		Size = UDim2.fromOffset(1, 16),
 		BackgroundColor3 = THEME.Accent,
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
@@ -547,7 +548,7 @@ function Window:AddTab(name, icon, subtitle)
 		Parent = button,
 	}, { corner(3) })
 	local iconLabel = create("TextLabel", {
-		Position = UDim2.fromOffset(self._compact and 9 or 14, 10),
+		Position = UDim2.fromOffset(self._compact and 8 or 13, 8),
 		Size = UDim2.fromOffset(28, 28),
 		BackgroundTransparency = 1,
 		Text = tostring(tab.Icon),
@@ -563,7 +564,7 @@ function Window:AddTab(name, icon, subtitle)
 		Text = name,
 		TextColor3 = THEME.Muted,
 		TextXAlignment = Enum.TextXAlignment.Left,
-		Font = Enum.Font.BuilderSansBold,
+		Font = Enum.Font.BuilderSansMedium,
 		TextSize = 14,
 		Parent = button,
 	})
@@ -637,6 +638,7 @@ function Module:SetEnabled(enabled, silent)
 	self.Window:_tween(self.Status, 0.12, { TextColor3 = enabled and THEME.Success or THEME.Muted })
 	self.Window:_tween(self.Accent, 0.14, {
 		BackgroundColor3 = enabled and THEME.Accent or THEME.Border,
+		BackgroundTransparency = enabled and 0 or 1,
 	})
 	for _, proxy in ipairs(self.FavoriteProxies or {}) do
 		if proxy.Toggle and proxy.Toggle.Value ~= enabled then proxy.Toggle:SetValue(enabled, true) end
@@ -728,6 +730,7 @@ function Module:AddToggle(name, default, callback, description)
 		})
 		self.Module.Window:_tween(knob, 0.14, {
 			Position = self.Value and UDim2.fromOffset(23, 3) or UDim2.fromOffset(3, 3),
+			BackgroundColor3 = self.Value and THEME.Background or THEME.Text,
 		})
 		if not silent then safeCall(self.Module.Window, callback, self.Value) end
 	end
@@ -751,6 +754,9 @@ function Module:AddActionGrid(actions, options)
 	local buttonHeight = options.ButtonHeight or 42
 	local rows = math.ceil(#actions / columns)
 	local row = self:_row(rows * buttonHeight + math.max(0, rows - 1) * 8)
+	row.BackgroundTransparency = 1
+	local rowStroke = row:FindFirstChildWhichIsA("UIStroke")
+	if rowStroke then rowStroke:Destroy() end
 	local grid = create("UIGridLayout", {
 		CellSize = UDim2.new(1 / columns, -6, 0, buttonHeight),
 		CellPadding = UDim2.fromOffset(8, 8),
@@ -758,6 +764,12 @@ function Module:AddActionGrid(actions, options)
 		HorizontalAlignment = Enum.HorizontalAlignment.Center,
 		Parent = row,
 	})
+	if options.MinCellWidth then
+		self.Window._actionGrids = self.Window._actionGrids or {}
+		table.insert(self.Window._actionGrids, { Module = self, Row = row, Grid = grid,
+			Count = #actions, Columns = columns, MinCellWidth = options.MinCellWidth, ButtonHeight = buttonHeight })
+		self.Window:_layoutActionGrids()
+	end
 	local controls = {}
 	for index, action in ipairs(actions) do
 		local button = create("TextButton", {
@@ -789,6 +801,18 @@ function Module:AddActionGrid(actions, options)
 		table.insert(controls, control)
 	end
 	return controls, grid
+end
+
+function Window:_layoutActionGrids()
+	if not self.TargetSize then return end
+	local available = self.TargetSize.X - (self._compact and 68 or 192) - 40 - CARD_HORIZONTAL_GUTTER - CARD_BODY_INSET * 2
+	for _, item in ipairs(self._actionGrids or {}) do
+		local columns = math.clamp(math.floor((available + 8) / (item.MinCellWidth + 8)), 1, item.Columns)
+		local rows = math.ceil(item.Count / columns)
+		item.Grid.CellSize = UDim2.new(1 / columns, -6, 0, item.ButtonHeight)
+		item.Row.Size = UDim2.new(1, 0, 0, rows * item.ButtonHeight + (rows - 1) * 8)
+		item.Module:_refreshHeight()
+	end
 end
 
 function Module:AddSlider(name, minimum, maximum, default, callback, options)
@@ -1127,6 +1151,11 @@ function Module:AddParagraph(title, text, options)
 	self:_index(text)
 	options = options or {}
 	local row = self:_row(options.Height or 66)
+	if options.Plain then
+		row.BackgroundTransparency = 1
+		local border = row:FindFirstChildWhichIsA("UIStroke")
+		if border then border:Destroy() end
+	end
 	create("TextLabel", {
 		Position = UDim2.fromOffset(14, 8),
 		Size = UDim2.new(1, -28, 0, 20),
@@ -1180,16 +1209,18 @@ function Tab:AddModule(options)
 		Name = module.Name,
 		Size = UDim2.new(1, -CARD_HORIZONTAL_GUTTER, 0, module.HeaderHeight),
 		BackgroundColor3 = THEME.PanelRaised,
+		BackgroundTransparency = options.Frameless and 1 or 0,
 		BorderSizePixel = 0,
 		ClipsDescendants = true,
 		Active = true,
 		LayoutOrder = #self.Modules + 1,
 		Parent = self.Scroll,
-	}, { corner(13), stroke(THEME.Border, 0.25) })
+	}, { corner(12), stroke(THEME.Border, options.Frameless and 1 or 0.5) })
 	module.Accent = create("Frame", {
-		Position = UDim2.fromOffset(4, 10),
-		Size = UDim2.fromOffset(3, math.max(20, module.HeaderHeight - 20)),
+		Position = UDim2.fromOffset(0, 18),
+		Size = UDim2.fromOffset(1, math.max(16, module.HeaderHeight - 36)),
 		BackgroundColor3 = options.Accent and THEME.Accent or THEME.Border,
+		BackgroundTransparency = options.Accent and 0 or 1,
 		BorderSizePixel = 0,
 		ZIndex = 3,
 		Parent = module.Card,
@@ -1217,7 +1248,7 @@ function Tab:AddModule(options)
 		TextSize = 12,
 		Parent = module.Card,
 	})
-	module.Chevron = chevron(module.Card, UDim2.new(1, options.Toggleable and -100 or -36, 0, 25))
+	module.Chevron = chevron(module.Card, UDim2.new(1, options.Toggleable and -100 or -36, 0, (module.HeaderHeight - 18) / 2))
 	module.Chevron.Visible = module.Collapsible
 	local headerButton = create("TextButton", {
 		Size = UDim2.new(1, options.Toggleable and -78 or 0, 0, module.HeaderHeight),
@@ -1265,8 +1296,8 @@ function Tab:AddModule(options)
 		end
 		local toggleButton = create("TextButton", {
 			AnchorPoint = Vector2.new(1, 0),
-			Position = UDim2.new(1, -22, 0, 18),
-			Size = UDim2.fromOffset(48, 26),
+			Position = UDim2.new(1, -22, 0, (module.HeaderHeight - 24) / 2),
+			Size = UDim2.fromOffset(44, 24),
 			AutoButtonColor = false,
 			BackgroundColor3 = THEME.Surface,
 			BorderSizePixel = 0,
@@ -1276,7 +1307,7 @@ function Tab:AddModule(options)
 		}, { corner(12) })
 		local knob = create("Frame", {
 			Position = UDim2.fromOffset(3, 3),
-			Size = UDim2.fromOffset(20, 20),
+			Size = UDim2.fromOffset(18, 18),
 			BackgroundColor3 = THEME.Text,
 			BorderSizePixel = 0,
 			ZIndex = 6,
@@ -1288,7 +1319,8 @@ function Tab:AddModule(options)
 				BackgroundColor3 = self.Value and THEME.Accent or THEME.Surface,
 			})
 			self.Module.Window:_tween(knob, 0.14, {
-				Position = self.Value and UDim2.fromOffset(25, 3) or UDim2.fromOffset(3, 3),
+				Position = self.Value and UDim2.fromOffset(23, 3) or UDim2.fromOffset(3, 3),
+				BackgroundColor3 = self.Value and THEME.Background or THEME.Text,
 			})
 			self.Module:SetEnabled(self.Value, silent)
 			if not silent then safeCall(self.Module.Window, options.Callback, self.Value) end
@@ -1307,19 +1339,26 @@ function Tab:AddModule(options)
 	if module.FavoriteId then
 		module.FavoriteButton = create("TextButton", {
 			Name = "FavoriteButton",
-			Position = UDim2.new(1, options.Toggleable and -142 or -76, 0, 12),
-			Size = UDim2.fromOffset(36, 34),
+			Position = UDim2.new(1, options.Toggleable and -146 or -80, 0, (module.HeaderHeight - 44) / 2),
+			Size = UDim2.fromOffset(44, 44),
 			BackgroundColor3 = THEME.Surface,
+			BackgroundTransparency = 1,
 			BorderSizePixel = 0,
-			Text = "☆",
+			Text = "",
 			TextColor3 = THEME.Muted,
 			TextSize = 20,
 			Font = Enum.Font.BuilderSansBold,
 			AutoButtonColor = false,
 			ZIndex = 8,
 			Parent = module.Card,
-		}, { corner(9), stroke(THEME.Border, 0.45) })
-		self.Window:_hover(module.FavoriteButton, THEME.Surface, THEME.SurfaceHover)
+		}, { corner(9) })
+		module.FavoriteIcon = self.Window:_attachIcon(module.FavoriteButton, "favorites")
+		self.Window:_connect(module.FavoriteButton.MouseEnter, function()
+			self.Window:_tween(module.FavoriteButton, 0.12, { BackgroundTransparency = 0.5 })
+		end)
+		self.Window:_connect(module.FavoriteButton.MouseLeave, function()
+			self.Window:_tween(module.FavoriteButton, 0.12, { BackgroundTransparency = 1 })
+		end)
 		self.Window:_connect(module.FavoriteButton.Activated, function() module:SetFavorite(not module:IsFavorite()) end)
 		table.insert(self.Window._favoriteModules, module)
 		if module:IsFavorite() then
@@ -1910,7 +1949,7 @@ function Window:_applyTheme()
 	if self.ActiveTab then
 		for _, item in ipairs(self.Tabs) do
 			local selected = item == self.ActiveTab
-			item.Button.BackgroundColor3 = selected and THEME.AccentSoft or THEME.Panel
+			item.Button.BackgroundColor3 = selected and THEME.Surface or THEME.Panel
 			item.Label.TextColor3 = selected and THEME.Text or THEME.Muted
 			item.IconLabel.TextColor3 = selected and THEME.Accent or THEME.Muted
 			item.IconLabel.BackgroundColor3 = selected and THEME.AccentSoft or THEME.Surface
@@ -1918,6 +1957,7 @@ function Window:_applyTheme()
 			item.Indicator.BackgroundTransparency = selected and 0 or 1
 		end
 	end
+	for _, module in ipairs(self._favoriteModules) do self:_refreshFavoriteModule(module) end
 end
 
 function Window:SetTheme(themeName)

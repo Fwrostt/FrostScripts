@@ -25,9 +25,11 @@ function Window:_resizeWindow(animate)
 	self.Logo.Position = UDim2.fromOffset(compact and 14 or 20, 24)
 	for _, tab in ipairs(self.Tabs) do
 		tab.Label.Visible = not compact
-		tab.IconLabel.Position = UDim2.fromOffset(compact and 8 or 13, 12)
+		tab.IconLabel.Position = UDim2.fromOffset(compact and 8 or 13, 8)
 	end
 	self._compact = compact
+	self:_layoutActionGrids()
+	self:_layoutToolbar()
 	self:_layoutScriptCards()
 	self:_layoutDashboardCards()
 	for _, gallery in ipairs(self.ThemeGalleries or {}) do gallery:Layout() end
@@ -62,7 +64,7 @@ function Window:_layoutScriptCards()
 			end
 			local rows = math.ceil(count / columns)
 			local fittedHeight = math.max(54, math.floor((availableHeight - 8 - (rows - 1) * 12) / rows))
-			local preferredHeight = 310 + math.ceil((self.TextScale - 1) * 72)
+			local preferredHeight = 326 + math.ceil((self.TextScale - 1) * 88)
 			local vertical = columns > 1 and rows == 1 and fittedHeight >= 270
 			local height = vertical and math.min(preferredHeight, fittedHeight) or fittedHeight
 			local offset = columns == 3 and -12 or columns == 2 and -10 or -8
@@ -70,6 +72,23 @@ function Window:_layoutScriptCards()
 			for _, card in ipairs(tab.ScriptCards) do card:Layout(not vertical, height) end
 		end
 	end
+end
+
+function Window:_layoutToolbar()
+	local tab = self.ActiveTab
+	if not tab then return end
+	local searchable = tab.SearchEnabled ~= false
+	local categorized = searchable and tab.Categories and #tab.Categories > 0
+	local stacked = self._compact and categorized
+	self.Toolbar.Size = UDim2.new(1, -40, 0, stacked and 88 or 40)
+	self.Search.Parent.Size = UDim2.new(1, (stacked or tab.ItemNoun == "scripts") and 0 or (categorized and -230 or -92), 0, 40)
+	self.CategoryFilter.Position = stacked and UDim2.fromOffset(0, 48) or UDim2.new(1, -216, 0, 0)
+	self.ActiveFilter.Position = UDim2.new(1, -78, 0, stacked and 48 or 0)
+	local contentY = searchable and (stacked and 190 or 142) or 94
+	self.Content.Position = UDim2.fromOffset(20, contentY)
+	self.Content.Size = UDim2.new(1, -40, 1, -contentY - 44)
+	self.SearchHint.Visible = searchable and not self._compact
+	self.Footer.Size = UDim2.new(1, self._compact and -48 or -180, 0, 20)
 end
 
 function Window:_refreshSearch()
@@ -89,7 +108,7 @@ function Window:_refreshSearch()
 		if module.Enabled then active += 1 end
 	end
 	self.Empty.Visible = shown == 0
-	self.Empty.Text = tab.FavoritesView and "No favorites yet\nUse the star on any module to pin it here."
+	self.Empty.Text = tab.FavoritesView and "No favorites yet\nUse the heart on any module to pin it here."
 		or #tab.Modules == 0 and "Your workspace is ready.\nAdd a module to get started."
 		or "No matching modules\nTry a different search or turn off Active."
 	self.Footer.Text = tab.StatusText or (tab.ItemNoun == "scripts" and string.format("%d scripts in your collection", shown)
@@ -320,9 +339,9 @@ function Library:CreateWindow(options)
 		BackgroundColor3 = THEME.Border, BackgroundTransparency = 0.45, BorderSizePixel = 0, Parent = window.Sidebar })
 	window.Logo = create("TextLabel", {
 		Position = UDim2.fromOffset(20, 24), Size = UDim2.fromOffset(44, 44), Text = options.Logo or "F",
-		BackgroundColor3 = THEME.AccentSoft, TextColor3 = THEME.Accent, Font = Enum.Font.BuilderSansBold,
+		BackgroundColor3 = THEME.PanelRaised, TextColor3 = THEME.Accent, Font = Enum.Font.BuilderSansBold,
 		TextSize = 26, BorderSizePixel = 0, Parent = window.Sidebar,
-	}, { corner(13), stroke(THEME.Accent, 0.65) })
+	}, { corner(12), stroke(THEME.Border, 0.45) })
 	if not options.Logo then window:_attachIcon(window.Logo, "snowflake") end
 	local function label(parentObject, text, position, size, fontSize, color, bold, localize)
 		return create("TextLabel", { Text = text, Position = position, Size = size, BackgroundTransparency = 1,
@@ -337,7 +356,7 @@ function Library:CreateWindow(options)
 		Name = "Navigation", Position = UDim2.fromOffset(12, 132), Size = UDim2.new(1, -24, 1, -228),
 		BackgroundTransparency = 1, BorderSizePixel = 0, AutomaticCanvasSize = Enum.AutomaticSize.Y,
 		CanvasSize = UDim2.new(), ScrollBarThickness = 0, Parent = window.Sidebar,
-	}, { create("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder }) })
+	}, { create("UIListLayout", { Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder }) })
 	local playerCard = create("Frame", {
 		Position = UDim2.new(0, 12, 1, -78), Size = UDim2.new(1, -24, 0, 58),
 		BackgroundColor3 = THEME.PanelRaised, BorderSizePixel = 0, Parent = window.Sidebar,
@@ -358,9 +377,8 @@ function Library:CreateWindow(options)
 	window.BrandName:SetAttribute("FrostTheme_TextColor3", "Text")
 	window.Main = create("Frame", { Name = "Main", BackgroundTransparency = 1, Parent = window.Frame })
 	local topbar = create("Frame", { Name = "Header", Size = UDim2.new(1, 0, 0, 92), BackgroundTransparency = 1, Parent = window.Main })
-	label(topbar, string.upper(window:Text(options.Game or "FrostScripts")), UDim2.fromOffset(20, 12), UDim2.new(1, -88, 0, 16), 9, THEME.Accent, true)
-	window.PageTitle = label(topbar, "Workspace", UDim2.fromOffset(20, 30), UDim2.new(1, -88, 0, 28), 24, THEME.Text, true)
-	window.PageSubtitle = label(topbar, "", UDim2.fromOffset(20, 61), UDim2.new(1, -40, 0, 17), 11, THEME.Muted, false)
+	window.PageTitle = label(topbar, "Workspace", UDim2.fromOffset(24, 22), UDim2.new(1, -92, 0, 28), 24, THEME.Text, true)
+	window.PageSubtitle = label(topbar, "", UDim2.fromOffset(24, 55), UDim2.new(1, -48, 0, 17), 12, THEME.Muted, false)
 	local close = create("TextButton", {
 		Position = UDim2.new(1, -60, 0, 18), Size = UDim2.fromOffset(38, 38), Text = "−",
 		BackgroundColor3 = THEME.PanelRaised, TextColor3 = THEME.Muted, BorderSizePixel = 0,
@@ -372,9 +390,10 @@ function Library:CreateWindow(options)
 		local back = create("TextButton", {
 		Name = "ReturnToLibrary", Position = UDim2.new(1, -106, 0, 18), Size = UDim2.fromOffset(38, 38),
 			Text = "←", TextSize = 20, Font = Enum.Font.BuilderSansBold, TextColor3 = THEME.Accent,
-			BackgroundColor3 = THEME.AccentSoft, BorderSizePixel = 0, Parent = topbar,
+			BackgroundColor3 = THEME.PanelRaised, AutoButtonColor = false, BorderSizePixel = 0, Parent = topbar,
 		}, { corner(12), stroke(THEME.Border, 0.5) })
 		window.PageTitle.Size = UDim2.new(1, -154, 0, 32)
+		window:_hover(back, THEME.PanelRaised, THEME.SurfaceHover)
 		window:_connect(back.Activated, function() safeCall(window, options.OnReturnToLibrary) end)
 	end
 	local toolbar = create("Frame", { Position = UDim2.fromOffset(20, 94), Size = UDim2.new(1, -40, 0, 40), BackgroundTransparency = 1, Parent = window.Main })

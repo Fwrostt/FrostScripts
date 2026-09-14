@@ -56,10 +56,10 @@ end)()
 local UI_DEFAULTS = (function()
 -- UI defaults only. Feature settings belong to their game modules.
 return {
-	DesignRevision = 5,
+	DesignRevision = 6,
 	Animations = true,
-	-- Ambient motion is deliberately lightweight (two ribbons at 15 fps).
-	BackgroundEffects = true,
+	-- Keep the black foundation clean; decorative motion is opt-in.
+	BackgroundEffects = false,
 	BackgroundAnimations = true,
 	Sounds = true,
 	SoundVolume = 0.18,
@@ -102,33 +102,17 @@ function Window:Text(value)
 	return self.Translate(value)
 end
 
--- Neutral and tinted palettes. Keep semantic colors distinct for theme bindings.
+-- Every palette keeps the same black foundation. Color belongs to small accents.
 local THEMES = {
 	Black = {
-		Background = Color3.fromRGB(7, 7, 8),
-		Panel = Color3.fromRGB(13, 13, 15),
-		PanelRaised = Color3.fromRGB(21, 21, 24),
-		Surface = Color3.fromRGB(29, 29, 33),
-		SurfaceHover = Color3.fromRGB(43, 43, 49),
-		Border = Color3.fromRGB(56, 56, 63),
-		Text = Color3.fromRGB(245, 245, 247),
-		Muted = Color3.fromRGB(165, 165, 175),
-		Accent = Color3.fromRGB(215, 218, 230),
+		Accent = Color3.fromRGB(220, 220, 226),
 		AccentHover = Color3.fromRGB(255, 255, 255),
-		AccentSoft = Color3.fromRGB(56, 56, 72),
+		AccentSoft = Color3.fromRGB(30, 30, 34),
 		Success = Color3.fromRGB(131, 219, 166),
 		Danger = Color3.fromRGB(255, 173, 179),
 		DangerSurface = Color3.fromRGB(66, 36, 42),
 	},
 	Graphite = {
-		Background = Color3.fromRGB(20, 22, 25),
-		Panel = Color3.fromRGB(27, 29, 33),
-		PanelRaised = Color3.fromRGB(35, 38, 43),
-		Surface = Color3.fromRGB(44, 48, 54),
-		SurfaceHover = Color3.fromRGB(60, 66, 74),
-		Border = Color3.fromRGB(74, 81, 91),
-		Text = Color3.fromRGB(241, 244, 248),
-		Muted = Color3.fromRGB(176, 185, 198),
 		Accent = Color3.fromRGB(191, 207, 227),
 		AccentHover = Color3.fromRGB(218, 230, 247),
 		AccentSoft = Color3.fromRGB(46, 66, 100),
@@ -137,14 +121,6 @@ local THEMES = {
 		DangerSurface = Color3.fromRGB(66, 36, 42),
 	},
 	Midnight = {
-		Background = Color3.fromRGB(8, 12, 22),
-		Panel = Color3.fromRGB(14, 20, 35),
-		PanelRaised = Color3.fromRGB(21, 30, 48),
-		Surface = Color3.fromRGB(30, 41, 64),
-		SurfaceHover = Color3.fromRGB(44, 61, 89),
-		Border = Color3.fromRGB(60, 80, 109),
-		Text = Color3.fromRGB(239, 244, 254),
-		Muted = Color3.fromRGB(161, 179, 207),
 		Accent = Color3.fromRGB(140, 174, 255),
 		AccentHover = Color3.fromRGB(182, 201, 255),
 		AccentSoft = Color3.fromRGB(38, 60, 104),
@@ -153,14 +129,6 @@ local THEMES = {
 		DangerSurface = Color3.fromRGB(66, 36, 42),
 	},
 	Frost = {
-		Background = Color3.fromRGB(11, 16, 20),
-		Panel = Color3.fromRGB(17, 25, 31),
-		PanelRaised = Color3.fromRGB(26, 36, 43),
-		Surface = Color3.fromRGB(36, 49, 57),
-		SurfaceHover = Color3.fromRGB(52, 74, 85),
-		Border = Color3.fromRGB(69, 96, 108),
-		Text = Color3.fromRGB(238, 248, 252),
-		Muted = Color3.fromRGB(162, 189, 201),
 		Accent = Color3.fromRGB(154, 220, 236),
 		AccentHover = Color3.fromRGB(198, 240, 250),
 		AccentSoft = Color3.fromRGB(41, 73, 86),
@@ -169,14 +137,6 @@ local THEMES = {
 		DangerSurface = Color3.fromRGB(66, 36, 42),
 	},
 	Amethyst = {
-		Background = Color3.fromRGB(16, 13, 25),
-		Panel = Color3.fromRGB(25, 20, 35),
-		PanelRaised = Color3.fromRGB(35, 29, 49),
-		Surface = Color3.fromRGB(48, 40, 63),
-		SurfaceHover = Color3.fromRGB(73, 57, 92),
-		Border = Color3.fromRGB(96, 80, 117),
-		Text = Color3.fromRGB(246, 240, 254),
-		Muted = Color3.fromRGB(187, 170, 207),
 		Accent = Color3.fromRGB(194, 162, 255),
 		AccentHover = Color3.fromRGB(219, 197, 255),
 		AccentSoft = Color3.fromRGB(73, 50, 103),
@@ -185,14 +145,6 @@ local THEMES = {
 		DangerSurface = Color3.fromRGB(66, 36, 42),
 	},
 	Forest = {
-		Background = Color3.fromRGB(11, 18, 15),
-		Panel = Color3.fromRGB(18, 28, 23),
-		PanelRaised = Color3.fromRGB(28, 40, 33),
-		Surface = Color3.fromRGB(41, 55, 46),
-		SurfaceHover = Color3.fromRGB(57, 78, 65),
-		Border = Color3.fromRGB(74, 100, 83),
-		Text = Color3.fromRGB(237, 247, 239),
-		Muted = Color3.fromRGB(168, 192, 175),
 		Accent = Color3.fromRGB(141, 216, 165),
 		AccentHover = Color3.fromRGB(180, 236, 197),
 		AccentSoft = Color3.fromRGB(41, 79, 57),
@@ -201,14 +153,6 @@ local THEMES = {
 		DangerSurface = Color3.fromRGB(66, 36, 42),
 	},
 	Ember = {
-		Background = Color3.fromRGB(22, 15, 12),
-		Panel = Color3.fromRGB(32, 23, 17),
-		PanelRaised = Color3.fromRGB(44, 33, 25),
-		Surface = Color3.fromRGB(58, 44, 34),
-		SurfaceHover = Color3.fromRGB(82, 61, 46),
-		Border = Color3.fromRGB(107, 80, 64),
-		Text = Color3.fromRGB(255, 243, 233),
-		Muted = Color3.fromRGB(203, 178, 161),
 		Accent = Color3.fromRGB(242, 177, 132),
 		AccentHover = Color3.fromRGB(255, 209, 173),
 		AccentSoft = Color3.fromRGB(91, 57, 38),
@@ -217,14 +161,6 @@ local THEMES = {
 		DangerSurface = Color3.fromRGB(66, 36, 42),
 	},
 	Rose = {
-		Background = Color3.fromRGB(22, 13, 18),
-		Panel = Color3.fromRGB(32, 20, 27),
-		PanelRaised = Color3.fromRGB(45, 30, 39),
-		Surface = Color3.fromRGB(59, 41, 52),
-		SurfaceHover = Color3.fromRGB(84, 59, 74),
-		Border = Color3.fromRGB(108, 77, 96),
-		Text = Color3.fromRGB(255, 240, 247),
-		Muted = Color3.fromRGB(203, 174, 190),
 		Accent = Color3.fromRGB(242, 166, 201),
 		AccentHover = Color3.fromRGB(255, 206, 227),
 		AccentSoft = Color3.fromRGB(90, 48, 71),
@@ -233,14 +169,6 @@ local THEMES = {
 		DangerSurface = Color3.fromRGB(66, 36, 42),
 	},
 	Neon = {
-		Background = Color3.fromRGB(8, 13, 16),
-		Panel = Color3.fromRGB(16, 25, 29),
-		PanelRaised = Color3.fromRGB(23, 37, 43),
-		Surface = Color3.fromRGB(32, 52, 58),
-		SurfaceHover = Color3.fromRGB(47, 75, 82),
-		Border = Color3.fromRGB(65, 98, 105),
-		Text = Color3.fromRGB(238, 253, 255),
-		Muted = Color3.fromRGB(160, 196, 201),
 		Accent = Color3.fromRGB(80, 230, 219),
 		AccentHover = Color3.fromRGB(161, 255, 244),
 		AccentSoft = Color3.fromRGB(31, 83, 82),
@@ -249,14 +177,6 @@ local THEMES = {
 		DangerSurface = Color3.fromRGB(66, 36, 42),
 	},
 	Hayfield = {
-		Background = Color3.fromRGB(20, 18, 9),
-		Panel = Color3.fromRGB(30, 27, 16),
-		PanelRaised = Color3.fromRGB(43, 38, 23),
-		Surface = Color3.fromRGB(57, 51, 31),
-		SurfaceHover = Color3.fromRGB(80, 71, 44),
-		Border = Color3.fromRGB(105, 94, 60),
-		Text = Color3.fromRGB(255, 248, 228),
-		Muted = Color3.fromRGB(200, 189, 153),
 		Accent = Color3.fromRGB(235, 201, 108),
 		AccentHover = Color3.fromRGB(255, 229, 162),
 		AccentSoft = Color3.fromRGB(83, 69, 31),
@@ -265,6 +185,20 @@ local THEMES = {
 		DangerSurface = Color3.fromRGB(66, 36, 42),
 	},
 }
+
+local foundation = {
+	Background = Color3.fromRGB(8, 8, 9),
+	Panel = Color3.fromRGB(12, 12, 13),
+	PanelRaised = Color3.fromRGB(18, 18, 20),
+	Surface = Color3.fromRGB(26, 26, 29),
+	SurfaceHover = Color3.fromRGB(34, 34, 38),
+	Border = Color3.fromRGB(48, 48, 53),
+	Text = Color3.fromRGB(241, 241, 244),
+	Muted = Color3.fromRGB(150, 150, 160),
+}
+for _, palette in pairs(THEMES) do
+	for key, value in pairs(foundation) do palette[key] = value end
+end
 
 local function copyTheme(source)
 	local result = {}
@@ -623,11 +557,12 @@ function Window:SelectTab(tab)
 	self.Search.Parent.Size = UDim2.new(1, tab.ItemNoun == "scripts" and 0 or (categorized and -230 or -92), 1, 0)
 	self.Content.Position = UDim2.fromOffset(20, searchable and 142 or 94)
 	self.Content.Size = UDim2.new(1, -40, 1, searchable and -186 or -138)
+	self:_layoutToolbar()
 	self:SetActiveOnly(self.ActiveOnly)
 	for _, item in ipairs(self.Tabs) do
 		local selected = item == tab
 		item.Page.Visible = selected
-		self:_tween(item.Button, 0.14, { BackgroundColor3 = selected and THEME.AccentSoft or THEME.Panel })
+		self:_tween(item.Button, 0.14, { BackgroundColor3 = selected and THEME.Surface or THEME.Panel })
 		self:_tween(item.Label, 0.14, { TextColor3 = selected and THEME.Text or THEME.Muted })
 		self:_tween(item.IconLabel, 0.14, { TextColor3 = selected and THEME.Accent or THEME.Muted })
 		item.Indicator.BackgroundTransparency = selected and 0 or 1
@@ -645,10 +580,8 @@ end
 function Window:_refreshFavoriteModule(module)
 	if module.FavoriteButton then
 		local favorite = self:IsFavorite(module.FavoriteId)
-		local colorKey = favorite and "Accent" or "Muted"
-		module.FavoriteButton.Text = ""
-		module.FavoriteButton:SetAttribute("FrostTheme_TextColor3", colorKey)
-		module.FavoriteButton.TextColor3 = THEME[colorKey]
+		module.FavoriteIcon:FindFirstChild("HeartFill").Visible = favorite
+		self:_tween(module.FavoriteButton, 0.12, { TextColor3 = favorite and THEME.Accent or THEME.Muted })
 	end
 	for _, proxy in ipairs(module.FavoriteProxies or {}) do
 		proxy.Card.Visible = self:IsFavorite(module.FavoriteId)
@@ -757,14 +690,14 @@ function Window:AddTab(name, icon, subtitle)
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		CanvasSize = UDim2.new(),
-		ScrollBarImageColor3 = THEME.Accent,
+		ScrollBarImageColor3 = THEME.Muted,
 		ScrollBarImageTransparency = 0.35,
 		ScrollBarThickness = 3,
 		ScrollingDirection = Enum.ScrollingDirection.Y,
 		Parent = tab.Page,
 	}, {
 		create("UIListLayout", {
-			Padding = UDim.new(0, 14),
+			Padding = UDim.new(0, 10),
 			SortOrder = Enum.SortOrder.LayoutOrder,
 			HorizontalAlignment = Enum.HorizontalAlignment.Center,
 		}),
@@ -775,17 +708,17 @@ function Window:AddTab(name, icon, subtitle)
 	})
 	local button = create("TextButton", {
 		Name = name,
-		Size = UDim2.new(1, 0, 0, 50),
+		Size = UDim2.new(1, 0, 0, 44),
 		LayoutOrder = #self.Tabs + 1,
 		AutoButtonColor = false,
 		BackgroundColor3 = THEME.Panel,
 		BorderSizePixel = 0,
 		Text = "",
 		Parent = self.Navigation,
-	}, { corner(10), stroke(THEME.Accent, 0.84) })
+	}, { corner(10) })
 	local indicator = create("Frame", {
-		Position = UDim2.fromOffset(4, 10),
-		Size = UDim2.fromOffset(3, 30),
+		Position = UDim2.fromOffset(0, 14),
+		Size = UDim2.fromOffset(1, 16),
 		BackgroundColor3 = THEME.Accent,
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
@@ -793,7 +726,7 @@ function Window:AddTab(name, icon, subtitle)
 		Parent = button,
 	}, { corner(3) })
 	local iconLabel = create("TextLabel", {
-		Position = UDim2.fromOffset(self._compact and 9 or 14, 10),
+		Position = UDim2.fromOffset(self._compact and 8 or 13, 8),
 		Size = UDim2.fromOffset(28, 28),
 		BackgroundTransparency = 1,
 		Text = tostring(tab.Icon),
@@ -809,7 +742,7 @@ function Window:AddTab(name, icon, subtitle)
 		Text = name,
 		TextColor3 = THEME.Muted,
 		TextXAlignment = Enum.TextXAlignment.Left,
-		Font = Enum.Font.BuilderSansBold,
+		Font = Enum.Font.BuilderSansMedium,
 		TextSize = 14,
 		Parent = button,
 	})
@@ -882,14 +815,9 @@ function Module:SetEnabled(enabled, silent)
 	if changed then self.Window:_refreshSearch() end
 	self.Window:_tween(self.Status, 0.12, { TextColor3 = enabled and THEME.Success or THEME.Muted })
 	self.Window:_tween(self.Accent, 0.14, {
-		BackgroundColor3 = THEME.Accent,
-		BackgroundTransparency = enabled and 0 or 0.3,
+		BackgroundColor3 = enabled and THEME.Accent or THEME.Border,
+		BackgroundTransparency = enabled and 0 or 1,
 	})
-	if self.HeaderTint then self.Window:_tween(self.HeaderTint, 0.14, { BackgroundTransparency = enabled and 0.22 or 0.52 }) end
-	if self.CardStroke then self.Window:_tween(self.CardStroke, 0.14, {
-		Color = enabled and THEME.Accent or THEME.AccentSoft,
-		Transparency = enabled and 0.25 or 0.62,
-	}) end
 	for _, proxy in ipairs(self.FavoriteProxies or {}) do
 		if proxy.Toggle and proxy.Toggle.Value ~= enabled then proxy.Toggle:SetValue(enabled, true) end
 		proxy.Status.Text = self.Status.Text
@@ -923,7 +851,7 @@ function Module:_row(height)
 		BackgroundColor3 = THEME.Surface,
 		BorderSizePixel = 0,
 		Parent = self.Body,
-	}, { corner(10), stroke(THEME.Accent, 0.84) })
+	}, { corner(10) })
 	task.defer(function() self:_refreshHeight() end)
 	return row
 end
@@ -980,6 +908,7 @@ function Module:AddToggle(name, default, callback, description)
 		})
 		self.Module.Window:_tween(knob, 0.14, {
 			Position = self.Value and UDim2.fromOffset(23, 3) or UDim2.fromOffset(3, 3),
+			BackgroundColor3 = self.Value and THEME.Background or THEME.Text,
 		})
 		if not silent then safeCall(self.Module.Window, callback, self.Value) end
 	end
@@ -1003,6 +932,9 @@ function Module:AddActionGrid(actions, options)
 	local buttonHeight = options.ButtonHeight or 42
 	local rows = math.ceil(#actions / columns)
 	local row = self:_row(rows * buttonHeight + math.max(0, rows - 1) * 8)
+	row.BackgroundTransparency = 1
+	local rowStroke = row:FindFirstChildWhichIsA("UIStroke")
+	if rowStroke then rowStroke:Destroy() end
 	local grid = create("UIGridLayout", {
 		CellSize = UDim2.new(1 / columns, -6, 0, buttonHeight),
 		CellPadding = UDim2.fromOffset(8, 8),
@@ -1010,6 +942,12 @@ function Module:AddActionGrid(actions, options)
 		HorizontalAlignment = Enum.HorizontalAlignment.Center,
 		Parent = row,
 	})
+	if options.MinCellWidth then
+		self.Window._actionGrids = self.Window._actionGrids or {}
+		table.insert(self.Window._actionGrids, { Module = self, Row = row, Grid = grid,
+			Count = #actions, Columns = columns, MinCellWidth = options.MinCellWidth, ButtonHeight = buttonHeight })
+		self.Window:_layoutActionGrids()
+	end
 	local controls = {}
 	for index, action in ipairs(actions) do
 		local button = create("TextButton", {
@@ -1041,6 +979,18 @@ function Module:AddActionGrid(actions, options)
 		table.insert(controls, control)
 	end
 	return controls, grid
+end
+
+function Window:_layoutActionGrids()
+	if not self.TargetSize then return end
+	local available = self.TargetSize.X - (self._compact and 68 or 192) - 40 - CARD_HORIZONTAL_GUTTER - CARD_BODY_INSET * 2
+	for _, item in ipairs(self._actionGrids or {}) do
+		local columns = math.clamp(math.floor((available + 8) / (item.MinCellWidth + 8)), 1, item.Columns)
+		local rows = math.ceil(item.Count / columns)
+		item.Grid.CellSize = UDim2.new(1 / columns, -6, 0, item.ButtonHeight)
+		item.Row.Size = UDim2.new(1, 0, 0, rows * item.ButtonHeight + (rows - 1) * 8)
+		item.Module:_refreshHeight()
+	end
 end
 
 function Module:AddSlider(name, minimum, maximum, default, callback, options)
@@ -1379,6 +1329,11 @@ function Module:AddParagraph(title, text, options)
 	self:_index(text)
 	options = options or {}
 	local row = self:_row(options.Height or 66)
+	if options.Plain then
+		row.BackgroundTransparency = 1
+		local border = row:FindFirstChildWhichIsA("UIStroke")
+		if border then border:Destroy() end
+	end
 	create("TextLabel", {
 		Position = UDim2.fromOffset(14, 8),
 		Size = UDim2.new(1, -28, 0, 20),
@@ -1428,31 +1383,22 @@ function Tab:AddModule(options)
 		FavoriteActionText = options.FavoriteActionText,
 		Enabled = false,
 	}, Module)
-	local cardStroke = stroke(THEME.Accent, 0.62)
 	module.Card = create("Frame", {
 		Name = module.Name,
 		Size = UDim2.new(1, -CARD_HORIZONTAL_GUTTER, 0, module.HeaderHeight),
 		BackgroundColor3 = THEME.PanelRaised,
+		BackgroundTransparency = options.Frameless and 1 or 0,
 		BorderSizePixel = 0,
 		ClipsDescendants = true,
 		Active = true,
 		LayoutOrder = #self.Modules + 1,
 		Parent = self.Scroll,
-	}, { corner(13), cardStroke })
-	module.CardStroke = cardStroke
-	module.HeaderTint = create("Frame", {
-		Name = "ThemeTint",
-		Size = UDim2.new(1, 0, 0, module.HeaderHeight),
-		BackgroundColor3 = THEME.AccentSoft,
-		BackgroundTransparency = options.Accent and 0.2 or 0.52,
-		BorderSizePixel = 0,
-		Parent = module.Card,
-	})
+	}, { corner(12), stroke(THEME.Border, options.Frameless and 1 or 0.5) })
 	module.Accent = create("Frame", {
-		Position = UDim2.fromOffset(4, 10),
-		Size = UDim2.fromOffset(3, math.max(20, module.HeaderHeight - 20)),
-		BackgroundColor3 = THEME.Accent,
-		BackgroundTransparency = options.Accent and 0 or 0.3,
+		Position = UDim2.fromOffset(0, 18),
+		Size = UDim2.fromOffset(1, math.max(16, module.HeaderHeight - 36)),
+		BackgroundColor3 = options.Accent and THEME.Accent or THEME.Border,
+		BackgroundTransparency = options.Accent and 0 or 1,
 		BorderSizePixel = 0,
 		ZIndex = 3,
 		Parent = module.Card,
@@ -1469,8 +1415,8 @@ function Tab:AddModule(options)
 		Parent = module.Card,
 	})
 	module.Status = create("TextLabel", {
-		Position = UDim2.fromOffset(34, 30),
-		Size = UDim2.new(1, -(options.RightInset or (options.Toggleable and 160 or 76)), 0, 20),
+		Position = UDim2.fromOffset(22, 30),
+		Size = UDim2.new(1, -(options.RightInset or (options.Toggleable and 148 or 64)), 0, 20),
 		BackgroundTransparency = 1,
 		Text = options.Description or options.Status or "Ready",
 		TextColor3 = THEME.Muted,
@@ -1480,12 +1426,7 @@ function Tab:AddModule(options)
 		TextSize = 12,
 		Parent = module.Card,
 	})
-	module.StatusDot = create("Frame", {
-		Name = "StatusDot", Position = UDim2.fromOffset(22, 37), Size = UDim2.fromOffset(6, 6),
-		BackgroundColor3 = THEME.Accent, BackgroundTransparency = 0.2, BorderSizePixel = 0,
-		Parent = module.Card,
-	}, { corner(3) })
-	module.Chevron = chevron(module.Card, UDim2.new(1, options.Toggleable and -100 or -36, 0, 25))
+	module.Chevron = chevron(module.Card, UDim2.new(1, options.Toggleable and -100 or -36, 0, (module.HeaderHeight - 18) / 2))
 	module.Chevron.Visible = module.Collapsible
 	local headerButton = create("TextButton", {
 		Size = UDim2.new(1, options.Toggleable and -78 or 0, 0, module.HeaderHeight),
@@ -1533,8 +1474,8 @@ function Tab:AddModule(options)
 		end
 		local toggleButton = create("TextButton", {
 			AnchorPoint = Vector2.new(1, 0),
-			Position = UDim2.new(1, -22, 0, 18),
-			Size = UDim2.fromOffset(48, 26),
+			Position = UDim2.new(1, -22, 0, (module.HeaderHeight - 24) / 2),
+			Size = UDim2.fromOffset(44, 24),
 			AutoButtonColor = false,
 			BackgroundColor3 = THEME.Surface,
 			BorderSizePixel = 0,
@@ -1544,7 +1485,7 @@ function Tab:AddModule(options)
 		}, { corner(12) })
 		local knob = create("Frame", {
 			Position = UDim2.fromOffset(3, 3),
-			Size = UDim2.fromOffset(20, 20),
+			Size = UDim2.fromOffset(18, 18),
 			BackgroundColor3 = THEME.Text,
 			BorderSizePixel = 0,
 			ZIndex = 6,
@@ -1556,7 +1497,8 @@ function Tab:AddModule(options)
 				BackgroundColor3 = self.Value and THEME.Accent or THEME.Surface,
 			})
 			self.Module.Window:_tween(knob, 0.14, {
-				Position = self.Value and UDim2.fromOffset(25, 3) or UDim2.fromOffset(3, 3),
+				Position = self.Value and UDim2.fromOffset(23, 3) or UDim2.fromOffset(3, 3),
+				BackgroundColor3 = self.Value and THEME.Background or THEME.Text,
 			})
 			self.Module:SetEnabled(self.Value, silent)
 			if not silent then safeCall(self.Module.Window, options.Callback, self.Value) end
@@ -1575,8 +1517,9 @@ function Tab:AddModule(options)
 	if module.FavoriteId then
 		module.FavoriteButton = create("TextButton", {
 			Name = "FavoriteButton",
-			Position = UDim2.new(1, options.Toggleable and -142 or -76, 0, 12),
-			Size = UDim2.fromOffset(36, 34),
+			Position = UDim2.new(1, options.Toggleable and -146 or -80, 0, (module.HeaderHeight - 44) / 2),
+			Size = UDim2.fromOffset(44, 44),
+			BackgroundColor3 = THEME.Surface,
 			BackgroundTransparency = 1,
 			BorderSizePixel = 0,
 			Text = "",
@@ -1586,13 +1529,13 @@ function Tab:AddModule(options)
 			AutoButtonColor = false,
 			ZIndex = 8,
 			Parent = module.Card,
-		})
-		self.Window:_attachIcon(module.FavoriteButton, "favorites")
+		}, { corner(9) })
+		module.FavoriteIcon = self.Window:_attachIcon(module.FavoriteButton, "favorites")
 		self.Window:_connect(module.FavoriteButton.MouseEnter, function()
-			self.Window:_tween(module.FavoriteButton, 0.12, { TextColor3 = THEME.AccentHover })
+			self.Window:_tween(module.FavoriteButton, 0.12, { BackgroundTransparency = 0.5 })
 		end)
 		self.Window:_connect(module.FavoriteButton.MouseLeave, function()
-			self.Window:_refreshFavoriteModule(module)
+			self.Window:_tween(module.FavoriteButton, 0.12, { BackgroundTransparency = 1 })
 		end)
 		self.Window:_connect(module.FavoriteButton.Activated, function() module:SetFavorite(not module:IsFavorite()) end)
 		table.insert(self.Window._favoriteModules, module)
@@ -2184,7 +2127,7 @@ function Window:_applyTheme()
 	if self.ActiveTab then
 		for _, item in ipairs(self.Tabs) do
 			local selected = item == self.ActiveTab
-			item.Button.BackgroundColor3 = selected and THEME.AccentSoft or THEME.Panel
+			item.Button.BackgroundColor3 = selected and THEME.Surface or THEME.Panel
 			item.Label.TextColor3 = selected and THEME.Text or THEME.Muted
 			item.IconLabel.TextColor3 = selected and THEME.Accent or THEME.Muted
 			item.IconLabel.BackgroundColor3 = selected and THEME.AccentSoft or THEME.Surface
@@ -2192,6 +2135,7 @@ function Window:_applyTheme()
 			item.Indicator.BackgroundTransparency = selected and 0 or 1
 		end
 	end
+	for _, module in ipairs(self._favoriteModules) do self:_refreshFavoriteModule(module) end
 end
 
 function Window:SetTheme(themeName)
@@ -2283,96 +2227,80 @@ function Module:AddColorPicker(name, default, callback)
 	return control
 end
 
--- Purpose-built solid navigation badges. They are drawn with native Roblox Frames,
--- so no SVG paths, font glyphs, or third-party image assets are involved.
-local function badgePiece(parent, name, position, size, transparency, rotation)
+-- Asset-free line icons with a shared stroke weight and explicit favorite state.
+local function iconLine(root, x1, y1, x2, y2)
+	local dx, dy = x2 - x1, y2 - y1
 	return create("Frame", {
-		Name = name,
-		Position = position,
-		Size = size,
-		Rotation = rotation or 0,
-		BackgroundTransparency = transparency or 0,
-		BorderSizePixel = 0,
-		Parent = parent,
-	}, { corner(math.max(2, math.floor(math.min(size.X.Offset, size.Y.Offset) / 3))) })
+		Name = "IconStroke", AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromOffset((x1 + x2) / 2, (y1 + y2) / 2),
+		Size = UDim2.fromOffset(math.sqrt(dx * dx + dy * dy), 1.6),
+		Rotation = math.deg(math.atan2(dy, dx)), BorderSizePixel = 0,
+		ZIndex = root.ZIndex, Parent = root,
+	}, { corner(1) })
 end
 
-local function makeLibrary(root)
-	badgePiece(root, "ScriptPage", UDim2.fromOffset(3, 1), UDim2.fromOffset(14, 18), 0.5)
-	badgePiece(root, "ScriptBinding", UDim2.fromOffset(3, 1), UDim2.fromOffset(4, 18), 0.04)
-	badgePiece(root, "ScriptLine", UDim2.fromOffset(9, 5), UDim2.fromOffset(6, 2), 0.08)
-	badgePiece(root, "ScriptLine", UDim2.fromOffset(9, 9), UDim2.fromOffset(5, 2), 0.22)
-	badgePiece(root, "ScriptLine", UDim2.fromOffset(9, 13), UDim2.fromOffset(7, 2), 0.38)
-end
-
-local function makeSliders(root)
-	for index, x in ipairs({ 11, 6, 13 }) do
-		local y = 3 + (index - 1) * 7
-		badgePiece(root, "Track", UDim2.fromOffset(2, y + 2), UDim2.fromOffset(16, 2), 0.62)
-		badgePiece(root, "Knob", UDim2.fromOffset(x, y), UDim2.fromOffset(5, 5), index == 2 and 0.02 or 0.14)
-	end
-end
-
-local function makeModules(root)
-	for index = 0, 2 do
-		badgePiece(root, "ModuleBar", UDim2.fromOffset(2, 2 + index * 7), UDim2.fromOffset(16, 3), index == 1 and 0.08 or 0.3)
-	end
-end
-
-local function makeMark(root)
-	for _, rotation in ipairs({ 0, 60, -60 }) do
-		badgePiece(root, "CrystalArm", UDim2.fromOffset(2, 9), UDim2.fromOffset(16, 2), 0.1, rotation)
-	end
-	badgePiece(root, "CrystalCenter", UDim2.fromOffset(7, 7), UDim2.fromOffset(6, 6), 0.02, 45)
-end
-
-local function makeFavorite(root)
-	-- Native geometry keeps the heart crisp in executors that replace unsupported font glyphs with squares.
-	badgePiece(root, "HeartLeft", UDim2.fromOffset(2, 2), UDim2.fromOffset(10, 10), 0.06)
-	badgePiece(root, "HeartRight", UDim2.fromOffset(8, 2), UDim2.fromOffset(10, 10), 0.06)
-	badgePiece(root, "HeartPoint", UDim2.fromOffset(4, 6), UDim2.fromOffset(12, 12), 0.06, 45)
-end
-
-local ICON_BUILDERS = {
-	library = makeLibrary,
-	modules = makeModules,
-	settings = makeSliders,
-	controls = makeSliders,
-	favorites = makeFavorite,
-	snowflake = makeMark,
+local HEART_POINTS = {
+	{10, 5}, {8, 3}, {5, 2.8}, {2.7, 4.2}, {2, 6.5}, {2.6, 9},
+	{4.5, 11.5}, {10, 17}, {15.5, 11.5}, {17.4, 9}, {18, 6.5},
+	{17.3, 4.2}, {15, 2.8}, {12, 3},
 }
 
 function Window:_attachIcon(host, name)
 	host.Text = ""
-	if name == "home" then
-		local image = create("ImageLabel", {
-			Name = "NavigationHome",
-			Size = UDim2.fromOffset(20, 20),
-			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.fromScale(0.5, 0.5),
-			BackgroundTransparency = 1,
-			Image = "rbxassetid://7733960981",
-			ImageColor3 = host.TextColor3,
-			ScaleType = Enum.ScaleType.Fit,
-			Parent = host,
-		})
-		self:_connect(host:GetPropertyChangedSignal("TextColor3"), function()
-			image.ImageColor3 = host.TextColor3
-		end)
-		return image
-	end
 	local root = create("Frame", {
-		Name = "NavigationBadge_" .. name,
-		Size = UDim2.fromOffset(20, 20),
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, 0.5),
-		BackgroundTransparency = 1,
-		BorderSizePixel = 0,
-		Parent = host,
+		Name = "NavigationBadge_" .. name, Size = UDim2.fromOffset(20, 20),
+		AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
+		BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = host.ZIndex, Parent = host,
 	})
-	local buildBadge = ICON_BUILDERS[name] or makeSliders
-	buildBadge(root)
-
+	local function path(points, closed)
+		for index = 1, #points - (closed and 0 or 1) do
+			local a, b = points[index], points[index % #points + 1]
+			iconLine(root, a[1], a[2], b[1], b[2])
+		end
+	end
+	if name == "favorites" then
+		path(HEART_POINTS, true)
+		local fill = create("Frame", { Name = "HeartFill", Size = UDim2.fromScale(1, 1),
+			BackgroundTransparency = 1, Visible = false, ZIndex = host.ZIndex, Parent = root })
+		-- Interior shares the outline contour. Only saved favorites show the fill.
+		for y = 3, 16 do
+			local intersections = {}
+			for index, a in ipairs(HEART_POINTS) do
+				local b = HEART_POINTS[index % #HEART_POINTS + 1]
+				if (a[2] <= y and b[2] > y) or (b[2] <= y and a[2] > y) then
+					table.insert(intersections, a[1] + (y - a[2]) * (b[1] - a[1]) / (b[2] - a[2]))
+				end
+			end
+			table.sort(intersections)
+			for index = 1, #intersections - 1, 2 do
+				create("Frame", { Name = "HeartInterior", Position = UDim2.fromOffset(intersections[index], y),
+					Size = UDim2.fromOffset(intersections[index + 1] - intersections[index], 1),
+					BorderSizePixel = 0, ZIndex = host.ZIndex, Parent = fill })
+			end
+		end
+	elseif name == "home" then
+		path({{2, 9}, {10, 2}, {18, 9}})
+		path({{4, 8}, {4, 18}, {8, 18}, {8, 12}, {12, 12}, {12, 18}, {16, 18}, {16, 8}})
+	elseif name == "library" then
+		path({{4, 2}, {16, 2}, {16, 18}, {4, 18}}, true)
+		iconLine(root, 7, 2, 7, 18)
+		iconLine(root, 10, 7, 13, 7); iconLine(root, 10, 11, 13, 11)
+	elseif name == "modules" then
+		for _, position in ipairs({{2, 2}, {12, 2}, {2, 12}, {12, 12}}) do
+			local x, y = position[1], position[2]
+			path({{x, y}, {x + 6, y}, {x + 6, y + 6}, {x, y + 6}}, true)
+		end
+	elseif name == "snowflake" then
+		for _, rotation in ipairs({0, 60, 120}) do
+			local arm = iconLine(root, 2, 10, 18, 10); arm.Rotation = rotation
+		end
+	else
+		for index, x in ipairs({12, 6, 12}) do
+			local y = 4 + (index - 1) * 6
+			iconLine(root, 2, y, x - 2, y); iconLine(root, x + 2, y, 18, y)
+			path({{x - 2, y - 2}, {x + 2, y - 2}, {x + 2, y + 2}, {x - 2, y + 2}}, true)
+		end
+	end
 	local function tint()
 		for _, piece in ipairs(root:GetDescendants()) do
 			if piece:IsA("Frame") then piece.BackgroundColor3 = host.TextColor3 end
@@ -2385,7 +2313,7 @@ end
 
 -- Inline palette previews, with separate hover and selected treatments.
 function Window:AddThemeGallery(tab)
-	local module = tab:AddModule({ Name = "Themes", Description = "Choose a palette. Your whole workspace changes together.", Expanded = true })
+	local module = tab:AddModule({ Name = "Themes", Description = "Choose an accent. Every palette keeps the black foundation.", Expanded = true })
 	local row = module:_row(348)
 	row.Name, row.BackgroundTransparency = "ThemeGallery", 1
 	local layout = create("UIGridLayout", { CellSize = UDim2.new(1 / 3, -8, 0, 78),
@@ -2743,7 +2671,7 @@ function Tab:AddScriptCard(entry, onLaunch)
 		if object:IsA("GuiObject") then object.Visible = false end
 	end
 	local cover = create("Frame", { Name = "ScriptCover", ClipsDescendants = true,
-		BackgroundColor3 = THEME.AccentSoft, BorderSizePixel = 0, Parent = module.Card }, { corner(10) })
+		BackgroundColor3 = THEME.Surface, BorderSizePixel = 0, Parent = module.Card }, { corner(10) })
 	local gradient = create("UIGradient", { Rotation = 25,
 		Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(90, 95, 110)), Parent = cover })
 	table.insert(self.Window._coverGradients, gradient)
@@ -2795,15 +2723,15 @@ function Tab:AddScriptCard(entry, onLaunch)
 	local button = create("TextButton", { Name = "LaunchScript", Text = "Launch script",
 		TextSize = 14, Font = Enum.Font.BuilderSansMedium, TextColor3 = THEME.Text,
 		BackgroundColor3 = THEME.Surface, BorderSizePixel = 0, AutoButtonColor = false, Parent = module.Card,
-	}, { corner(8), stroke(THEME.Accent, 0.65) })
+	}, { corner(8), stroke(THEME.Border, 0.25) })
 	self.Window:_hover(button, THEME.Surface, THEME.SurfaceHover)
 	local cardStroke = module.Card:FindFirstChildWhichIsA("UIStroke")
 	local function setHovered(hovered)
 		cardHovered = hovered
 		imageReady()
 		self.Window:_tween(module.Card, 0.13, { BackgroundColor3 = hovered and THEME.Surface or THEME.PanelRaised })
-		if cardStroke then self.Window:_tween(cardStroke, 0.13, { Color = hovered and THEME.Accent or THEME.Border, Transparency = hovered and 0.3 or 0.25 }) end
-		self.Window:_tween(hoverWash, 0.13, { BackgroundTransparency = hovered and 0.84 or 1 })
+		if cardStroke then self.Window:_tween(cardStroke, 0.13, { Color = hovered and THEME.Accent or THEME.Border, Transparency = hovered and 0.65 or 0.5 }) end
+		self.Window:_tween(hoverWash, 0.13, { BackgroundTransparency = hovered and 0.96 or 1 })
 		self.Window:_tween(hoverHint, 0.13, { TextTransparency = hovered and hoverHint.Visible and 0 or 1 })
 		if hovered then self.Window:PlaySound("Hover") end
 	end
@@ -2833,7 +2761,7 @@ function Tab:AddScriptCard(entry, onLaunch)
 			hoverHint.Visible = side >= 84
 			status.Visible = false
 		else
-			local descriptionHeight = math.ceil(52 * textScale)
+			local descriptionHeight = math.ceil(68 * textScale)
 			local coverHeight = height - 116 - titleHeight - descriptionHeight
 			cover.Position, cover.Size = UDim2.fromOffset(12, 12), UDim2.new(1, -24, 0, coverHeight)
 			title.Position, title.Size = UDim2.fromOffset(14, coverHeight + 24), UDim2.new(1, -28, 0, titleHeight)
@@ -2886,9 +2814,11 @@ function Window:_resizeWindow(animate)
 	self.Logo.Position = UDim2.fromOffset(compact and 14 or 20, 24)
 	for _, tab in ipairs(self.Tabs) do
 		tab.Label.Visible = not compact
-		tab.IconLabel.Position = UDim2.fromOffset(compact and 8 or 13, 12)
+		tab.IconLabel.Position = UDim2.fromOffset(compact and 8 or 13, 8)
 	end
 	self._compact = compact
+	self:_layoutActionGrids()
+	self:_layoutToolbar()
 	self:_layoutScriptCards()
 	self:_layoutDashboardCards()
 	for _, gallery in ipairs(self.ThemeGalleries or {}) do gallery:Layout() end
@@ -2923,7 +2853,7 @@ function Window:_layoutScriptCards()
 			end
 			local rows = math.ceil(count / columns)
 			local fittedHeight = math.max(54, math.floor((availableHeight - 8 - (rows - 1) * 12) / rows))
-			local preferredHeight = 310 + math.ceil((self.TextScale - 1) * 72)
+			local preferredHeight = 326 + math.ceil((self.TextScale - 1) * 88)
 			local vertical = columns > 1 and rows == 1 and fittedHeight >= 270
 			local height = vertical and math.min(preferredHeight, fittedHeight) or fittedHeight
 			local offset = columns == 3 and -12 or columns == 2 and -10 or -8
@@ -2931,6 +2861,23 @@ function Window:_layoutScriptCards()
 			for _, card in ipairs(tab.ScriptCards) do card:Layout(not vertical, height) end
 		end
 	end
+end
+
+function Window:_layoutToolbar()
+	local tab = self.ActiveTab
+	if not tab then return end
+	local searchable = tab.SearchEnabled ~= false
+	local categorized = searchable and tab.Categories and #tab.Categories > 0
+	local stacked = self._compact and categorized
+	self.Toolbar.Size = UDim2.new(1, -40, 0, stacked and 88 or 40)
+	self.Search.Parent.Size = UDim2.new(1, (stacked or tab.ItemNoun == "scripts") and 0 or (categorized and -230 or -92), 0, 40)
+	self.CategoryFilter.Position = stacked and UDim2.fromOffset(0, 48) or UDim2.new(1, -216, 0, 0)
+	self.ActiveFilter.Position = UDim2.new(1, -78, 0, stacked and 48 or 0)
+	local contentY = searchable and (stacked and 190 or 142) or 94
+	self.Content.Position = UDim2.fromOffset(20, contentY)
+	self.Content.Size = UDim2.new(1, -40, 1, -contentY - 44)
+	self.SearchHint.Visible = searchable and not self._compact
+	self.Footer.Size = UDim2.new(1, self._compact and -48 or -180, 0, 20)
 end
 
 function Window:_refreshSearch()
@@ -3181,9 +3128,9 @@ function Library:CreateWindow(options)
 		BackgroundColor3 = THEME.Border, BackgroundTransparency = 0.45, BorderSizePixel = 0, Parent = window.Sidebar })
 	window.Logo = create("TextLabel", {
 		Position = UDim2.fromOffset(20, 24), Size = UDim2.fromOffset(44, 44), Text = options.Logo or "F",
-		BackgroundColor3 = THEME.AccentSoft, TextColor3 = THEME.Accent, Font = Enum.Font.BuilderSansBold,
+		BackgroundColor3 = THEME.PanelRaised, TextColor3 = THEME.Accent, Font = Enum.Font.BuilderSansBold,
 		TextSize = 26, BorderSizePixel = 0, Parent = window.Sidebar,
-	}, { corner(13), stroke(THEME.Accent, 0.65) })
+	}, { corner(12), stroke(THEME.Border, 0.45) })
 	if not options.Logo then window:_attachIcon(window.Logo, "snowflake") end
 	local function label(parentObject, text, position, size, fontSize, color, bold, localize)
 		return create("TextLabel", { Text = text, Position = position, Size = size, BackgroundTransparency = 1,
@@ -3198,7 +3145,7 @@ function Library:CreateWindow(options)
 		Name = "Navigation", Position = UDim2.fromOffset(12, 132), Size = UDim2.new(1, -24, 1, -228),
 		BackgroundTransparency = 1, BorderSizePixel = 0, AutomaticCanvasSize = Enum.AutomaticSize.Y,
 		CanvasSize = UDim2.new(), ScrollBarThickness = 0, Parent = window.Sidebar,
-	}, { create("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder }) })
+	}, { create("UIListLayout", { Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder }) })
 	local playerCard = create("Frame", {
 		Position = UDim2.new(0, 12, 1, -78), Size = UDim2.new(1, -24, 0, 58),
 		BackgroundColor3 = THEME.PanelRaised, BorderSizePixel = 0, Parent = window.Sidebar,
@@ -3219,18 +3166,8 @@ function Library:CreateWindow(options)
 	window.BrandName:SetAttribute("FrostTheme_TextColor3", "Text")
 	window.Main = create("Frame", { Name = "Main", BackgroundTransparency = 1, Parent = window.Frame })
 	local topbar = create("Frame", { Name = "Header", Size = UDim2.new(1, 0, 0, 92), BackgroundTransparency = 1, Parent = window.Main })
-	window.HeaderWash = create("Frame", {
-		Name = "ThemeWash", Position = UDim2.fromOffset(10, 7), Size = UDim2.new(1, -20, 0, 76),
-		BackgroundColor3 = THEME.AccentSoft, BackgroundTransparency = 0.24,
-		BorderSizePixel = 0, Parent = topbar,
-	}, { corner(14), stroke(THEME.Accent, 0.7) })
-	window.HeaderAccent = create("Frame", {
-		Name = "ThemeAccent", Position = UDim2.fromOffset(20, 79), Size = UDim2.fromOffset(110, 3),
-		BackgroundColor3 = THEME.Accent, BorderSizePixel = 0, Parent = topbar,
-	}, { corner(2) })
-	label(topbar, string.upper(window:Text(options.Game or "FrostScripts")), UDim2.fromOffset(20, 12), UDim2.new(1, -88, 0, 16), 9, THEME.Accent, true)
-	window.PageTitle = label(topbar, "Workspace", UDim2.fromOffset(20, 30), UDim2.new(1, -88, 0, 28), 24, THEME.Text, true)
-	window.PageSubtitle = label(topbar, "", UDim2.fromOffset(20, 61), UDim2.new(1, -40, 0, 17), 11, THEME.Muted, false)
+	window.PageTitle = label(topbar, "Workspace", UDim2.fromOffset(24, 22), UDim2.new(1, -92, 0, 28), 24, THEME.Text, true)
+	window.PageSubtitle = label(topbar, "", UDim2.fromOffset(24, 55), UDim2.new(1, -48, 0, 17), 12, THEME.Muted, false)
 	local close = create("TextButton", {
 		Position = UDim2.new(1, -60, 0, 18), Size = UDim2.fromOffset(38, 38), Text = "−",
 		BackgroundColor3 = THEME.PanelRaised, TextColor3 = THEME.Muted, BorderSizePixel = 0,
@@ -3242,15 +3179,15 @@ function Library:CreateWindow(options)
 		local back = create("TextButton", {
 		Name = "ReturnToLibrary", Position = UDim2.new(1, -106, 0, 18), Size = UDim2.fromOffset(38, 38),
 			Text = "←", TextSize = 20, Font = Enum.Font.BuilderSansBold, TextColor3 = THEME.Accent,
-			BackgroundColor3 = THEME.AccentSoft, BorderSizePixel = 0, Parent = topbar,
+			BackgroundColor3 = THEME.PanelRaised, AutoButtonColor = false, BorderSizePixel = 0, Parent = topbar,
 		}, { corner(12), stroke(THEME.Border, 0.5) })
 		window.PageTitle.Size = UDim2.new(1, -154, 0, 32)
+		window:_hover(back, THEME.PanelRaised, THEME.SurfaceHover)
 		window:_connect(back.Activated, function() safeCall(window, options.OnReturnToLibrary) end)
 	end
 	local toolbar = create("Frame", { Position = UDim2.fromOffset(20, 94), Size = UDim2.new(1, -40, 0, 40), BackgroundTransparency = 1, Parent = window.Main })
 	window.Toolbar = toolbar
-	local searchFrame = create("Frame", { Size = UDim2.new(1, -92, 1, 0), BackgroundColor3 = THEME.AccentSoft,
-		BackgroundTransparency = 0.18, BorderSizePixel = 0, Parent = toolbar }, { corner(10), stroke(THEME.Accent, 0.68) })
+	local searchFrame = create("Frame", { Size = UDim2.new(1, -92, 1, 0), BackgroundColor3 = THEME.PanelRaised, BorderSizePixel = 0, Parent = toolbar }, { corner(10), stroke(THEME.Border, 0.4) })
 	window.Search = create("TextBox", {
 		Position = UDim2.fromOffset(14, 0), Size = UDim2.new(1, -56, 1, 0), Text = "",
 		PlaceholderText = "Search this tab…", ClearTextOnFocus = false,
@@ -3264,16 +3201,16 @@ function Library:CreateWindow(options)
 	window:_connect(window.Search:GetPropertyChangedSignal("Text"), function() window:_refreshSearch() end)
 	window.ActiveFilter = create("TextButton", { Position = UDim2.new(1, -78, 0, 0), Size = UDim2.fromOffset(78, 40),
 		Text = "Active", TextSize = 12, Font = Enum.Font.BuilderSansBold, TextColor3 = THEME.Muted,
-		BackgroundColor3 = THEME.AccentSoft, AutoButtonColor = false, BorderSizePixel = 0, Parent = toolbar,
-	}, { corner(10), stroke(THEME.Accent, 0.68) })
+		BackgroundColor3 = THEME.PanelRaised, AutoButtonColor = false, BorderSizePixel = 0, Parent = toolbar,
+	}, { corner(10), stroke(THEME.Border, 0.4) })
 	window:_connect(window.ActiveFilter.Activated, function() window:SetActiveOnly(not window.ActiveOnly) end)
 	window.CategoryFilter = create("TextButton", {
 		Name = "CategoryFilter", Position = UDim2.new(1, -216, 0, 0), Size = UDim2.fromOffset(128, 40),
 		Text = "", TextSize = 12, Font = Enum.Font.BuilderSansBold, TextColor3 = THEME.Text,
-		BackgroundColor3 = THEME.AccentSoft, AutoButtonColor = false, BorderSizePixel = 0,
+		BackgroundColor3 = THEME.PanelRaised, AutoButtonColor = false, BorderSizePixel = 0,
 		Visible = false, Parent = toolbar,
-	}, { corner(10), stroke(THEME.Accent, 0.68) })
-	window:_hover(window.CategoryFilter, THEME.AccentSoft, THEME.SurfaceHover)
+	}, { corner(10), stroke(THEME.Border, 0.4) })
+	window:_hover(window.CategoryFilter, THEME.PanelRaised, THEME.SurfaceHover)
 	window:_connect(window.CategoryFilter.Activated, function()
 		local tab = window.ActiveTab
 		if not tab or not tab.Categories then return end
@@ -3282,13 +3219,11 @@ function Library:CreateWindow(options)
 		window:_openDropdown(control, "Category", tab.Categories, window.CategoryFilter)
 	end)
 	window.Content = create("Frame", { Position = UDim2.fromOffset(20, 142), Size = UDim2.new(1, -40, 1, -186),
-		BackgroundColor3 = THEME.Panel, BackgroundTransparency = 0.22,
-		BorderSizePixel = 0, ClipsDescendants = true, Parent = window.Main,
-	}, { corner(14), stroke(THEME.Accent, 0.78) })
+		BackgroundTransparency = 1, ClipsDescendants = true, Parent = window.Main })
 	window.Empty = label(window.Main, "", UDim2.new(0, 32, 0.5, 0), UDim2.new(1, -64, 0, 90), 14, THEME.Muted, false)
 	window.Empty.TextXAlignment = Enum.TextXAlignment.Center
 	window.Empty.Visible = false
-	window.Footer = label(window.Main, "Ready", UDim2.new(0, 24, 1, -32), UDim2.new(1, -180, 0, 20), 11, THEME.Accent, false)
+	window.Footer = label(window.Main, "Ready", UDim2.new(0, 24, 1, -32), UDim2.new(1, -180, 0, 20), 11, THEME.Muted, false)
 	window.SearchHint = label(window.Main, "CTRL K  /  SEARCH", UDim2.new(1, -152, 1, -32), UDim2.fromOffset(132, 20), 9, THEME.Muted, true)
 	window.Launcher = create("TextButton", { Name = "ReopenFrostScripts", AnchorPoint = Vector2.new(0, 1),
 		Position = UDim2.new(0, 20, 1, -20), Size = UDim2.fromOffset(52, 52), Text = "F",

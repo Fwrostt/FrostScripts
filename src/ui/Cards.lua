@@ -27,7 +27,7 @@ function Tab:AddScriptCard(entry, onLaunch)
 		if object:IsA("GuiObject") then object.Visible = false end
 	end
 	local cover = create("Frame", { Name = "ScriptCover", ClipsDescendants = true,
-		BackgroundColor3 = THEME.AccentSoft, BorderSizePixel = 0, Parent = module.Card }, { corner(10) })
+		BackgroundColor3 = THEME.Surface, BorderSizePixel = 0, Parent = module.Card }, { corner(10) })
 	local gradient = create("UIGradient", { Rotation = 25,
 		Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(90, 95, 110)), Parent = cover })
 	table.insert(self.Window._coverGradients, gradient)
@@ -79,15 +79,15 @@ function Tab:AddScriptCard(entry, onLaunch)
 	local button = create("TextButton", { Name = "LaunchScript", Text = "Launch script",
 		TextSize = 14, Font = Enum.Font.BuilderSansMedium, TextColor3 = THEME.Text,
 		BackgroundColor3 = THEME.Surface, BorderSizePixel = 0, AutoButtonColor = false, Parent = module.Card,
-	}, { corner(8), stroke(THEME.Accent, 0.65) })
+	}, { corner(8), stroke(THEME.Border, 0.25) })
 	self.Window:_hover(button, THEME.Surface, THEME.SurfaceHover)
 	local cardStroke = module.Card:FindFirstChildWhichIsA("UIStroke")
 	local function setHovered(hovered)
 		cardHovered = hovered
 		imageReady()
 		self.Window:_tween(module.Card, 0.13, { BackgroundColor3 = hovered and THEME.Surface or THEME.PanelRaised })
-		if cardStroke then self.Window:_tween(cardStroke, 0.13, { Color = hovered and THEME.Accent or THEME.Border, Transparency = hovered and 0.3 or 0.25 }) end
-		self.Window:_tween(hoverWash, 0.13, { BackgroundTransparency = hovered and 0.84 or 1 })
+		if cardStroke then self.Window:_tween(cardStroke, 0.13, { Color = hovered and THEME.Accent or THEME.Border, Transparency = hovered and 0.65 or 0.5 }) end
+		self.Window:_tween(hoverWash, 0.13, { BackgroundTransparency = hovered and 0.96 or 1 })
 		self.Window:_tween(hoverHint, 0.13, { TextTransparency = hovered and hoverHint.Visible and 0 or 1 })
 		if hovered then self.Window:PlaySound("Hover") end
 	end
@@ -117,7 +117,7 @@ function Tab:AddScriptCard(entry, onLaunch)
 			hoverHint.Visible = side >= 84
 			status.Visible = false
 		else
-			local descriptionHeight = math.ceil(52 * textScale)
+			local descriptionHeight = math.ceil(68 * textScale)
 			local coverHeight = height - 116 - titleHeight - descriptionHeight
 			cover.Position, cover.Size = UDim2.fromOffset(12, 12), UDim2.new(1, -24, 0, coverHeight)
 			title.Position, title.Size = UDim2.fromOffset(14, coverHeight + 24), UDim2.new(1, -28, 0, titleHeight)
